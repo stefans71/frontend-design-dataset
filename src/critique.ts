@@ -25,6 +25,8 @@ export async function critiqueComponent(screenshotPath: string, outputDir: strin
 
   let timedOut = false;
 
+  // Prompt must come before -i: the -i flag accepts FILE... and would otherwise
+  // consume the prompt string as a second image path.
   const proc = Bun.spawn(
     [
       "codex",
@@ -33,13 +35,14 @@ export async function critiqueComponent(screenshotPath: string, outputDir: strin
       "gpt-5.4",
       "--dangerously-bypass-approvals-and-sandbox",
       "--ephemeral",
+      CRITIQUE_PROMPT,
       "-i",
       screenshotPath,
-      CRITIQUE_PROMPT,
     ],
     {
       stdout: "pipe",
       stderr: "ignore",
+      stdin: "ignore",
     }
   );
 
@@ -63,18 +66,19 @@ export async function critiqueComponent(screenshotPath: string, outputDir: strin
     return;
   }
 
-  // Strip trailing token-count metadata lines
+  // Codex output format:
+  //   <header>\ncodex\n{response}\ntokens used\n{count}\n{response again}
+  // The response is printed twice; the copy after "tokens used\n{count}\n" is cleanest.
   const lines = text.split("\n");
-  let endIdx = lines.length;
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = (lines[i] ?? "").trim();
-    if (line === "" || line.includes("tokens") || line.startsWith("---")) {
-      endIdx = i;
-    } else {
-      break;
-    }
+  const tokIdx = lines.findIndex((l) => l.trim() === "tokens used");
+  let critique: string;
+  if (tokIdx !== -1 && tokIdx + 2 <= lines.length) {
+    critique = lines.slice(tokIdx + 2).join("\n").trim();
+  } else {
+    // Fallback: strip header lines up to and including "codex" marker
+    const codexIdx = lines.findLastIndex((l) => l.trim() === "codex");
+    critique = (codexIdx !== -1 ? lines.slice(codexIdx + 1) : lines).join("\n").trim();
   }
-  const critique = lines.slice(0, endIdx).join("\n").trim();
 
   writeFileSync(critiquePath, critique, "utf-8");
 }
