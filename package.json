@@ -1,0 +1,22 @@
+{
+  "name": "frontend-design-dataset",
+  "module": "src/pipeline.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "pipeline": "bun run src/pipeline.ts",
+    "generate": "bun run src/generate.ts",
+    "render": "bun run src/render.ts",
+    "critique": "bun run src/critique.ts",
+    "package": "bun run src/package-dataset.ts",
+    "test:pipeline": "TEST_MODE=true TEST_COUNT=3 bun run src/pipeline.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "playwright": "^1.60.0"
+  }
+}
