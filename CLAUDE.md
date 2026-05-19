@@ -184,3 +184,44 @@ codex exec -m gpt-5.4 --dangerously-bypass-approvals-and-sandbox --ephemeral "pr
 ## GitHub
 
 https://github.com/stefans71/frontend-design-dataset
+
+---
+
+## Session Notes — 2026-05-20 08:43:21 JST
+
+### Current Status
+- All v2 code committed and pushed to GitHub
+- AutoDL offline (rebooted, new SSH port needed from AutoDL web UI)
+- v2 A/B test NOT yet run — waiting for AutoDL to come back online
+
+### What's Ready to Run (exact commands)
+
+```bash
+# Step 1 — rsync new code to AutoDL
+bash scripts/rsync-to-autodl.sh <NEW_PORT>
+
+# Step 2 — AutoDL: generate + render v2
+source autodl-run.sh
+TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run generate
+TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run render
+
+# Step 3 — VPS: pull + critique + improve v2
+bash scripts/rsync-from-autodl.sh <NEW_PORT>
+TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run critique
+TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run improve
+
+# Step 4 — Compare v1 vs v2 for all 5 pairs visually
+```
+
+### What Changed This Session
+- `COMPONENT_PROMPTS_V2`: 5 natural language rewrites (no Tailwind classes)
+- `improve.ts`: now reads `metadata.json` and passes original prompt as scope constraint
+- `OUTPUT_SUFFIX` env var: all 5 stages support versioned output dirs
+- `package.json`: `test:v2` script added
+- `PLAN.md`: Prompt Design Principles section added, 100-prompt mix table
+- `CLAUDE.md`: both fixes documented
+
+### After v2 Test Confirms
+- Write all 80 remaining prompts in natural language style
+- Scale to 100 prompts × 5 quality variants = 500 components = 2,500 JSONL records
+- Full pipeline run on AutoDL
