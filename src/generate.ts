@@ -2,11 +2,12 @@
 import "dotenv/config";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
-import { COMPONENT_PROMPTS } from "../prompts/components.ts";
+import { COMPONENT_PROMPTS, COMPONENT_PROMPTS_V2 } from "../prompts/components.ts";
 
 const LLAMA_SERVER_URL = process.env.LLAMA_SERVER_URL ?? "http://localhost:11434";
 const LLAMA_MODEL = process.env.LLAMA_MODEL ?? "qwen3.6-27b-mtp";
 const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./output";
+const OUTPUT_SUFFIX = process.env.OUTPUT_SUFFIX ?? "";
 
 const SYSTEM_PROMPT =
   "You are a frontend developer. Output a complete, self-contained HTML document. Do NOT use any CDN links or external resources of any kind. Use only inline CSS with a <style> tag — no Tailwind, no external stylesheets, no Google Fonts, no CDN scripts. All styles must be embedded directly in the HTML file. The file must render perfectly with zero internet connectivity. Use realistic content — no lorem ipsum, no placeholder text. Center the component on the page with padding. Do not use external images. Output only the HTML, no explanation.";
@@ -62,6 +63,7 @@ export async function generateComponent(prompt: string, outputDir: string): Prom
     model: LLAMA_MODEL,
     timestamp: new Date().toISOString(),
     stage: "generate",
+    outputSuffix: OUTPUT_SUFFIX || null,
   };
   writeFileSync(join(outputDir, "metadata.json"), JSON.stringify(metadata, null, 2), "utf-8");
 }
@@ -70,11 +72,15 @@ export async function generateAll(): Promise<void> {
   const testMode = process.env.TEST_MODE === "true";
   const testCount = parseInt(process.env.TEST_COUNT ?? "3", 10);
 
-  const prompts = testMode ? COMPONENT_PROMPTS.slice(0, testCount) : COMPONENT_PROMPTS;
+  // V2 suffix → use natural language prompts; no suffix → use expert prompts
+  const promptArray = OUTPUT_SUFFIX ? COMPONENT_PROMPTS_V2 : COMPONENT_PROMPTS;
+  const prompts = testMode ? promptArray.slice(0, testCount) : promptArray;
   const total = prompts.length;
 
+  const dirSuffix = OUTPUT_SUFFIX ? `-${OUTPUT_SUFFIX}` : "";
+
   for (let i = 0; i < total; i++) {
-    const outputDir = join(OUTPUT_DIR, `component-${String(i).padStart(3, "0")}`);
+    const outputDir = join(OUTPUT_DIR, `component-${String(i).padStart(3, "0")}${dirSuffix}`);
     mkdirSync(outputDir, { recursive: true });
     await generateComponent(prompts[i]!, outputDir);
     console.log(`[generate] Component ${i + 1}/${total} done`);

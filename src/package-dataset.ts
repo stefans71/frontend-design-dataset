@@ -4,6 +4,13 @@ import { join } from "path";
 
 const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./output";
 const DATASET_PATH = process.env.DATASET_PATH ?? "./output/dataset.jsonl";
+const OUTPUT_SUFFIX = process.env.OUTPUT_SUFFIX ?? "";
+
+function componentDirPattern(): RegExp {
+  return OUTPUT_SUFFIX
+    ? new RegExp(`^component-\\d+-${OUTPUT_SUFFIX}$`)
+    : /^component-\d+$/;
+}
 
 type ImageContent = { type: "image"; path: string };
 type TextContent = { type: "text"; text: string };
@@ -131,6 +138,7 @@ function record4_screenshotHtmlToCritique(c: ComponentData): TrainingRecord {
 }
 
 // Type 5: Screenshot + HTML + critique → improved HTML (the most valuable record)
+// Includes the original prompt as a scope constraint so the model learns not to expand scope.
 function record5_screenshotHtmlCritiqueToImproved(c: ComponentData): TrainingRecord | null {
   if (!c.improved) return null;
   return {
@@ -143,7 +151,7 @@ function record5_screenshotHtmlCritiqueToImproved(c: ComponentData): TrainingRec
           { type: "image", path: c.screenshotDesktop },
           {
             type: "text",
-            text: `This UI component has design quality issues.\n\nCurrent HTML:\n${c.html}\n\nDesign critique:\n${c.critique}\n\nRewrite the HTML fixing every issue. Output only the improved HTML file.`,
+            text: `This UI component has design quality issues.\n\nOriginal user intent: "${c.prompt}"\n\nCurrent HTML:\n${c.html}\n\nDesign critique:\n${c.critique}\n\nRewrite the HTML fixing every issue while staying within the original scope. Output only the improved HTML file.`,
           },
         ],
       },
@@ -154,7 +162,7 @@ function record5_screenshotHtmlCritiqueToImproved(c: ComponentData): TrainingRec
 
 export function packageAll(): void {
   const componentDirs = readdirSync(OUTPUT_DIR)
-    .filter((name) => /^component-\d+$/.test(name))
+    .filter((name) => componentDirPattern().test(name))
     .sort();
 
   const records: TrainingRecord[] = [];

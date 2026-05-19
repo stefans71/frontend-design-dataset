@@ -4,6 +4,13 @@ import { existsSync, readdirSync, writeFileSync } from "fs";
 import { join } from "path";
 
 const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./output";
+const OUTPUT_SUFFIX = process.env.OUTPUT_SUFFIX ?? "";
+
+function componentDirPattern(): RegExp {
+  return OUTPUT_SUFFIX
+    ? new RegExp(`^component-\\d+-${OUTPUT_SUFFIX}$`)
+    : /^component-\d+$/;
+}
 
 const CRITIQUE_PROMPT = `You are a senior product designer reviewing a UI component screenshot.
 
@@ -85,7 +92,7 @@ export async function critiqueComponent(screenshotPath: string, outputDir: strin
 
 export async function critiqueAll(): Promise<void> {
   const componentDirs = readdirSync(OUTPUT_DIR)
-    .filter((name) => /^component-\d+$/.test(name))
+    .filter((name) => componentDirPattern().test(name))
     .sort();
 
   const screenshotFiles = componentDirs

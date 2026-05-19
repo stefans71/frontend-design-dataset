@@ -4,17 +4,28 @@ Synthetic frontend design training data pipeline for fine-tuning **Qwen3-VL-8B**
 
 ## Last Updated
 
-2026-05-19 23:30:00 JST
+2026-05-20 00:30:00 JST
 
 ## Current Status
 
-- Full 20-component run complete — generate, render, critique, improve, package all working
-- 20/20 components generated and rendered (AutoDL RTX 5090)
-- 20/20 critiques complete (4.2–6.2 KB each, pixel-level feedback, scores 4–7/10)
-- 20/20 improved.html files generated (300s timeout; data table 017 needed retry)
-- dataset.jsonl: 100 training records (20×each of 5 types) — 1.5 MB
-- Scores: median 6/10, range 4–7. Dramatic visual improvements confirmed in browser (003: 4/10 → full landing page)
-- Ready to scale to 2,500 records (100 prompts × 5 quality variants)
+- Full 20-component v1 run complete — 100 records, 1.5 MB dataset.jsonl
+- Two bugs fixed: natural language prompts (COMPONENT_PROMPTS_V2) + scope-aware improve.ts
+- v2 A/B test code ready; waiting for AutoDL to run generate+render for 5 v2 components
+- After v2 test validates both fixes, scale to 100 prompts × 5 variants = 2,500 records
+
+## Two Fixes Applied for v2
+
+**Fix 1 — Natural language prompts (`COMPONENT_PROMPTS_V2`):**
+Expert prompts (v1) use Tailwind class names and pixel values — not representative of real users.
+`COMPONENT_PROMPTS_V2` rewrites the first 5 prompts the way a non-designer would ask:
+intent + content + rough style direction, no technical specifics.
+All 100 prompts for the full run will be natural language style.
+
+**Fix 2 — Scope-aware improve.ts:**
+v1 improve.ts had no concept of the original user intent, causing Codex to expand scope
+(e.g. a navbar prompt became a full SaaS landing page). Now `improveComponent(id, originalPrompt?)`
+reads the prompt from metadata.json and passes it as a scope constraint in the Codex prompt.
+The type-5 training record also now includes the original prompt so the model learns scope fidelity.
 
 ## Critical Fixes Applied (do not revert)
 
@@ -55,6 +66,22 @@ bash /root/autodl-tmp/start.sh
 sudo systemctl daemon-reload && sudo systemctl restart autodl-tunnel.service
 ```
 
+## OUTPUT_SUFFIX — Versioned Output Dirs
+
+Set `OUTPUT_SUFFIX=v2` to write to `component-000-v2/` dirs instead of `component-000/`.
+V1 data is never touched. All stages (generate, render, critique, improve, package) read this env var.
+When OUTPUT_SUFFIX is set, generate.ts automatically uses COMPONENT_PROMPTS_V2.
+
+```bash
+# v2 A/B test — 5 components, natural language prompts
+TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run generate
+TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run render
+# ... rsync ...
+TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run critique
+TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run improve
+OUTPUT_SUFFIX=v2 bun run package
+```
+
 ## Full Run Sequence
 
 ```bash
@@ -74,8 +101,10 @@ bun run package                     # assembles dataset.jsonl
 
 ## Next Steps
 
-1. Scale to 2,500 records (expand prompts to 100, run 5 quality variants each)
-2. Fine-tune Qwen3-VL-8B on the dataset
+1. Run v2 A/B test on AutoDL (5 components, natural language prompts) — validate both fixes
+2. Compare v1 vs v2: base HTML quality, scope fidelity in improved.html
+3. Scale to 2,500 records (100 natural language prompts × 5 quality variants)
+4. Fine-tune Qwen3-VL-8B on the dataset
 
 ---
 
@@ -94,7 +123,7 @@ bun run package                     # assembles dataset.jsonl
 2. `screenshot_to_critique` — desktop screenshot → critique (visual critique learning)
 3. `screenshot_to_code` — desktop screenshot → original HTML (visual-to-code)
 4. `screenshot_html_to_critique` — screenshot + HTML → critique (full-context critique)
-5. `screenshot_code_critique_to_improved` — screenshot + HTML + critique → improved HTML **(most valuable)**
+5. `screenshot_code_critique_to_improved` — screenshot + HTML + original prompt + critique → improved HTML **(most valuable)**; original prompt included as scope constraint
 
 ## Codex Timeout Notes
 

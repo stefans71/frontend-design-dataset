@@ -5,6 +5,13 @@ import { join } from "path";
 import { chromium } from "playwright";
 
 const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./output";
+const OUTPUT_SUFFIX = process.env.OUTPUT_SUFFIX ?? "";
+
+function componentDirPattern(): RegExp {
+  return OUTPUT_SUFFIX
+    ? new RegExp(`^component-\\d+-${OUTPUT_SUFFIX}$`)
+    : /^component-\d+$/;
+}
 
 export async function renderComponent(htmlPath: string, outputDir: string): Promise<void> {
   const desktopPath = join(outputDir, "screenshot-desktop.png");
@@ -41,7 +48,7 @@ export async function renderComponent(htmlPath: string, outputDir: string): Prom
 
 export async function renderAll(): Promise<void> {
   const componentDirs = readdirSync(OUTPUT_DIR)
-    .filter((name) => /^component-\d+$/.test(name))
+    .filter((name) => componentDirPattern().test(name))
     .sort();
 
   const htmlFiles = componentDirs

@@ -1,40 +1,67 @@
 # Implementation Plan
 
+## Status
+
+Stages 1–4 fully implemented and validated on 20 v1 components.
+v2 A/B test code ready — pending AutoDL availability for generate+render run.
+
+---
+
+## Prompt Design Principles
+
+All prompts for the full 100-prompt expansion must follow these rules:
+
+**Write like a real non-designer user, not a frontend engineer.**
+
+| ✗ Expert style (v1) | ✓ Natural language style (v2) |
+|---|---|
+| `bg-gray-950 background` | `dark background` |
+| `bg-blue-600 text-white font-semibold px-8 py-3 rounded-lg` | `blue button, white text, rounded corners` |
+| `text-5xl font-black` | `large bold price` |
+| `border border-purple-500/30 rounded-2xl p-8 shadow-xl` | `card with a subtle purple glow` |
+
+**Each prompt must:**
+1. Name a specific component type (button, card, form, nav, table…) — not a "page" or "app"
+2. Include brand/product name and realistic content (no "Company Name", no lorem ipsum)
+3. State light or dark theme in plain English
+4. Mention accent color by name (blue, green, purple, amber…) — no hex, no Tailwind tokens
+5. Scope to exactly what should appear on screen — no "also add a hero section below"
+6. End with: `Use only inline CSS — no external libraries. Self-contained HTML document.`
+
+**Do not include:**
+- Tailwind class names (`bg-gray-950`, `rounded-2xl`, `font-semibold`)
+- Pixel or rem values (`px-8`, `py-3`, `text-5xl`, `w-80`)
+- CSS property names (`border-radius`, `box-shadow`, `letter-spacing`)
+- Framework references (Tailwind, Bootstrap, React, etc.)
+
+---
+
 ## prompts/components.ts
 
-Export `COMPONENT_PROMPTS: string[]` with 20 diverse, specific prompts. Each prompt is self-contained and specifies framework, colors, and realistic content.
+Two exported arrays:
 
-### Required mix (20 prompts):
+- **`COMPONENT_PROMPTS`** — 20 expert-authored v1 prompts. Kept for reference and backward compatibility. Not used in new runs.
+- **`COMPONENT_PROMPTS_V2`** — natural language rewrites of the first 5 prompts. Used when `OUTPUT_SUFFIX` is set.
+- **Full 100-prompt array** (to be added) — all in natural language style, covering the component mix below.
 
-1. Primary CTA button with hover/disabled states — dark theme, blue accent
-2. Email signup form with validation states — light theme, green accent
-3. Pricing card (Pro tier) with feature list and CTA — dark theme, purple gradient
-4. Responsive navbar with logo, links, and mobile hamburger — light theme
-5. User profile card with avatar, stats, and action buttons — dark theme, slate/cyan
-6. Toast notification stack (success, error, warning) — light theme
-7. Stats dashboard card with big numbers and sparkline placeholders — dark theme, emerald accent
-8. Login form with social auth buttons — light theme, minimal
-9. E-commerce product card with image placeholder, price, and add-to-cart — light theme
-10. Mobile bottom navigation bar with 5 icons and active state — dark theme
-11. Settings toggle list with descriptions — light theme
-12. File upload dropzone with progress indicator — dark theme, indigo accent
-13. Comment thread with nested replies and timestamps — light theme
-14. Pricing table (3 tiers) with highlighted recommended plan — light theme, blue
-15. Search bar with filters dropdown and recent searches — dark theme
-16. Testimonial card with star rating and avatar — light theme, warm tones
-17. Mobile app onboarding card with illustration placeholder and pagination dots — dark theme
-18. Data table with sortable headers, pagination, and row selection — light theme
-19. Cookie consent banner with accept/reject/customize — dark theme, amber accent
-20. Notification bell dropdown with unread count and notification list — light theme
+### Required component mix (100 prompts total)
 
-At least prompts 1, 3, 5, 10, 12, 15, 17, 19 are dark theme (8 dark variants).
+Maintain at least 40% dark theme. Cover all major UI component categories:
 
-Each prompt must specify:
-- Exact component description
-- Color palette (specific Tailwind colors)
-- Light or dark theme
-- Realistic content (no lorem ipsum, no placeholder text)
-- "Use Tailwind CSS via CDN. Center the component with padding. Self-contained HTML document."
+| Category | Count | Examples |
+|---|---|---|
+| Buttons & CTAs | 8 | Primary CTA, destructive, loading state, icon button, split button |
+| Forms | 10 | Login, signup, newsletter, search, settings, contact, checkout |
+| Navigation | 8 | Navbar, sidebar, bottom nav, breadcrumb, tab bar, pagination |
+| Cards | 12 | Product card, profile card, pricing card, blog post card, stat card |
+| Modals & Overlays | 8 | Dialog, confirm, side drawer, image lightbox, command palette |
+| Feedback & Status | 10 | Toast, alert banner, empty state, skeleton loader, progress bar |
+| Data Display | 12 | Table, list, timeline, kanban column, calendar cell, chart card |
+| Marketing | 10 | Testimonial, feature grid, pricing table, FAQ accordion, CTA section |
+| Mobile | 8 | Bottom nav, pull-to-refresh, onboarding card, mobile menu, swipe card |
+| Misc | 14 | File upload, cookie banner, notification bell, avatar stack, tag input |
+
+Each component gets 5 quality variants in the full run (temperature variation or re-prompting).
 
 ---
 
@@ -42,163 +69,143 @@ Each prompt must specify:
 
 ### Function: `generateComponent(prompt: string, outputDir: string): Promise<void>`
 
-1. Load dotenv at module top
-2. Check if `{outputDir}/component.html` exists — skip if so
-3. POST to `${LLAMA_SERVER_URL}/v1/chat/completions`:
-   ```json
-   {
-     "model": "${LLAMA_MODEL}",
-     "messages": [
-       {
-         "role": "system",
-         "content": "You are a frontend developer. Output a complete, self-contained HTML document. Use Tailwind CSS via CDN (<script src=\"https://cdn.tailwindcss.com\"></script>). Use realistic content — no lorem ipsum, no placeholder text. Center the component on the page with padding. Do not use external images. Output only the HTML, no explanation."
-       },
-       {
-         "role": "user",
-         "content": "<the component prompt>"
-       }
-     ],
-     "chat_template_kwargs": {
-       "enable_thinking": false
-     },
-     "temperature": 0.7,
-     "max_tokens": 4096
-   }
-   ```
-4. Extract `choices[0].message.content`
-5. Strip markdown fences: remove leading ````html\n` and trailing ````\n` if present
-6. Save `{outputDir}/component.html`
-7. Save `{outputDir}/metadata.json`:
-   ```json
-   {
-     "prompt": "<the prompt>",
-     "model": "<LLAMA_MODEL>",
-     "timestamp": "<ISO 8601>",
-     "stage": "generate"
-   }
-   ```
+1. Check if `{outputDir}/component.html` exists — skip if so
+2. POST to `${LLAMA_SERVER_URL}/v1/chat/completions` with system prompt enforcing inline CSS only, zero CDN
+3. Extract `choices[0].message.content`
+4. Strip markdown fences
+5. Save `{outputDir}/component.html`
+6. Save `{outputDir}/metadata.json` with prompt, model, timestamp, outputSuffix
 
 ### Function: `generateAll(): Promise<void>`
 
-1. Load `COMPONENT_PROMPTS` from `prompts/components.ts`
-2. Read `TEST_MODE` and `TEST_COUNT` from env
-3. If `TEST_MODE === "true"`, slice prompts to first `TEST_COUNT` (default 3)
-4. For each prompt at index `i`:
-   - `outputDir = ${OUTPUT_DIR}/component-${String(i).padStart(3, '0')}`
-   - `mkdir -p` the output dir
-   - Call `generateComponent(prompt, outputDir)`
-   - Log progress: `[generate] Component ${i+1}/${total} done`
-5. Log summary: `[generate] ${total} components generated`
-
-### Entry point
-
-If `import.meta.main`, call `generateAll()`.
+- Reads `TEST_MODE`, `TEST_COUNT`, `OUTPUT_SUFFIX` from env
+- If `OUTPUT_SUFFIX` set → uses `COMPONENT_PROMPTS_V2` and dirs like `component-000-v2/`
+- Otherwise → uses `COMPONENT_PROMPTS` and dirs like `component-000/`
 
 ---
 
 ## Stage 2 — render.ts
 
-### Function: `renderComponent(htmlPath: string, outputDir: string): Promise<void>`
-
-1. Check if both `screenshot-desktop.png` and `screenshot-mobile.png` exist in `outputDir` — skip if so
-2. Read HTML from `htmlPath`
-3. **Desktop screenshot (1280x900):**
-   - Launch Chromium: `chromium.launch()`
-   - Create page with viewport `{ width: 1280, height: 900 }`
-   - `page.setContent(html, { waitUntil: 'networkidle' })`
-   - Wait additional 1500ms (Tailwind CDN load buffer)
-   - `page.screenshot({ path: outputDir/screenshot-desktop.png, fullPage: true })`
-   - Close browser
-4. **Mobile screenshot (390x844):**
-   - Launch Chromium
-   - Create page with viewport `{ width: 390, height: 844 }`
-   - Same setContent + wait pattern
-   - `page.screenshot({ path: outputDir/screenshot-mobile.png, fullPage: true })`
-   - Close browser
-
 ### Function: `renderAll(): Promise<void>`
 
-1. Glob `${OUTPUT_DIR}/component-*/component.html`
-2. Sort by directory name
-3. For each HTML file:
-   - Call `renderComponent(htmlPath, dirname(htmlPath))`
-   - Log progress: `[render] Component ${i+1}/${total} rendered`
-4. Log summary
-
-### Entry point
-
-If `import.meta.main`, call `renderAll()`.
+- Reads `OUTPUT_SUFFIX` from env
+- Filters component dirs by suffix: `OUTPUT_SUFFIX=v2` → matches only `component-*-v2/`
+- Desktop screenshot: 1280×900, fullPage
+- Mobile screenshot: 390×844, fullPage
+- `waitUntil: "networkidle"` + 1500ms buffer (required — do not change)
 
 ---
 
 ## Stage 3 — critique.ts
 
-### Critique prompt (hardcoded constant)
-
-```
-You are a senior product designer reviewing a UI component screenshot.
-
-Provide a structured design critique covering:
-1. Visual hierarchy — is the most important element immediately obvious?
-2. Spacing & layout — consistent spacing system? Specific values that need changing?
-3. Typography — weight contrast, size scale, readability
-4. Color — contrast ratios, palette cohesion, WCAG AA accessibility
-5. Component completeness — all states shown? (hover, disabled, loading, error, empty)
-6. Production readiness — what would a senior designer change before shipping?
-
-Score 1-10. Be specific — name exact measurements, not general advice.
-```
-
-### Function: `critiqueComponent(screenshotPath: string, outputDir: string): Promise<void>`
-
-1. Check if `{outputDir}/critique.md` exists — skip if so
-2. Build command:
-   ```
-   codex exec -m gpt-5.4 --dangerously-bypass-approvals-and-sandbox --ephemeral -i {screenshotPath} "{CRITIQUE_PROMPT}"
-   ```
-3. Run via `Bun.spawn()`:
-   - Capture stdout as text
-   - Set timeout: 120_000ms
-   - On timeout, kill process and log warning, skip component
-4. Parse stdout:
-   - Split by newlines
-   - Strip trailing lines that match token count pattern (lines containing "tokens" or starting with `---`)
-   - Join remaining lines as the critique text
-5. Save `{outputDir}/critique.md`
-
 ### Function: `critiqueAll(): Promise<void>`
 
-1. Glob `${OUTPUT_DIR}/component-*/screenshot-desktop.png`
-2. Sort by directory name
-3. For each screenshot (**sequentially**, no parallelism):
-   - Call `critiqueComponent(screenshotPath, dirname(screenshotPath))`
-   - Log progress: `[critique] Component ${i+1}/${total} critiqued`
-4. Log summary
+- Reads `OUTPUT_SUFFIX` from env, filters dirs accordingly
+- Runs Codex sequentially (no parallelism)
+- Timeout: 120s per component
 
-### Entry point
+---
 
-If `import.meta.main`, call `critiqueAll()`.
+## Stage 3b — improve.ts
+
+### Function: `improveComponent(id: string, originalPrompt?: string): Promise<void>`
+
+- `originalPrompt` is read from `metadata.json` by `improveAll` and passed in
+- If provided, the Codex prompt includes a scope constraint:
+  > "A navbar prompt should produce a better navbar, not a landing page."
+- If not provided, falls back to: "Improve only the specific component shown."
+- Timeout: 300s (HTML output is 3–5× larger than critique text)
+
+### Function: `improveAll(testMode, testCount): Promise<void>`
+
+- Reads `OUTPUT_SUFFIX` from env, filters dirs accordingly
+- Reads `metadata.json` per component to get original prompt
+- Passes prompt to `improveComponent` as scope constraint
+
+---
+
+## Stage 4 — package-dataset.ts
+
+### Five record types per component
+
+1. **`prompt_to_html`** — text prompt → original HTML
+2. **`screenshot_to_critique`** — screenshot → critique text
+3. **`screenshot_to_code`** — screenshot → original HTML (reconstruct from visual)
+4. **`screenshot_html_to_critique`** — screenshot + HTML → critique
+5. **`screenshot_code_critique_to_improved`** — screenshot + original prompt + HTML + critique → improved HTML
+
+Record type 5 now includes the original prompt in the user message so the model learns scope fidelity alongside design improvement.
+
+### Function: `packageAll(): void`
+
+- Reads `OUTPUT_SUFFIX` from env, filters dirs accordingly
+- Writes to `output/dataset.jsonl` (or `DATASET_PATH` env var)
 
 ---
 
 ## Output Directory Structure (per component)
 
 ```
-output/component-000/
-├── component.html          (Stage 1)
-├── metadata.json           (Stage 1)
-├── screenshot-desktop.png  (Stage 2)
-├── screenshot-mobile.png   (Stage 2)
-└── critique.md             (Stage 3)
+output/component-000/          ← v1 (expert prompts)
+├── component.html
+├── metadata.json              ← includes prompt + outputSuffix field
+├── screenshot-desktop.png
+├── screenshot-mobile.png
+├── critique.md
+└── improved.html
+
+output/component-000-v2/       ← v2 (natural language prompts)
+├── component.html
+├── metadata.json
+├── screenshot-desktop.png
+├── screenshot-mobile.png
+├── critique.md
+└── improved.html
 ```
 
 ---
 
-## Implementation Order
+## v2 A/B Test Plan
 
-1. `prompts/components.ts` — write all 20 prompts
-2. `src/generate.ts` — implement and syntax check
-3. `src/render.ts` — implement and syntax check
-4. `src/critique.ts` — implement and syntax check
-5. Test with `TEST_MODE=true bun run generate`, then `render`, then `critique`
-6. `src/pipeline.ts` and `src/package-dataset.ts` — later, after stages 1-3 are validated
+**Goal:** Validate two fixes before scaling to 100 prompts.
+
+**What to compare for each of the 5 components:**
+
+| Comparison | What we're measuring |
+|---|---|
+| v1 `component.html` vs v2 `component.html` | Does natural language produce different/better base output from Qwen? |
+| v1 `improved.html` vs v2 `improved.html` | Does the scope constraint keep Codex focused on the component type? |
+| v1 critique score vs v2 critique score | Do simpler prompts produce better-scored components? |
+
+**Expected outcomes:**
+- v2 base HTML: same or slightly lower quality (natural prompts give less precise spec), but more varied and realistic
+- v2 improved.html: significantly better scope fidelity (no more navbars becoming landing pages)
+
+**Run sequence:**
+```bash
+# AutoDL:
+TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run generate
+TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run render
+
+# VPS (after rsync):
+TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run critique
+TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run improve
+OUTPUT_SUFFIX=v2 bun run package
+```
+
+---
+
+## Implementation Order (remaining)
+
+1. ✅ `prompts/components.ts` — v1 prompts + COMPONENT_PROMPTS_V2
+2. ✅ `src/generate.ts` — OUTPUT_SUFFIX, V2 prompt routing
+3. ✅ `src/render.ts` — OUTPUT_SUFFIX dir filtering
+4. ✅ `src/critique.ts` — OUTPUT_SUFFIX dir filtering
+5. ✅ `src/improve.ts` — originalPrompt param, scope instruction, OUTPUT_SUFFIX, metadata reading
+6. ✅ `src/package-dataset.ts` — OUTPUT_SUFFIX filtering, original prompt in type-5 record
+7. ✅ `src/pipeline.ts` — orchestrator with JST timestamps
+8. ✅ `package.json` — test:v2 script
+9. ⏳ Run v2 A/B test on AutoDL + VPS (pending AutoDL)
+10. ⏳ Write all 80 new natural language prompts (bring total to 100)
+11. ⏳ Full 100-prompt × 5-variant run → 2,500 records
+12. ⏳ Fine-tune Qwen3-VL-8B

@@ -59,3 +59,24 @@ export const COMPONENT_PROMPTS: string[] = [
   // 20 — Notification bell dropdown, light theme
   `Build a notification bell dropdown panel. Light bg-gray-100 background. Show a nav bar stub: bg-white border-b border-gray-200 px-6 py-3 flex justify-end items-center with an avatar circle and a notification bell button (bell SVG text-gray-600 w-6 h-6) with a red badge "7" bg-red-500 text-white text-xs rounded-full absolute -top-1 -right-1 in a relative container. Below (as if the dropdown is open): dropdown panel bg-white border border-gray-200 rounded-2xl shadow-xl w-80 float-right mr-6. Header px-4 pt-4 pb-2: "Notifications" in text-gray-900 font-semibold and "Mark all read" in text-blue-600 text-sm. Four notification rows px-4 py-3 border-b border-gray-100 flex gap-3: (1) unread bg-blue-50 rounded-xl — blue dot + "Priya Sharma commented on your design update." + "5 min ago" text-gray-400 text-xs; (2) unread — "Lucas Kim mentioned you in the Q3 review." + "1 hour ago"; (3) unread — download icon text-blue-500 + "Your export is ready — dashboard-may2026.csv (2.4 MB)" + "3 hours ago"; (4) read (no bg) — gray dot + "Scheduled maintenance Sunday 2–4 AM UTC." + "Yesterday". Footer text-center py-3: "View all notifications →" in text-blue-600 text-sm. Use only inline CSS in a <style> tag — no CDN, no external resources. Center the component with padding. Self-contained HTML document.`,
 ];
+
+// Natural language rewrites of the first 5 prompts.
+// Written the way a real non-designer user would ask — no Tailwind classes,
+// no px values, no technical specifics. Just intent, content, and style direction.
+// These are used when OUTPUT_SUFFIX is set (e.g. OUTPUT_SUFFIX=v2).
+export const COMPONENT_PROMPTS_V2: string[] = [
+  // 1 — CTA button, dark theme, blue accent
+  `Show me a sign-up button for a SaaS app in three states side by side: normal, hovered, and disabled. Dark page background. Blue button with white text and rounded corners, label "Start Your Free Trial" with a small arrow icon. The hover state should look slightly lighter with a soft glow. The disabled state should be grayed out and clearly inactive. Add a small caption below each state. Use only inline CSS — no external libraries. Self-contained HTML document.`,
+
+  // 2 — Email signup form, light theme, green accent
+  `Make an email newsletter signup form for a design blog called Craft Weekly. Light background. Show three states stacked vertically: (1) the default form with a headline "Get weekly design insights", a subtitle about joining 12,400 designers, an email input field, and a green Subscribe button; (2) an error state with a red message under the input saying the email is invalid; (3) a success state replacing the form with a green confirmation message and checkmark. Use only inline CSS — no external libraries. Self-contained HTML document.`,
+
+  // 3 — Pricing card Pro, dark theme, purple accent
+  `Design a pricing card for the Pro plan of a startup app called Shipfast. Dark background with a subtle purple glow around the card. Show the price as $49/month. List 5 features with checkmarks: unlimited projects, priority support, custom domain, advanced analytics, team collaboration. Add a "Most Popular" badge at the top and a big purple "Get Pro Access" button at the bottom. Use only inline CSS — no external libraries. Self-contained HTML document.`,
+
+  // 4 — Responsive navbar, light theme
+  `Make a top navigation bar for a SaaS product called Flowdesk. Logo on the left (small icon + brand name), nav links in the middle (Features, Pricing, Docs, Blog), and a "Sign in" text link plus a blue "Get Started" button on the right. On mobile it should collapse and show a hamburger menu icon instead of the links. Below the nav add a simple white page area with a bold headline as placeholder content. Use only inline CSS — no external libraries. Self-contained HTML document.`,
+
+  // 5 — User profile card, dark theme, teal/cyan accent
+  `Create a developer profile card for Alex Rivera, a Senior Frontend Engineer based in San Francisco. Dark slate background. Show a circular avatar with their initials "AR" in a teal circle, their name and job title, location with a pin icon, and a row of three stats: Projects, Followers, Following. Below the stats add two side-by-side buttons: a filled teal "Follow" button and a ghost "Message" button. Use only inline CSS — no external libraries. Self-contained HTML document.`,
+];

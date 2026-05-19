@@ -7,14 +7,27 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 
 const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./output";
+const OUTPUT_SUFFIX = process.env.OUTPUT_SUFFIX ?? "";
 
-function buildPrompt(currentHtml: string, critique: string): string {
-  return `You are an expert UI/UX designer and frontend engineer with 15 years experience at companies like Linear, Vercel, and Stripe.
+function componentDirPattern(): RegExp {
+  return OUTPUT_SUFFIX
+    ? new RegExp(`^component-\\d+-${OUTPUT_SUFFIX}$`)
+    : /^component-\d+$/;
+}
+
+function buildPrompt(currentHtml: string, critique: string, originalPrompt?: string): string {
+  const scopeInstruction = originalPrompt
+    ? `Original user intent: "${originalPrompt}"\n\nIMPORTANT: The improved output must fulfill this same intent — same component type and scope. Do not add sections, pages, or features beyond what the original prompt requested. A navbar prompt should produce a better navbar, not a landing page.`
+    : `IMPORTANT: Improve only the specific component shown. Do not expand scope beyond what is visible in the screenshot.`;
+
+  return `You are an expert UI/UX designer and frontend engineer.
+
+${scopeInstruction}
 
 You are given:
-1. A screenshot of a UI component (attached image)
-2. The current HTML implementation
-3. A design critique identifying specific issues
+1. A screenshot of the current implementation (attached)
+2. The current HTML
+3. A design critique
 
 Current HTML:
 \`\`\`html
@@ -24,21 +37,12 @@ ${currentHtml}
 Design critique:
 ${critique}
 
-Your task: Rewrite the HTML fixing EVERY issue mentioned in the critique.
-Produce a significantly improved version with:
-- Better visual hierarchy and spacing
-- Improved typography scale and weight contrast
-- Proper color contrast meeting WCAG AA
-- Polished micro-details a senior designer would notice
-- All component states shown (hover, disabled, loading where relevant)
-
-Rules:
-- Use only inline CSS in a <style> tag — no CDN, no external resources
-- Output ONLY the complete HTML file, nothing else
-- No explanation, no markdown fences`;
+Rewrite the HTML fixing every issue in the critique while staying within the original scope.
+Use only inline CSS in a <style> tag — no CDN, no external resources.
+Output ONLY the complete HTML file, nothing else.`;
 }
 
-export async function improveComponent(id: string): Promise<void> {
+export async function improveComponent(id: string, originalPrompt?: string): Promise<void> {
   const outputDir = join(OUTPUT_DIR, id);
   const improvedPath = join(outputDir, "improved.html");
   if (existsSync(improvedPath)) return;
@@ -54,7 +58,7 @@ export async function improveComponent(id: string): Promise<void> {
 
   const currentHtml = readFileSync(htmlPath, "utf-8");
   const critique = readFileSync(critiquePath, "utf-8");
-  const prompt = buildPrompt(currentHtml, critique);
+  const prompt = buildPrompt(currentHtml, critique, originalPrompt);
 
   let timedOut = false;
 
@@ -128,14 +132,28 @@ export async function improveComponent(id: string): Promise<void> {
 
 export async function improveAll(testMode: boolean, testCount: number): Promise<void> {
   const componentDirs = readdirSync(OUTPUT_DIR)
-    .filter((name) => /^component-\d+$/.test(name))
+    .filter((name) => componentDirPattern().test(name))
     .sort();
 
   const ids = testMode ? componentDirs.slice(0, testCount) : componentDirs;
   const total = ids.length;
 
   for (let i = 0; i < total; i++) {
-    await improveComponent(ids[i]!);
+    const id = ids[i]!;
+
+    // Read original prompt from metadata so Codex knows the intended scope
+    let originalPrompt: string | undefined;
+    const metaPath = join(OUTPUT_DIR, id, "metadata.json");
+    if (existsSync(metaPath)) {
+      try {
+        const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
+        originalPrompt = meta.prompt;
+      } catch {
+        // metadata unreadable — proceed without scope constraint
+      }
+    }
+
+    await improveComponent(id, originalPrompt);
     console.log(`[improve] Component ${i + 1}/${total} done`);
   }
 
