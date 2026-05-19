@@ -9,6 +9,7 @@
     "render": "bun run src/render.ts",
     "critique": "bun run src/critique.ts",
     "package": "bun run src/package-dataset.ts",
+    "improve": "bun run src/improve.ts",
     "test:pipeline": "TEST_MODE=true TEST_COUNT=3 bun run src/pipeline.ts"
   },
   "devDependencies": {

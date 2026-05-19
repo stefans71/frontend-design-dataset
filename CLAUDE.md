@@ -4,14 +4,17 @@ Synthetic frontend design training data pipeline for fine-tuning **Qwen3-VL-8B**
 
 ## Last Updated
 
-2026-05-19 22:16:38 JST
+2026-05-19 23:30:00 JST
 
 ## Current Status
 
-- Pipeline fully working end to end — all 3 stages tested clean
-- 3 test components generated, rendered, and critiqued successfully
-- Critique files are 4–5 KB with specific pixel-level design feedback and scores
-- Ready to scale to full 20-component run, then 2,500 records
+- Full 20-component run complete — generate, render, critique, improve, package all working
+- 20/20 components generated and rendered (AutoDL RTX 5090)
+- 20/20 critiques complete (4.2–6.2 KB each, pixel-level feedback, scores 4–7/10)
+- 20/20 improved.html files generated (300s timeout; data table 017 needed retry)
+- dataset.jsonl: 100 training records (20×each of 5 types) — 1.5 MB
+- Scores: median 6/10, range 4–7. Dramatic visual improvements confirmed in browser (003: 4/10 → full landing page)
+- Ready to scale to 2,500 records (100 prompts × 5 quality variants)
 
 ## Critical Fixes Applied (do not revert)
 
@@ -24,12 +27,12 @@ Synthetic frontend design training data pipeline for fine-tuning **Qwen3-VL-8B**
 ```
 AutoDL (RTX 5090)                    VPS Japan (hostdzire)
 ─────────────────                    ─────────────────────
-Stage 1: bun run generate            Stage 3: bun run critique
-Stage 2: bun run render              (Codex CLI lives here only)
-         ↓
-bash scripts/rsync-from-autodl.sh <PORT>
-         ↓
-              VPS runs critique
+Stage 1: bun run generate
+Stage 2: bun run render
+         ↓ rsync
+                                     Stage 3:  bun run critique
+                                     Stage 3b: bun run improve
+                                     Stage 4:  bun run package
 ```
 
 ## SSH Access
@@ -59,24 +62,20 @@ sudo systemctl daemon-reload && sudo systemctl restart autodl-tunnel.service
 cd /root/autodl-tmp/frontend-design-dataset
 source autodl-run.sh
 bun install --registry https://registry.npmmirror.com
-TEST_MODE=false bun run generate    # generates all 20 components
-TEST_MODE=false bun run render      # renders all 20 to PNG
+TEST_MODE=false bun run generate    # generates all components
+TEST_MODE=false bun run render      # renders all to PNG
 
 # On VPS:
 bash scripts/rsync-from-autodl.sh <PORT>
-TEST_MODE=false bun run critique    # Codex CLI critiques all 20
-
-# Then package (not implemented yet):
-bun run package
+TEST_MODE=false bun run critique    # Codex CLI critiques all
+TEST_MODE=false bun run improve     # Codex CLI generates improved HTML
+bun run package                     # assembles dataset.jsonl
 ```
 
 ## Next Steps
 
-1. Run full 20-component test (`TEST_MODE=false`) — validate all prompts produce good output
-2. Implement `pipeline.ts` — orchestrates all stages in sequence with proper error handling
-3. Implement `package-dataset.ts` — assembles JSONL training records from all component outputs
-4. Scale to 2,500 records (expand prompts to 100, run 5 quality variants each)
-5. Fine-tune Qwen3-VL-8B on the dataset
+1. Scale to 2,500 records (expand prompts to 100, run 5 quality variants each)
+2. Fine-tune Qwen3-VL-8B on the dataset
 
 ---
 
@@ -85,7 +84,23 @@ bun run package
 1. **generate.ts** — Generate HTML/CSS components via llama-server (OpenAI-compatible API)
 2. **render.ts** — Render HTML to desktop + mobile PNG screenshots via Playwright
 3. **critique.ts** — Send screenshots to Codex CLI (gpt-5.4) for structured design critique
-4. **package-dataset.ts** — Assemble JSONL training records from all artifacts
+4. **improve.ts** — Send screenshot + HTML + critique to Codex CLI → improved.html (Stage 3b)
+5. **package-dataset.ts** — Assemble JSONL with 5 record types per component
+6. **pipeline.ts** — Orchestrates all stages in sequence with JST timestamps
+
+## Training Record Types (package-dataset.ts)
+
+1. `prompt_to_html` — text prompt → original HTML (generation knowledge)
+2. `screenshot_to_critique` — desktop screenshot → critique (visual critique learning)
+3. `screenshot_to_code` — desktop screenshot → original HTML (visual-to-code)
+4. `screenshot_html_to_critique` — screenshot + HTML → critique (full-context critique)
+5. `screenshot_code_critique_to_improved` — screenshot + HTML + critique → improved HTML **(most valuable)**
+
+## Codex Timeout Notes
+
+- critique.ts: 120s per component — sufficient for text output
+- improve.ts: 300s per component — HTML output can be 3–5× larger than original
+- Complex components (data table 13KB, search+filters 9KB) occasionally need retry
 
 ## Tech Stack
 
