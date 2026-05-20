@@ -30,6 +30,19 @@ tail -f /tmp/vps-process.log
 
 ---
 
+## Pending Doc Updates (after dataset complete)
+
+- §7 acceptance criteria: replace line count ratio ≥1.4 with CSS property
+  quality check (flex/grid/transition/box-shadow introduced in improved.html)
+- §9 prompt wording: clarify "inline CSS" means `<style>` block in `<head>`,
+  not `style=""` attributes — reword to avoid confusion
+- §13 conversation trace generation: add temperature variation, persona
+  injection, generate in batches of 1-2 not 10 (diversity collapse risk)
+- §2 add screenshot resolution guidance for inference: max 1024x1024
+  recommended to avoid vision encoder VRAM OOM on 12GB GPUs
+
+---
+
 ## Current Run Status (as of 2026-05-20 ~12:30 JST)
 
 | Run  | Temp | Generate      | Render              | VPS Critique      | VPS Improve | Package |
