@@ -205,7 +205,7 @@ OUTPUT_SUFFIX=v2 bun run package
 6. ✅ `src/package-dataset.ts` — OUTPUT_SUFFIX filtering, original prompt in type-5 record
 7. ✅ `src/pipeline.ts` — orchestrator with JST timestamps
 8. ✅ `package.json` — test:v2 script
-9. ⏳ Run v2 A/B test on AutoDL + VPS (pending AutoDL)
+9. ✅ Run v2 A/B test on AutoDL + VPS — VALIDATED (both fixes confirmed, adopted)
 10. ⏳ Write all 80 new natural language prompts (bring total to 100)
 11. ⏳ Full 100-prompt × 5-variant run → 2,500 records
 12. ⏳ Fine-tune Qwen3-VL-8B

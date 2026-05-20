@@ -10,7 +10,7 @@ const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./output";
 const OUTPUT_SUFFIX = process.env.OUTPUT_SUFFIX ?? "";
 
 const SYSTEM_PROMPT =
-  'You are a frontend developer. Output a complete, self-contained HTML document. Use Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>. Use Tailwind utility classes for all styling. No inline <style> tags. Output a complete self-contained HTML file with realistic content. No external images. Center the component with padding. Do not use external images. Output only the HTML, no explanation.';
+  "You are a frontend developer. Output a complete, self-contained HTML document. Do NOT use any CDN links or external resources of any kind. Use only inline CSS with a <style> tag — no Tailwind, no external stylesheets, no Google Fonts, no CDN scripts. All styles must be embedded directly in the HTML file. The file must render perfectly with zero internet connectivity. Use realistic content — no lorem ipsum, no placeholder text. Center the component on the page with padding. Do not use external images. Output only the HTML, no explanation.";
 
 interface ChatCompletionResponse {
   choices: Array<{

@@ -9,9 +9,9 @@ Synthetic frontend design training data pipeline for fine-tuning **Qwen3-VL-8B**
 ## Current Status
 
 - Full 20-component v1 run complete — 100 records, 1.5 MB dataset.jsonl
-- Two bugs fixed: natural language prompts (COMPONENT_PROMPTS_V2) + scope-aware improve.ts
-- v2 A/B test code ready; waiting for AutoDL to run generate+render for 5 v2 components
-- After v2 test validates both fixes, scale to 100 prompts × 5 variants = 2,500 records
+- v2 A/B test COMPLETE and VALIDATED — both fixes confirmed (see Session Notes 2026-05-20)
+- Next: write 80 remaining natural language prompts → scale to 100 prompts × 5 variants = 2,500 records
+- New AutoDL instance: port 25180, host connect.westd.seetacloud.com (clone of westc)
 
 ## Two Fixes Applied for v2
 
@@ -49,9 +49,9 @@ Stage 2: bun run render
 ## SSH Access
 
 ```bash
-# VPS → AutoDL
-ssh -i /root/.ssh/id_ed25519 -p 33472 root@connect.westc.seetacloud.com
-# Note: port 33472 changes on every AutoDL reboot — check AutoDL web UI
+# VPS → AutoDL (new westd clone — 2026-05-20)
+ssh -i /root/.ssh/id_ed25519 -p 25180 root@connect.westd.seetacloud.com
+# Note: port changes on every AutoDL reboot — check AutoDL web UI
 ```
 
 ## AutoDL Startup Sequence
@@ -187,36 +187,28 @@ https://github.com/stefans71/frontend-design-dataset
 
 ---
 
-## Pending Tests
+## Tailwind CDN Test Results — 2026-05-20 JST
 
-### Test A — Tailwind CDN (must run before v2 test)
+**Result: TECHNICAL PASS** (all 3 criteria met), with important observations.
 
-**Goal:** Verify Tailwind CDN loads successfully on AutoDL's China network.
+### What was tested
+- `render.ts`: `domcontentloaded` + 3000ms (was `networkidle` + 1500ms) — **KEEP**
+- `generate.ts`: SYSTEM_PROMPT instructs Tailwind CDN — **SEE BELOW**
+- Ran 3 components with `OUTPUT_SUFFIX=tailwind-test` on AutoDL westd zone
 
-**Changes to validate:**
-- `render.ts`: `waitUntil: "domcontentloaded"` + 3000ms buffer (was `networkidle` + 1500ms)
-- `generate.ts`: SYSTEM_PROMPT now instructs Tailwind CDN instead of inline CSS
+### Results
+- All 6 PNGs: 25K–111K (pass >15KB) ✓
+- No Playwright timeout errors ✓
+- Tailwind CDN loaded and rendered correctly for component-000 ✓
 
-**Run:**
-```bash
-TEST_MODE=true TEST_COUNT=3 OUTPUT_SUFFIX=tailwind-test bun run generate
-TEST_MODE=true TEST_COUNT=3 OUTPUT_SUFFIX=tailwind-test bun run render
-```
+### Critical observation — prompt conflict
+`COMPONENT_PROMPTS_V2` prompts end with `"Use only inline CSS — no external libraries."` which overrides the Tailwind system prompt. Only 1/3 components followed the CDN instruction; the other 2 produced inline CSS.
 
-**Pass criteria (all 3 must pass):**
-1. All 6 screenshot PNGs exist and are > 15 KB each
-2. Screenshots show colored/styled elements — not plain browser defaults
-3. No Playwright timeout errors in render output
-
-**If PASS:** Tailwind CDN works — proceed to v2 test with Tailwind enabled.
-**If FAIL:** Revert both changes. Run v2 test with inline CSS as originally planned. Document failure reason.
-
----
-
-### Test B — v2 A/B test (run only after Test A resolves)
-
-See `## OUTPUT_SUFFIX — Versioned Output Dirs` for run commands.
-Evaluate against FRONTEND-DESIGN-MODEL-CARD.md § 7.
+**Conclusion:**
+- Tailwind CDN is **not blocked** on AutoDL westd China network
+- `render.ts` change (domcontentloaded + 3000ms) is better in all cases — KEPT
+- For training data: inline CSS remains preferred (model card §8) — prompts already enforce it
+- generate.ts system prompt kept as Tailwind CDN for now, but COMPONENT_PROMPTS_V2 overrides it in practice
 
 ---
 
@@ -258,3 +250,42 @@ TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run improve
 - Write all 80 remaining prompts in natural language style
 - Scale to 100 prompts × 5 quality variants = 500 components = 2,500 JSONL records
 - Full pipeline run on AutoDL
+
+---
+
+## Session Notes — 2026-05-20 JST (v2 test complete)
+
+### New AutoDL Instance
+- Host: connect.westd.seetacloud.com, port 25180 (clone of westc instance)
+- All data confirmed present: Qwen3.6-27B GGUF, llama-server, bun, Playwright
+- rsync scripts updated to accept HOST as second arg (default: westd)
+
+### Tailwind CDN Test — PASS (CDN not blocked)
+- cdn.tailwindcss.com DOES load from AutoDL westd China zone
+- render.ts: `domcontentloaded` + 3000ms KEPT (better than networkidle for all cases)
+- generate.ts: system prompt REVERTED to inline CSS (CDN works but inline CSS is better training data + COMPONENT_PROMPTS_V2 already enforce inline CSS)
+- model card §8 updated: "CDN not blocked, inline CSS still preferred"
+
+### v2 A/B Test — VALIDATED ✓
+
+**Both fixes confirmed working:**
+
+| Fix | Evidence |
+|---|---|
+| Natural language prompts | Scores same or better (avg 5.7→6.4), components match intent on all 5 |
+| Scope-aware improve.ts | Component-003: 1182L→452L, score 4→6. No scope expansion in any improved.html |
+
+**Quantitative results:**
+- v1 avg improved.html: 719L | v2 avg improved.html: 334L (scope under control)
+- v2 critique scores: 6, 6.5, 7, 6, 6.5 (median 6.5, up from 6 in v1)
+- All improved.html files: clean (no external resources)
+
+**Known issue (fix applied):** generate.ts Tailwind CDN system prompt caused component-001 and component-003 component.html to include Google Fonts + Tailwind CDN. System prompt reverted to inline CSS. improved.html files were clean regardless.
+
+### Decision: ADOPT v2 prompts for full 100-prompt run ✓
+
+### Immediate next steps
+1. Write 80 remaining natural language prompts in COMPONENT_PROMPTS_V2 (bring to 100 total)
+2. Follow PLAN.md component mix table
+3. Scale to 100 prompts × 5 variants → 500 components → 2,500 JSONL records
+4. Full run on AutoDL westd (port 25180)

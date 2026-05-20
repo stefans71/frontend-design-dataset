@@ -117,7 +117,7 @@ bash scripts/rsync-from-autodl.sh    → dataset-stats.json
 
 | Issue | Root Cause | Fix |
 |---|---|---|
-| Playwright networkidle timeout | Tailwind CDN keeps connections open from China | System prompt: inline CSS only, no CDN, no external resources |
+| Playwright networkidle timeout | CDN connections keep network active indefinitely | Switch to `domcontentloaded` + 3000ms buffer — CDN not blocked, just shouldn't use `networkidle` |
 | Codex CLI `-i` flag bug | `-i FILE...` is variadic — consumes prompt string as second image if placed after | Move CRITIQUE_PROMPT before `-i` flag |
 | Codex empty stdout | stdin not closed | Add `stdin: "ignore"` to Bun.spawn |
 | Codex stdout parsing | Token count lines appear after response | Strip lines after `tokens used\n{count}\n` |
@@ -475,9 +475,11 @@ ssh ... then: tmux attach -t generate
 
 ## 8. Design Decisions & Rationale
 
-### Why inline CSS only (no Tailwind CDN)
+### Why inline CSS (Tailwind CDN tested and not blocked, but inline CSS still preferred)
 
-AutoDL is in China — `cdn.tailwindcss.com` either blocks or routes internationally causing Playwright `networkidle` to timeout. All generated HTML must be self-contained. This is also better for training data — the model learns to write real CSS, not utility class names that won't help non-Tailwind users.
+Tailwind CDN was tested on AutoDL westd China zone (2026-05-20) and confirmed to load successfully — `cdn.tailwindcss.com` is not blocked. The original `networkidle` timeout issue was fixed by switching render.ts to `domcontentloaded` + 3000ms buffer.
+
+Inline CSS is still used because: (1) training data quality — the fine-tuned model should learn to write real CSS properties that work everywhere, not Tailwind utility classes that only work in Tailwind projects; (2) COMPONENT_PROMPTS_V2 explicitly instruct "Use only inline CSS" so the model follows the prompt regardless of the system prompt; (3) the fine-tuned model's target users run it offline — teaching it Tailwind vocabulary doesn't help users without Tailwind installed.
 
 ### Why Codex CLI not OpenAI REST API
 
