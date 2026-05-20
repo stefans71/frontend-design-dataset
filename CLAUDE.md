@@ -4,69 +4,79 @@ Synthetic frontend design training data pipeline for fine-tuning **Qwen3-VL-8B**
 
 ## Last Updated
 
-2026-05-20 JST
+2026-05-20 ~13:00 JST
+
+---
 
 ## ⚡ Continue From Here (after /compact)
 
 Read in this order before doing anything:
-1. **This file** (CLAUDE.md) — full context
-2. **PLAN.md** — implementation status (step 9 ✅, steps 10–12 ⏳)
+1. **This file** (CLAUDE.md) — full context, especially Current Run Status below
+2. **PLAN.md** — implementation checklist
 3. **FRONTEND-DESIGN-MODEL-CARD.md** — acceptance criteria §7, training strategy §3
-4. **Active plan file:** `/root/.claude/plans/giggly-foraging-nebula.md` — detailed implementation plan for the full run
 
-**Next action:** Implement the plan — code changes first (generate.ts, package-dataset.ts), then write 95 prompts, then run 2-run smoke test before the full 500-component run.
+**Current situation:** 500-component full run is IN PROGRESS on AutoDL westd. Run0+run1 generate+render complete. Run2 partial (56/100). Run3 in progress (~70/100). Run4 queued. VPS is processing critique+improve for run0+run1 in parallel.
+
+**Do not restart anything without checking current screen sessions first:**
+```bash
+# AutoDL
+ssh -i /root/.ssh/id_ed25519 -p 25180 root@connect.westd.seetacloud.com "screen -list"
+tail -f /tmp/fullrun3.log   # or fullrun2.log — check which is active
+
+# VPS
+screen -list
+tail -f /tmp/vps-process.log
+```
 
 ---
 
-## Current Status
+## Current Run Status (as of 2026-05-20 ~12:30 JST)
 
-- Full 20-component v1 run complete — 100 records, 1.5 MB dataset.jsonl
-- v2 A/B test COMPLETE and VALIDATED — both fixes confirmed (see Session Notes 2026-05-20)
-- **Plan written:** 100 prompts × 5 temperature variants = 500 components → ~3,000 records + 200–400 conversation traces
-- Active AutoDL instance: westd, port 25180 (clone of original westc)
+| Run  | Temp | Generate      | Render              | VPS Critique      | VPS Improve | Package |
+|------|------|---------------|---------------------|-------------------|-------------|---------|
+| run0 | 0.5  | 100/100 ✅    | 88/100 ✅ (12 failed) | 28/97 in progress | ⏳          | ⏳      |
+| run1 | 0.7  | 100/100 ✅    | 86/100 ✅ (14 failed) | queued after run0 | ⏳          | ⏳      |
+| run2 | 0.85 | 56/100 ⚠️     | 56/100 ✅             | not started       | ⏳          | ⏳      |
+| run3 | 1.0  | ~70/100 running | ⏳                  | not started       | ⏳          | ⏳      |
+| run4 | 1.1  | queued        | ⏳                  | not started       | ⏳          | ⏳      |
 
-## Two Fixes Applied for v2
+**After AutoDL run3+run4 complete:**
+1. Fix run2 — `OUTPUT_SUFFIX=run2 bun run generate` fills ~44 missing (resume skips existing)
+2. Re-render pass all 5 runs — catches ~26 Chromium failures (resume skips done PNGs)
+3. Final rsync AutoDL → VPS
+4. VPS processes run2+run3+run4
+5. `cat output/dataset-run*.jsonl > output/dataset.jsonl` — expect ~3,000 records
 
-**Fix 1 — Natural language prompts (`COMPONENT_PROMPTS_V2`):**
-Expert prompts (v1) use Tailwind class names and pixel values — not representative of real users.
-`COMPONENT_PROMPTS_V2` rewrites the first 5 prompts the way a non-designer would ask:
-intent + content + rough style direction, no technical specifics.
-All 100 prompts for the full run will be natural language style.
+---
 
-**Fix 2 — Scope-aware improve.ts:**
-v1 improve.ts had no concept of the original user intent, causing Codex to expand scope
-(e.g. a navbar prompt became a full SaaS landing page). Now `improveComponent(id, originalPrompt?)`
-reads the prompt from metadata.json and passes it as a scope constraint in the Codex prompt.
-The type-5 training record also now includes the original prompt so the model learns scope fidelity.
+## What Went Wrong & Fixes Applied (do not revert)
 
-## Critical Fixes Applied (do not revert)
+| # | Problem | Fix |
+|---|---------|-----|
+| 1 | `set -euo pipefail` in run script — one crash killed entire job | Removed `-e` from `run-all-variants.sh` — failures log and continue |
+| 2 | `render.ts` had no per-component error handling — one Playwright crash killed whole stage | Added try/catch per component — logs FAILED and continues |
+| 3 | Playwright `networkidle` timeout on slow/inline CSS pages | Switched to `domcontentloaded` + 3000ms fixed delay |
+| 4 | run2 generate stopped at ~56/100 — llama-server memory pressure | Re-run with resume support after run3/run4 done |
+| 5 | run2 render deadlocked on component-028 for 52min — no Playwright launch timeout | Per-component timeout needed — add `setTimeout` kill to browser launch |
+| 6 | llama-server died mid-run — run3+run4 got 3 components then ConnectionRefused | Restart llama-server (`bash start.sh`), new screen session handles resume |
+| 7 | ~26 render failures across run0+run1 (Chromium OOM crashes) | Re-render pass after full run — resume skips already-done PNGs |
 
-- **generate.ts system prompt:** inline CSS only, zero external resources, no Tailwind CDN — CDN is not blocked but inline CSS produces better training data (model learns real CSS)
-- **render.ts:** uses `waitUntil: "domcontentloaded"` + 3000ms buffer (changed from networkidle — domcontentloaded is faster and works with both inline CSS and CDN pages)
-- **critique.ts:** `CRITIQUE_PROMPT` must come **before** `-i` flag in Codex CLI command — `-i FILE...` is variadic and consumes the prompt string as a second image path if placed after; also `stdin: "ignore"` required; output parser extracts response printed after `tokens used\n{count}\n`
+**Additional permanent fixes (from earlier sessions):**
+- **generate.ts system prompt:** inline CSS only — CDN not blocked but inline CSS is better training data
+- **critique.ts:** `CRITIQUE_PROMPT` must come **before** `-i` flag — `-i FILE...` is variadic and eats the prompt as a second image path if placed after; `stdin: "ignore"` required
+- **improve.ts:** reads `metadata.json` and passes original prompt as scope constraint — prevents Codex expanding a navbar into a full landing page
+- **llama-server:** `--cache-reuse 0` flag required — prevents multi-turn crash on DeltaNet recurrent state
 
-## Architecture — Two Machine Split
-
-```
-AutoDL (RTX 5090)                    VPS Japan (hostdzire)
-─────────────────                    ─────────────────────
-Stage 1: bun run generate
-Stage 2: bun run render
-         ↓ rsync
-                                     Stage 3:  bun run critique
-                                     Stage 3b: bun run improve
-                                     Stage 4:  bun run package
-```
+---
 
 ## SSH Access
 
 ```bash
-# ACTIVE instance (westd clone, 2026-05-20)
+# ACTIVE instance (westd clone, port 25180)
 ssh -i /root/.ssh/id_ed25519 -p 25180 root@connect.westd.seetacloud.com
 
-# ON HOLD — original westc instance (may still be available)
-# ssh -i /root/.ssh/id_ed25519 -p <PORT> root@connect.westc.seetacloud.com
-# Note: port changes on every AutoDL reboot — check AutoDL web UI
+# Port changes on every AutoDL reboot — check AutoDL web UI after reboot
+# Original westc instance: on hold
 ```
 
 ## Rsync Scripts
@@ -74,137 +84,205 @@ ssh -i /root/.ssh/id_ed25519 -p 25180 root@connect.westd.seetacloud.com
 Both scripts accept `PORT` (arg 1) and optional `HOST` (arg 2, default: connect.westd.seetacloud.com):
 
 ```bash
-bash scripts/rsync-to-autodl.sh 25180                    # push code to westd
-bash scripts/rsync-from-autodl.sh 25180                  # pull output from westd
-bash scripts/rsync-to-autodl.sh <PORT> connect.westc.seetacloud.com   # use westc
+bash scripts/rsync-to-autodl.sh 25180                                          # push code to westd
+bash scripts/rsync-from-autodl.sh 25180                                        # pull output from westd
+bash scripts/rsync-to-autodl.sh <PORT> connect.westc.seetacloud.com            # use westc
 ```
 
-## AutoDL Startup Sequence
+## AutoDL Startup Sequence (after reboot)
 
 ```bash
-# 1. SSH in
-ssh -i /root/.ssh/id_ed25519 -p <PORT> root@connect.westc.seetacloud.com
-# 2. Start servers
+# 1. SSH in with new port from AutoDL web UI
+ssh -i /root/.ssh/id_ed25519 -p <NEW_PORT> root@connect.westd.seetacloud.com
+# 2. Start both llama-server instances
 bash /root/autodl-tmp/start.sh
-# 3. In new terminal on VPS — update tunnel port if rebooted
-# edit /etc/systemd/system/autodl-tunnel.service, then:
+# 3. Verify healthy
+curl http://localhost:11434/health   # → {"status":"ok"}
+# 4. On VPS — update tunnel port if changed
+sudo nano /etc/systemd/system/autodl-tunnel.service   # update port
 sudo systemctl daemon-reload && sudo systemctl restart autodl-tunnel.service
 ```
 
-## OUTPUT_SUFFIX — Versioned Output Dirs
+---
 
-Set `OUTPUT_SUFFIX=v2` to write to `component-000-v2/` dirs instead of `component-000/`.
-V1 data is never touched. All stages (generate, render, critique, improve, package) read this env var.
-When OUTPUT_SUFFIX is set, generate.ts automatically uses COMPONENT_PROMPTS_V2.
+## Architecture — Two Machine Split
 
-```bash
-# v2 A/B test — 5 components, natural language prompts
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run generate
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run render
-# ... rsync ...
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run critique
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run improve
-OUTPUT_SUFFIX=v2 bun run package
 ```
+AutoDL (RTX 5090, westd)             VPS Japan (hostdzire)
+────────────────────────             ─────────────────────
+Stage 1: bun run generate            Stage 3:  bun run critique
+Stage 2: bun run render              Stage 3b: bun run improve
+         ↓ rsync                     Stage 4:  bun run package
+bash scripts/rsync-from-autodl.sh
+```
+
+---
 
 ## Full Run Sequence
 
+### Standard full run (fresh)
 ```bash
-# On AutoDL:
-cd /root/autodl-tmp/frontend-design-dataset
+# AutoDL — always use screen/tmux for long runs
 source autodl-run.sh
 bun install --registry https://registry.npmmirror.com
-TEST_MODE=false bun run generate    # generates all components
-TEST_MODE=false bun run render      # renders all to PNG
+screen -dmS fullrun bash -c 'TEST_MODE=false bash scripts/run-all-variants.sh 2>&1 | tee /tmp/fullrun.log'
 
-# On VPS:
-bash scripts/rsync-from-autodl.sh <PORT>
-TEST_MODE=false bun run critique    # Codex CLI critiques all
-TEST_MODE=false bun run improve     # Codex CLI generates improved HTML
-bun run package                     # assembles dataset.jsonl
+# Monitor
+tail -f /tmp/fullrun.log
+screen -list   # check session is alive
+
+# VPS — after AutoDL generate+render complete
+bash scripts/rsync-from-autodl.sh 25180
+screen -dmS vps-process bash -c 'for SUFFIX in run0 run1 run2 run3 run4; do echo "=== $SUFFIX ===" && OUTPUT_SUFFIX=$SUFFIX bun run critique && OUTPUT_SUFFIX=$SUFFIX bun run improve && DATASET_PATH=output/dataset-${SUFFIX}.jsonl OUTPUT_SUFFIX=$SUFFIX bun run package; done 2>&1 | tee /tmp/vps-process.log'
+
+# Final concatenation
+cat output/dataset-run*.jsonl > output/dataset.jsonl
+wc -l output/dataset.jsonl   # expect ~3,000
 ```
 
-## Next Steps
+### Resume a partial run (after crash/restart)
+```bash
+# Resume generate for a specific run (skips existing component.html files)
+OUTPUT_SUFFIX=run2 TEMPERATURE=0.85 TEST_MODE=false bun run generate
 
-1. Run v2 A/B test on AutoDL (5 components, natural language prompts) — validate both fixes
-2. Compare v1 vs v2: base HTML quality, scope fidelity in improved.html
-3. Scale to 2,500 records (100 natural language prompts × 5 quality variants)
-4. Fine-tune Qwen3-VL-8B on the dataset
+# Re-render pass (skips existing PNGs)
+OUTPUT_SUFFIX=run2 TEST_MODE=false bun run render
+
+# Re-render ALL runs (catches Chromium OOM failures)
+for SUFFIX in run0 run1 run2 run3 run4; do
+  OUTPUT_SUFFIX=$SUFFIX TEST_MODE=false bun run render
+done
+```
+
+### Long run monitoring
+```bash
+# Check progress from VPS at any time
+ssh -i /root/.ssh/id_ed25519 -p 25180 root@connect.westd.seetacloud.com "tail -5 /tmp/fullrun.log"
+
+# Check component count per run
+ssh -i /root/.ssh/id_ed25519 -p 25180 root@connect.westd.seetacloud.com \
+  "for s in run0 run1 run2 run3 run4; do echo -n \"\$s: \"; ls /root/autodl-tmp/frontend-design-dataset/output/ | grep \$s | wc -l; done"
+```
+
+---
+
+## OUTPUT_SUFFIX — Versioned Output Dirs
+
+Set `OUTPUT_SUFFIX=run0` to write to `component-000-run0/` dirs. All stages read this env var.
+When OUTPUT_SUFFIX is set, generate.ts automatically uses `COMPONENT_PROMPTS_V2`.
+
+```bash
+# Single suffix run
+OUTPUT_SUFFIX=run2 TEMPERATURE=0.85 TEST_MODE=false bun run generate
+OUTPUT_SUFFIX=run2 TEST_MODE=false bun run render
+
+# Full 5-temperature run (run-all-variants.sh handles this automatically)
+TEST_MODE=false bash scripts/run-all-variants.sh
+```
 
 ---
 
 ## Pipeline Stages
 
-1. **generate.ts** — Generate HTML/CSS components via llama-server (OpenAI-compatible API)
-2. **render.ts** — Render HTML to desktop + mobile PNG screenshots via Playwright
-3. **critique.ts** — Send screenshots to Codex CLI (gpt-5.4) for structured design critique
-4. **improve.ts** — Send screenshot + HTML + critique to Codex CLI → improved.html (Stage 3b)
-5. **package-dataset.ts** — Assemble JSONL with 5 record types per component
-6. **pipeline.ts** — Orchestrates all stages in sequence with JST timestamps
+1. **generate.ts** — HTML/CSS components via llama-server (`TEMPERATURE` env var, default 0.7)
+2. **render.ts** — Desktop (1280×900) + mobile (390×844) PNGs via Playwright
+3. **critique.ts** — Codex CLI design critique → `critique.md`
+4. **improve.ts** — Codex CLI improved HTML → `improved.html` (scope-constrained by original prompt)
+5. **package-dataset.ts** — Assembles 6 JSONL record types per component
+6. **pipeline.ts** — Orchestrates all stages with JST timestamps
 
-## Training Record Types (package-dataset.ts)
+## Training Record Types
 
-1. `prompt_to_html` — text prompt → original HTML (generation knowledge)
-2. `screenshot_to_critique` — desktop screenshot → critique (visual critique learning)
-3. `screenshot_to_code` — desktop screenshot → original HTML (visual-to-code)
-4. `screenshot_html_to_critique` — screenshot + HTML → critique (full-context critique)
-5. `screenshot_code_critique_to_improved` — screenshot + HTML + original prompt + critique → improved HTML **(most valuable)**; original prompt included as scope constraint
+1. `prompt_to_html` — text prompt → original HTML
+2. `screenshot_to_critique` — desktop PNG → critique
+3. `screenshot_to_code` — desktop PNG → original HTML
+4. `mobile_to_code` — mobile PNG → original HTML *(added 2026-05-20)*
+5. `screenshot_html_to_critique` — PNG + HTML → critique
+6. `screenshot_code_critique_to_improved` — PNG + HTML + original prompt + critique → improved HTML **(most valuable)**
 
-## Codex Timeout Notes
+Expected total: 500 components × 6 types = **~3,000 records**
 
-- critique.ts: 120s per component — sufficient for text output
-- improve.ts: 300s per component — HTML output can be 3–5× larger than original
-- Complex components (data table 13KB, search+filters 9KB) occasionally need retry
-
-## Tech Stack
-
-- **Runtime:** Bun + TypeScript
-- **Rendering:** Playwright (Chromium)
-- **Critique:** Codex CLI (`codex exec`)
-- **LLM:** llama-server at `localhost:11434`, model `qwen3.6-27b-mtp`
+---
 
 ## llama-server API
 
-- Endpoint: `${LLAMA_SERVER_URL}/v1/chat/completions`
-- OpenAI-compatible chat completions API
-- **Always** include `chat_template_kwargs: { enable_thinking: false }` in every request — the model defaults to thinking mode which wraps output in think tags
+```bash
+curl http://localhost:11434/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen3.6-27b-mtp",
+    "messages": [{"role": "user", "content": "Hello"}],
+    "max_tokens": 4096,
+    "temperature": 0.7,
+    "chat_template_kwargs": {"enable_thinking": false}
+  }'
+```
+
+- **Always** include `enable_thinking: false` — model defaults to thinking mode
 - Model string: `qwen3.6-27b-mtp`
+- Max safe context: 131K tokens (29.3/32.6 GB VRAM at 131K)
+- Speed: 92–97 tok/s with MTP speculative decoding
 
 ## Codex CLI
 
-Confirmed working command:
-
 ```bash
-# IMPORTANT: prompt MUST come before -i flag
-codex exec -m gpt-5.4 --dangerously-bypass-approvals-and-sandbox --ephemeral "prompt" -i screenshot.png
+# CRITICAL: prompt MUST come before -i flag
+codex exec -m gpt-5.4 --dangerously-bypass-approvals-and-sandbox --ephemeral "prompt text" -i screenshot.png -o output.txt
 ```
 
-- Output format: header block → `user` → prompt → `codex` → response → `tokens used` → count → **response repeated** (use this copy)
-- Runs sequentially only (no parallelism)
-- Timeout: 120 seconds per invocation
-- Auth: ChatGPT OAuth via `/root/.codex/auth.json` (no API key needed)
+- Auth: ChatGPT OAuth (`~/.codex/auth.json`) — no API key needed
+- If auth fails: `codex logout && codex login --device-auth`
+- Output: use `-o output.txt` and read file — more reliable than stdout parsing
+- Sequential only — no parallelism (Codex CLI limitation)
+- Timeouts: critique 120s, improve 300s
 
 ## Playwright on AutoDL
 
-- Env var required: `PLAYWRIGHT_BROWSERS_PATH=/root/autodl-tmp/pw-browsers`
-- Chromium installed at that path
-- One browser instance per component (open → screenshot → close)
+```bash
+export PLAYWRIGHT_BROWSERS_PATH=/root/autodl-tmp/pw-browsers
+```
+
+- One browser per component (open → screenshot → close) — prevents OOM accumulation
+- Wait strategy: `domcontentloaded` + 3000ms (NOT networkidle)
+- Per-component try/catch — failures log and continue, don't crash the run
+- Chromium OOM is possible on complex components — resume support handles re-render
 
 ## AutoDL Environment
 
-- Bun: `/root/autodl-tmp/bun/bin/bun`
-- Node: `/root/autodl-tmp/node-v22.15.0-linux-x64/bin`
-- **Always** run `source autodl-run.sh` before any bun commands
-- Rsync to AutoDL: `bash scripts/rsync-to-autodl.sh 33472` (port changes on AutoDL reboot)
-- Rsync from AutoDL: `bash scripts/rsync-from-autodl.sh 33472`
+```bash
+# Always source this first
+source /root/autodl-tmp/frontend-design-dataset/autodl-run.sh
+# Sets: PATH (bun + node), PLAYWRIGHT_BROWSERS_PATH, checks llama-server health
+
+# Key paths
+/root/autodl-tmp/bun/bin/bun                          # Bun runtime
+/root/autodl-tmp/node-v22.15.0-linux-x64/bin/         # Node.js
+/root/autodl-tmp/pw-browsers/                         # Playwright Chromium
+/root/autodl-tmp/Qwen3.6-27B-MTP-UD-Q5_K_XL.gguf     # 19GB generation model
+/root/autodl-tmp/start.sh                             # starts both llama-server instances
+```
+
+---
+
+## Tailwind CDN — Status
+
+- **Not blocked** on AutoDL westd China zone — CDN loads correctly
+- **render.ts uses** `domcontentloaded` + 3000ms — works for both CDN and inline CSS pages
+- **generate.ts uses inline CSS** — COMPONENT_PROMPTS_V2 enforce it; inline CSS produces better training data (model learns real CSS, not utility classes)
+- Do not add Tailwind CDN to generate.ts system prompt — prompts already override it and the conflict causes inconsistent output
+
+---
 
 ## Key Constraints
 
-- Codex CLI is sequential — no parallel critique calls
-- One Playwright browser per component (open → screenshot → close)
-- Resume support: skip components that already have output files
-- `TEST_MODE=true` + `TEST_COUNT=3` runs only first 3 components
-- HTML must be fully self-contained (inline CSS only) — no external resources
+- Codex CLI sequential — no parallel critique/improve calls
+- One Playwright browser per component
+- Resume support: all stages skip components with existing output files
+- `TEST_MODE=true` + `TEST_COUNT=3` limits to first 3 components
+- HTML must be self-contained (inline CSS) — no external CDN resources in generated output
+- AutoDL single slot (`-np 1`) — one llama-server request at a time
+
+---
 
 ## GitHub
 
@@ -212,105 +290,25 @@ https://github.com/stefans71/frontend-design-dataset
 
 ---
 
-## Tailwind CDN Test Results — 2026-05-20 JST
+## Session Notes — 2026-05-20 ~13:00 JST
 
-**Result: TECHNICAL PASS** (all 3 criteria met), with important observations.
+### Full Run Issues and Resolutions
+- `set -e` removed from `run-all-variants.sh` — one Playwright crash was killing entire job
+- Per-component try/catch added to `render.ts` — Chromium OOM failures now log and continue
+- llama-server died mid-run3 — restarted, new screen session `run34` handles run3+run4
+- run2 stopped at 56/100 — will resume after run3+run4 complete
+- ~26 render failures (OOM) across run0+run1 — re-render pass scheduled after full generate complete
+- VPS started processing run0+run1 critique in parallel (screen session `vps-run01`)
 
-### What was tested
-- `render.ts`: `domcontentloaded` + 3000ms (was `networkidle` + 1500ms) — **KEEP**
-- `generate.ts`: SYSTEM_PROMPT instructs Tailwind CDN — **SEE BELOW**
-- Ran 3 components with `OUTPUT_SUFFIX=tailwind-test` on AutoDL westd zone
+### Components Visual Quality
+Natural language prompts (v2) producing significantly better output than expert prompts (v1).
+Component-026-run0 example: dark mode social feed with phone frame, Instagram-style layout, proper UI chrome.
 
-### Results
-- All 6 PNGs: 25K–111K (pass >15KB) ✓
-- No Playwright timeout errors ✓
-- Tailwind CDN loaded and rendered correctly for component-000 ✓
-
-### Critical observation — prompt conflict
-`COMPONENT_PROMPTS_V2` prompts end with `"Use only inline CSS — no external libraries."` which overrides the Tailwind system prompt. Only 1/3 components followed the CDN instruction; the other 2 produced inline CSS.
-
-**Conclusion:**
-- Tailwind CDN is **not blocked** on AutoDL westd China network
-- `render.ts` change (domcontentloaded + 3000ms) is better in all cases — KEPT
-- For training data: inline CSS remains preferred (model card §8) — prompts already enforce it
-- generate.ts system prompt kept as Tailwind CDN for now, but COMPONENT_PROMPTS_V2 overrides it in practice
-
----
-
-## Session Notes — 2026-05-20 08:43:21 JST
-
-### Current Status
-- All v2 code committed and pushed to GitHub
-- AutoDL offline (rebooted, new SSH port needed from AutoDL web UI)
-- v2 A/B test NOT yet run — waiting for AutoDL to come back online
-
-### What's Ready to Run (exact commands)
-
-```bash
-# Step 1 — rsync new code to AutoDL
-bash scripts/rsync-to-autodl.sh <NEW_PORT>
-
-# Step 2 — AutoDL: generate + render v2
-source autodl-run.sh
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run generate
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run render
-
-# Step 3 — VPS: pull + critique + improve v2
-bash scripts/rsync-from-autodl.sh <NEW_PORT>
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run critique
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run improve
-
-# Step 4 — Compare v1 vs v2 for all 5 pairs visually
-```
-
-### What Changed This Session
-- `COMPONENT_PROMPTS_V2`: 5 natural language rewrites (no Tailwind classes)
-- `improve.ts`: now reads `metadata.json` and passes original prompt as scope constraint
-- `OUTPUT_SUFFIX` env var: all 5 stages support versioned output dirs
-- `package.json`: `test:v2` script added
-- `PLAN.md`: Prompt Design Principles section added, 100-prompt mix table
-- `CLAUDE.md`: both fixes documented
-
-### After v2 Test Confirms
-- Write all 80 remaining prompts in natural language style
-- Scale to 100 prompts × 5 quality variants = 500 components = 2,500 JSONL records
-- Full pipeline run on AutoDL
-
----
-
-## Session Notes — 2026-05-20 JST (v2 test complete)
-
-### New AutoDL Instance
-- Host: connect.westd.seetacloud.com, port 25180 (clone of westc instance)
-- All data confirmed present: Qwen3.6-27B GGUF, llama-server, bun, Playwright
-- rsync scripts updated to accept HOST as second arg (default: westd)
-
-### Tailwind CDN Test — PASS (CDN not blocked)
-- cdn.tailwindcss.com DOES load from AutoDL westd China zone
-- render.ts: `domcontentloaded` + 3000ms KEPT (better than networkidle for all cases)
-- generate.ts: system prompt REVERTED to inline CSS (CDN works but inline CSS is better training data + COMPONENT_PROMPTS_V2 already enforce inline CSS)
-- model card §8 updated: "CDN not blocked, inline CSS still preferred"
-
-### v2 A/B Test — VALIDATED ✓
-
-**Both fixes confirmed working:**
-
-| Fix | Evidence |
-|---|---|
-| Natural language prompts | Scores same or better (avg 5.7→6.4), components match intent on all 5 |
-| Scope-aware improve.ts | Component-003: 1182L→452L, score 4→6. No scope expansion in any improved.html |
-
-**Quantitative results:**
-- v1 avg improved.html: 719L | v2 avg improved.html: 334L (scope under control)
-- v2 critique scores: 6, 6.5, 7, 6, 6.5 (median 6.5, up from 6 in v1)
-- All improved.html files: clean (no external resources)
-
-**Known issue (fix applied):** generate.ts Tailwind CDN system prompt caused component-001 and component-003 component.html to include Google Fonts + Tailwind CDN. System prompt reverted to inline CSS. improved.html files were clean regardless.
-
-### Decision: ADOPT v2 prompts for full 100-prompt run ✓
-
-### Immediate next steps
-1. Write 80 remaining natural language prompts in COMPONENT_PROMPTS_V2 (bring to 100 total)
-2. Follow PLAN.md component mix table
-3. Scale to 100 prompts × 5 variants → 500 components → 2,500 JSONL records
-4. Full run on AutoDL westd (port 25180)
+### After Full Run Completes
+1. Resume run2 generate (44 missing components)
+2. Re-render pass all 5 runs (26 failed OOM renders)
+3. Final rsync AutoDL → VPS
+4. VPS processes run2+run3+run4
+5. Concatenate all 5 datasets
+6. Generate 200-400 qualifying conversation traces on VPS (Codex CLI)
+7. Fine-tune Qwen3-VL-8B
