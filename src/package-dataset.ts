@@ -116,6 +116,28 @@ function record3_screenshotToCode(c: ComponentData): TrainingRecord {
   };
 }
 
+// Type 3b: Mobile screenshot → code reconstruction (mobile-to-code)
+function record3b_mobileToCode(c: ComponentData): TrainingRecord | null {
+  if (!existsSync(c.screenshotMobile)) return null;
+  return {
+    id: `${c.id}_mobile_to_code`,
+    type: "mobile_to_code",
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "image", path: c.screenshotMobile },
+          {
+            type: "text",
+            text: "Implement this mobile UI component as a complete, self-contained HTML file. Use only inline CSS in a <style> tag — no CDN, no external resources. Output only the HTML file.",
+          },
+        ],
+      },
+      { role: "assistant", content: c.html },
+    ],
+  };
+}
+
 // Type 4: Screenshot + HTML → critique (full-context critique)
 function record4_screenshotHtmlToCritique(c: ComponentData): TrainingRecord {
   return {
@@ -167,6 +189,7 @@ export function packageAll(): void {
 
   const records: TrainingRecord[] = [];
   let skipped = 0;
+  let type3bCount = 0;
   let type5Count = 0;
 
   for (const dir of componentDirs) {
@@ -179,6 +202,13 @@ export function packageAll(): void {
     records.push(record1_promptToHtml(c));
     records.push(record2_screenshotToCritique(c));
     records.push(record3_screenshotToCode(c));
+
+    const r3b = record3b_mobileToCode(c);
+    if (r3b) {
+      records.push(r3b);
+      type3bCount++;
+    }
+
     records.push(record4_screenshotHtmlToCritique(c));
 
     const r5 = record5_screenshotHtmlCritiqueToImproved(c);
@@ -192,8 +222,23 @@ export function packageAll(): void {
   writeFileSync(DATASET_PATH, jsonl + "\n", "utf-8");
 
   const components = componentDirs.length - skipped;
+  const stats = {
+    total: records.length,
+    components,
+    skipped,
+    byType: {
+      prompt_to_html: components,
+      screenshot_to_critique: components,
+      screenshot_to_code: components,
+      mobile_to_code: type3bCount,
+      screenshot_html_to_critique: components,
+      screenshot_code_critique_to_improved: type5Count,
+    },
+  };
+  writeFileSync(DATASET_PATH.replace(".jsonl", "-stats.json"), JSON.stringify(stats, null, 2), "utf-8");
+
   console.log(`[package] ${components} components → ${records.length} records written to ${DATASET_PATH}`);
-  console.log(`[package] Type breakdown: ${components}×type1 ${components}×type2 ${components}×type3 ${components}×type4 ${type5Count}×type5`);
+  console.log(`[package] Type breakdown: ${components}×type1 ${components}×type2 ${components}×type3 ${type3bCount}×type3b ${components}×type4 ${type5Count}×type5`);
   if (skipped > 0) console.log(`[package] ${skipped} components skipped (missing required files)`);
 }
 

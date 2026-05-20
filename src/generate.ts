@@ -8,6 +8,7 @@ const LLAMA_SERVER_URL = process.env.LLAMA_SERVER_URL ?? "http://localhost:11434
 const LLAMA_MODEL = process.env.LLAMA_MODEL ?? "qwen3.6-27b-mtp";
 const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./output";
 const OUTPUT_SUFFIX = process.env.OUTPUT_SUFFIX ?? "";
+const TEMPERATURE = parseFloat(process.env.TEMPERATURE ?? "0.7");
 
 const SYSTEM_PROMPT =
   "You are a frontend developer. Output a complete, self-contained HTML document. Do NOT use any CDN links or external resources of any kind. Use only inline CSS with a <style> tag — no Tailwind, no external stylesheets, no Google Fonts, no CDN scripts. All styles must be embedded directly in the HTML file. The file must render perfectly with zero internet connectivity. Use realistic content — no lorem ipsum, no placeholder text. Center the component on the page with padding. Do not use external images. Output only the HTML, no explanation.";
@@ -36,7 +37,7 @@ export async function generateComponent(prompt: string, outputDir: string): Prom
         { role: "user", content: prompt },
       ],
       chat_template_kwargs: { enable_thinking: false },
-      temperature: 0.7,
+      temperature: TEMPERATURE,
       max_tokens: 4096,
     }),
   });
@@ -55,14 +56,21 @@ export async function generateComponent(prompt: string, outputDir: string): Prom
   if (html.startsWith("```html")) html = html.slice("```html".length);
   if (html.endsWith("\n```")) html = html.slice(0, -"\n```".length);
   if (html.endsWith("```")) html = html.slice(0, -"```".length);
+  html = html.trim();
 
-  writeFileSync(htmlPath, html.trim(), "utf-8");
+  if (!html.includes("<html") && !html.includes("<!DOCTYPE")) {
+    console.warn(`[generate] Invalid HTML at temp=${TEMPERATURE} — skipping. Output starts: ${html.slice(0, 80)}`);
+    return;
+  }
+
+  writeFileSync(htmlPath, html, "utf-8");
 
   const metadata = {
     prompt,
     model: LLAMA_MODEL,
     timestamp: new Date().toISOString(),
     stage: "generate",
+    temperature: TEMPERATURE,
     outputSuffix: OUTPUT_SUFFIX || null,
   };
   writeFileSync(join(outputDir, "metadata.json"), JSON.stringify(metadata, null, 2), "utf-8");
