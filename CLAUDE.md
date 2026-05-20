@@ -4,14 +4,26 @@ Synthetic frontend design training data pipeline for fine-tuning **Qwen3-VL-8B**
 
 ## Last Updated
 
-2026-05-20 00:30:00 JST
+2026-05-20 JST
+
+## ⚡ Continue From Here (after /compact)
+
+Read in this order before doing anything:
+1. **This file** (CLAUDE.md) — full context
+2. **PLAN.md** — implementation status (step 9 ✅, steps 10–12 ⏳)
+3. **FRONTEND-DESIGN-MODEL-CARD.md** — acceptance criteria §7, training strategy §3
+4. **Active plan file:** `/root/.claude/plans/giggly-foraging-nebula.md` — detailed implementation plan for the full run
+
+**Next action:** Implement the plan — code changes first (generate.ts, package-dataset.ts), then write 95 prompts, then run 2-run smoke test before the full 500-component run.
+
+---
 
 ## Current Status
 
 - Full 20-component v1 run complete — 100 records, 1.5 MB dataset.jsonl
 - v2 A/B test COMPLETE and VALIDATED — both fixes confirmed (see Session Notes 2026-05-20)
-- Next: write 80 remaining natural language prompts → scale to 100 prompts × 5 variants = 2,500 records
-- New AutoDL instance: port 25180, host connect.westd.seetacloud.com (clone of westc)
+- **Plan written:** 100 prompts × 5 temperature variants = 500 components → ~3,000 records + 200–400 conversation traces
+- Active AutoDL instance: westd, port 25180 (clone of original westc)
 
 ## Two Fixes Applied for v2
 
@@ -29,8 +41,8 @@ The type-5 training record also now includes the original prompt so the model le
 
 ## Critical Fixes Applied (do not revert)
 
-- **generate.ts system prompt:** inline CSS only, zero external resources, no Tailwind CDN — AutoDL China network blocks CDN connections which breaks Playwright networkidle
-- **render.ts:** uses `waitUntil: "networkidle"` which works correctly now that HTML is self-contained
+- **generate.ts system prompt:** inline CSS only, zero external resources, no Tailwind CDN — CDN is not blocked but inline CSS produces better training data (model learns real CSS)
+- **render.ts:** uses `waitUntil: "domcontentloaded"` + 3000ms buffer (changed from networkidle — domcontentloaded is faster and works with both inline CSS and CDN pages)
 - **critique.ts:** `CRITIQUE_PROMPT` must come **before** `-i` flag in Codex CLI command — `-i FILE...` is variadic and consumes the prompt string as a second image path if placed after; also `stdin: "ignore"` required; output parser extracts response printed after `tokens used\n{count}\n`
 
 ## Architecture — Two Machine Split
@@ -49,9 +61,22 @@ Stage 2: bun run render
 ## SSH Access
 
 ```bash
-# VPS → AutoDL (new westd clone — 2026-05-20)
+# ACTIVE instance (westd clone, 2026-05-20)
 ssh -i /root/.ssh/id_ed25519 -p 25180 root@connect.westd.seetacloud.com
+
+# ON HOLD — original westc instance (may still be available)
+# ssh -i /root/.ssh/id_ed25519 -p <PORT> root@connect.westc.seetacloud.com
 # Note: port changes on every AutoDL reboot — check AutoDL web UI
+```
+
+## Rsync Scripts
+
+Both scripts accept `PORT` (arg 1) and optional `HOST` (arg 2, default: connect.westd.seetacloud.com):
+
+```bash
+bash scripts/rsync-to-autodl.sh 25180                    # push code to westd
+bash scripts/rsync-from-autodl.sh 25180                  # pull output from westd
+bash scripts/rsync-to-autodl.sh <PORT> connect.westc.seetacloud.com   # use westc
 ```
 
 ## AutoDL Startup Sequence
