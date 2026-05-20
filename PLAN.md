@@ -2,8 +2,11 @@
 
 ## Status
 
-Stages 1–4 fully implemented and validated on 20 v1 components.
-v2 A/B test code ready — pending AutoDL availability for generate+render run.
+Full 500-component run IN PROGRESS on AutoDL westd (2026-05-20).
+Run0+run1 generate+render complete. Run2 partial (56/100). Run3 in progress. Run4 queued.
+VPS processing critique+improve for run0+run1 in parallel.
+
+See CLAUDE.md `## Current Run Status` table for live state.
 
 ---
 
@@ -25,7 +28,7 @@ All prompts for the full 100-prompt expansion must follow these rules:
 2. Include brand/product name and realistic content (no "Company Name", no lorem ipsum)
 3. State light or dark theme in plain English
 4. Mention accent color by name (blue, green, purple, amber…) — no hex, no Tailwind tokens
-5. Scope to exactly what should appear on screen — no "also add a hero section below"
+5. Scope to exactly what should appear on screen
 6. End with: `Use only inline CSS — no external libraries. Self-contained HTML document.`
 
 **Do not include:**
@@ -40,172 +43,257 @@ All prompts for the full 100-prompt expansion must follow these rules:
 
 Two exported arrays:
 
-- **`COMPONENT_PROMPTS`** — 20 expert-authored v1 prompts. Kept for reference and backward compatibility. Not used in new runs.
-- **`COMPONENT_PROMPTS_V2`** — natural language rewrites of the first 5 prompts. Used when `OUTPUT_SUFFIX` is set.
-- **Full 100-prompt array** (to be added) — all in natural language style, covering the component mix below.
+- **`COMPONENT_PROMPTS`** — 20 expert-authored v1 prompts. Kept for reference only. Not used in new runs.
+- **`COMPONENT_PROMPTS_V2`** — 100 natural language prompts. Used when `OUTPUT_SUFFIX` is set (all production runs).
 
-### Required component mix (100 prompts total)
+### Component mix (100 prompts total, ~42% dark theme)
 
-Maintain at least 40% dark theme. Cover all major UI component categories:
-
-| Category | Count | Examples |
+| Category | Count | Dark theme target |
 |---|---|---|
-| Buttons & CTAs | 8 | Primary CTA, destructive, loading state, icon button, split button |
-| Forms | 10 | Login, signup, newsletter, search, settings, contact, checkout |
-| Navigation | 8 | Navbar, sidebar, bottom nav, breadcrumb, tab bar, pagination |
-| Cards | 12 | Product card, profile card, pricing card, blog post card, stat card |
-| Modals & Overlays | 8 | Dialog, confirm, side drawer, image lightbox, command palette |
-| Feedback & Status | 10 | Toast, alert banner, empty state, skeleton loader, progress bar |
-| Data Display | 12 | Table, list, timeline, kanban column, calendar cell, chart card |
-| Marketing | 10 | Testimonial, feature grid, pricing table, FAQ accordion, CTA section |
-| Mobile | 8 | Bottom nav, pull-to-refresh, onboarding card, mobile menu, swipe card |
-| Misc | 14 | File upload, cookie banner, notification bell, avatar stack, tag input |
-
-Each component gets 5 quality variants in the full run (temperature variation or re-prompting).
+| Buttons & CTAs | 8 | ~3 dark |
+| Forms | 10 | ~4 dark |
+| Navigation | 8 | ~3 dark |
+| Cards | 12 | ~5 dark |
+| Modals & Overlays | 8 | ~4 dark |
+| Feedback & Status | 10 | ~4 dark |
+| Data Display | 12 | ~5 dark |
+| Marketing | 10 | ~3 dark |
+| Mobile | 8 | ~5 dark |
+| Misc | 14 | ~6 dark |
+| **Total** | **100** | **~42 dark** |
 
 ---
 
 ## Stage 1 — generate.ts
 
-### Function: `generateComponent(prompt: string, outputDir: string): Promise<void>`
+### Env vars
+- `LLAMA_SERVER_URL` — llama-server base URL (default: http://localhost:11434)
+- `LLAMA_MODEL` — model string (default: qwen3.6-27b-mtp)
+- `TEMPERATURE` — generation temperature (default: 0.7), stored in metadata.json
+- `OUTPUT_SUFFIX` — dir suffix (e.g. `run0` → `component-000-run0/`)
+- `TEST_MODE` + `TEST_COUNT` — limit to first N prompts
 
-1. Check if `{outputDir}/component.html` exists — skip if so
-2. POST to `${LLAMA_SERVER_URL}/v1/chat/completions` with system prompt enforcing inline CSS only, zero CDN
-3. Extract `choices[0].message.content`
-4. Strip markdown fences
-5. Save `{outputDir}/component.html`
-6. Save `{outputDir}/metadata.json` with prompt, model, timestamp, outputSuffix
+### Function: `generateComponent(prompt, outputDir): Promise<void>`
+1. Skip if `{outputDir}/component.html` exists (resume support)
+2. POST to `/v1/chat/completions` with system prompt: inline CSS only, zero CDN, realistic content
+3. Always include `chat_template_kwargs: { enable_thinking: false }`
+4. Strip markdown fences from response
+5. Validate HTML — skip and warn if no `<html` or `<!DOCTYPE` (graceful skip, no crash)
+6. Save `component.html` + `metadata.json` (prompt, model, timestamp, temperature, outputSuffix)
 
 ### Function: `generateAll(): Promise<void>`
-
-- Reads `TEST_MODE`, `TEST_COUNT`, `OUTPUT_SUFFIX` from env
-- If `OUTPUT_SUFFIX` set → uses `COMPONENT_PROMPTS_V2` and dirs like `component-000-v2/`
-- Otherwise → uses `COMPONENT_PROMPTS` and dirs like `component-000/`
+- Uses `COMPONENT_PROMPTS_V2` when `OUTPUT_SUFFIX` is set
+- Falls back to `COMPONENT_PROMPTS` otherwise (legacy v1 only)
 
 ---
 
 ## Stage 2 — render.ts
 
-### Function: `renderAll(): Promise<void>`
+### Env vars
+- `OUTPUT_SUFFIX` — filters component dirs by suffix
+- `PLAYWRIGHT_BROWSERS_PATH` — must be set (autodl-run.sh handles this)
 
-- Reads `OUTPUT_SUFFIX` from env
-- Filters component dirs by suffix: `OUTPUT_SUFFIX=v2` → matches only `component-*-v2/`
+### Function: `renderAll(): Promise<void>`
 - Desktop screenshot: 1280×900, fullPage
 - Mobile screenshot: 390×844, fullPage
-- `waitUntil: "networkidle"` + 1500ms buffer (required — do not change)
+- Wait strategy: `waitUntil: "domcontentloaded"` + 3000ms (**not** networkidle — causes timeouts)
+- Per-component try/catch — log FAILED and continue (do not crash whole run)
+- One browser instance per component (open → screenshot → close) — prevents OOM accumulation
+- Skip if both PNGs already exist (resume support)
 
 ---
 
 ## Stage 3 — critique.ts
 
-### Function: `critiqueAll(): Promise<void>`
+### Env vars
+- `OUTPUT_SUFFIX` — filters dirs
+- `CODEX_MODEL` — model string (default: gpt-5.4)
 
-- Reads `OUTPUT_SUFFIX` from env, filters dirs accordingly
-- Runs Codex sequentially (no parallelism)
+### Function: `critiqueAll(): Promise<void>`
+- **CRITICAL:** prompt must come BEFORE `-i` flag in Codex CLI command
+- Add `stdin: "ignore"` to Bun.spawn
+- Sequential only — no parallelism
 - Timeout: 120s per component
+- Skip if `critique.md` exists (resume support)
 
 ---
 
 ## Stage 3b — improve.ts
 
-### Function: `improveComponent(id: string, originalPrompt?: string): Promise<void>`
-
-- `originalPrompt` is read from `metadata.json` by `improveAll` and passed in
-- If provided, the Codex prompt includes a scope constraint:
-  > "A navbar prompt should produce a better navbar, not a landing page."
-- If not provided, falls back to: "Improve only the specific component shown."
-- Timeout: 300s (HTML output is 3–5× larger than critique text)
+### Function: `improveComponent(id, originalPrompt?): Promise<void>`
+- Reads `screenshot-desktop.png` + `component.html` + `critique.md`
+- Passes `originalPrompt` as scope constraint in Codex prompt:
+  > "Original user intent: [prompt]. Improve the component staying within this scope."
+- Falls back to generic scope instruction if no prompt provided
+- Timeout: 300s (HTML output 3–5× larger than critique)
+- Skip if `improved.html` exists (resume support)
 
 ### Function: `improveAll(testMode, testCount): Promise<void>`
-
-- Reads `OUTPUT_SUFFIX` from env, filters dirs accordingly
-- Reads `metadata.json` per component to get original prompt
-- Passes prompt to `improveComponent` as scope constraint
+- Reads `OUTPUT_SUFFIX` from env, filters dirs
+- Reads `metadata.json` per component → passes prompt to `improveComponent`
 
 ---
 
 ## Stage 4 — package-dataset.ts
 
-### Five record types per component
+### Six record types per component *(mobile_to_code added 2026-05-20)*
 
 1. **`prompt_to_html`** — text prompt → original HTML
-2. **`screenshot_to_critique`** — screenshot → critique text
-3. **`screenshot_to_code`** — screenshot → original HTML (reconstruct from visual)
-4. **`screenshot_html_to_critique`** — screenshot + HTML → critique
-5. **`screenshot_code_critique_to_improved`** — screenshot + original prompt + HTML + critique → improved HTML
+2. **`screenshot_to_critique`** — desktop PNG → critique text
+3. **`screenshot_to_code`** — desktop PNG → original HTML
+4. **`mobile_to_code`** — mobile PNG → original HTML *(free extra record, same HTML target)*
+5. **`screenshot_html_to_critique`** — desktop PNG + HTML → critique
+6. **`screenshot_code_critique_to_improved`** — desktop PNG + original prompt + HTML + critique → improved HTML **(most valuable)**
 
-Record type 5 now includes the original prompt in the user message so the model learns scope fidelity alongside design improvement.
+Record type 6 includes original prompt so the model learns scope fidelity alongside design improvement.
 
 ### Function: `packageAll(): void`
+- Reads `OUTPUT_SUFFIX` from env, filters dirs
+- Writes to `DATASET_PATH` env var (default: `output/dataset.jsonl`)
+- Writes `dataset-stats.json` alongside JSONL
 
-- Reads `OUTPUT_SUFFIX` from env, filters dirs accordingly
-- Writes to `output/dataset.jsonl` (or `DATASET_PATH` env var)
-
----
-
-## Output Directory Structure (per component)
-
-```
-output/component-000/          ← v1 (expert prompts)
-├── component.html
-├── metadata.json              ← includes prompt + outputSuffix field
-├── screenshot-desktop.png
-├── screenshot-mobile.png
-├── critique.md
-└── improved.html
-
-output/component-000-v2/       ← v2 (natural language prompts)
-├── component.html
-├── metadata.json
-├── screenshot-desktop.png
-├── screenshot-mobile.png
-├── critique.md
-└── improved.html
-```
+### Expected counts (full run)
+- 500 components × 6 record types = **~3,000 JSONL records**
 
 ---
 
-## v2 A/B Test Plan
+## Temperature Variants — run-all-variants.sh
 
-**Goal:** Validate two fixes before scaling to 100 prompts.
+Five runs with different temperatures for training data diversity:
 
-**What to compare for each of the 5 components:**
+| Run  | Temperature | Expected output style |
+|------|-------------|----------------------|
+| run0 | 0.5 | Conservative, precise, fewer hallucinations |
+| run1 | 0.7 | Balanced (default) |
+| run2 | 0.85 | Slightly more creative |
+| run3 | 1.0 | More varied, occasional quirks |
+| run4 | 1.1 | Most creative, monitor for malformed output |
 
-| Comparison | What we're measuring |
-|---|---|
-| v1 `component.html` vs v2 `component.html` | Does natural language produce different/better base output from Qwen? |
-| v1 `improved.html` vs v2 `improved.html` | Does the scope constraint keep Codex focused on the component type? |
-| v1 critique score vs v2 critique score | Do simpler prompts produce better-scored components? |
+**Quality monitoring:** After each run, check median critique score.
+- Target range: 5–7/10
+- If run4 median < 5 → skip for training (too noisy)
+- If run0 median > 7 → consider raising minimum temperature
 
-**Expected outcomes:**
-- v2 base HTML: same or slightly lower quality (natural prompts give less precise spec), but more varied and realistic
-- v2 improved.html: significantly better scope fidelity (no more navbars becoming landing pages)
+**run-all-variants.sh** — do NOT use `set -e`. One crash should log and continue, not kill the job.
 
-**Run sequence:**
-```bash
-# AutoDL:
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run generate
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run render
+---
 
-# VPS (after rsync):
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run critique
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run improve
-OUTPUT_SUFFIX=v2 bun run package
+## Output Directory Structure
+
+```
+output/
+├── component-000-run0/        ← run0, temp=0.5
+│   ├── component.html
+│   ├── metadata.json          ← includes prompt, temperature, outputSuffix
+│   ├── screenshot-desktop.png
+│   ├── screenshot-mobile.png
+│   ├── critique.md
+│   └── improved.html
+├── component-000-run1/        ← run1, temp=0.7
+├── ...
+├── component-099-run4/        ← run4, temp=1.1
+├── dataset-run0.jsonl         ← per-run JSONL
+├── dataset-run1.jsonl
+├── ...
+├── dataset.jsonl              ← final concatenated (all 5 runs)
+└── dataset-stats.json
 ```
 
 ---
 
-## Implementation Order (remaining)
+## Implementation Checklist
 
-1. ✅ `prompts/components.ts` — v1 prompts + COMPONENT_PROMPTS_V2
+1. ✅ `prompts/components.ts` — v1 prompts + COMPONENT_PROMPTS_V2 (5 prompts)
 2. ✅ `src/generate.ts` — OUTPUT_SUFFIX, V2 prompt routing
 3. ✅ `src/render.ts` — OUTPUT_SUFFIX dir filtering
 4. ✅ `src/critique.ts` — OUTPUT_SUFFIX dir filtering
-5. ✅ `src/improve.ts` — originalPrompt param, scope instruction, OUTPUT_SUFFIX, metadata reading
-6. ✅ `src/package-dataset.ts` — OUTPUT_SUFFIX filtering, original prompt in type-5 record
+5. ✅ `src/improve.ts` — originalPrompt param, scope instruction, OUTPUT_SUFFIX
+6. ✅ `src/package-dataset.ts` — OUTPUT_SUFFIX, original prompt in type-6 record
 7. ✅ `src/pipeline.ts` — orchestrator with JST timestamps
-8. ✅ `package.json` — test:v2 script
-9. ✅ Run v2 A/B test on AutoDL + VPS — VALIDATED (both fixes confirmed, adopted)
-10. ⏳ Write all 80 new natural language prompts (bring total to 100)
-11. ⏳ Full 100-prompt × 5-variant run → 2,500 records
-12. ⏳ Fine-tune Qwen3-VL-8B
+8. ✅ `package.json` — scripts for all stages
+9. ✅ v2 A/B test VALIDATED — natural language prompts + scope constraint both confirmed
+10. ✅ COMPONENT_PROMPTS_V2 expanded to 100 prompts
+11. ✅ `src/generate.ts` — TEMPERATURE env var + graceful HTML validation
+12. ✅ `src/package-dataset.ts` — mobile_to_code (6th record type) + dataset-stats.json
+13. ✅ `scripts/run-all-variants.sh` — 5-temperature loop, no set -e
+14. ✅ Smoke test passed (3 components × 2 temps × 6 record types = 36 records)
+15. 🔄 **Full 500-component run IN PROGRESS** — run0+run1 done, run2 partial, run3 running, run4 queued
+16. ⏳ Resume run2 (44 missing components) after run3+run4 complete
+17. ⏳ Re-render pass all 5 runs (~26 Chromium OOM failures)
+18. ⏳ VPS critique+improve+package for run2+run3+run4
+19. ⏳ Concatenate: `cat output/dataset-run*.jsonl > output/dataset.jsonl` (~3,000 records)
+20. ⏳ Generate 200-400 qualifying conversation traces on VPS (Codex CLI)
+21. ⏳ Fine-tune Qwen3-VL-8B on combined dataset (~3,200-3,400 records)
+22. ⏳ Quantize to Q4_K_M + Q3_K_M GGUF
+23. ⏳ Test on Ollama (RTX 3060 12GB target)
+
+---
+
+## Step 20 — Qualifying Conversation Traces (200-400 records)
+
+After the main dataset is complete, generate multi-turn conversations that teach the model
+to ask follow-up questions on vague prompts. These are generated on VPS using Codex CLI.
+
+**Why needed:** ~200-400 examples is sufficient to teach behavioral nudges (when/what to ask).
+Base model already knows how to ask questions — we're teaching context-specific behavior.
+
+**Generation command:**
+```bash
+codex exec -m gpt-5.4 \
+  --dangerously-bypass-approvals-and-sandbox \
+  --ephemeral \
+  "Generate 10 multi-turn frontend design conversations in JSONL format.
+
+Each conversation:
+- Starts with a vague user request (website, app, landing page, dashboard)
+- Assistant asks 2-3 focused qualifying questions
+- User answers briefly  
+- Assistant confirms tech approach and builds complete HTML/CSS/JS
+
+Vary domains: restaurants, fitness, SaaS, portfolio, ecommerce, local businesses.
+Vary vagueness: some very vague, some partially specified.
+Output only valid JSONL, one conversation object per line."
+```
+
+Run 20-40 times = 200-400 examples.
+
+**Trigger logic the model learns:**
+- Ask questions when: full page/site/app requested with no tech stack or content detail
+- Don't ask when: component request ("make me a button"), or user already specified enough
+
+---
+
+## Step 21 — Fine-Tune Qwen3-VL-8B
+
+- Framework: SWIFT (Alibaba's official Qwen training toolkit)
+- Method: QLoRA NF4 + BF16 adapters, rank 32
+- Hardware: AutoDL H100 instance (or RTX 5090 — fits at 8B QLoRA)
+- Training time estimate: ~3-5 hours for 3,400 records at rank 32
+- Output: merged checkpoint → GGUF export
+
+**SWIFT command (approximate):**
+```bash
+swift sft \
+  --model Qwen/Qwen3-VL-8B-Instruct \
+  --tuner_type lora \
+  --lora_rank 32 \
+  --dataset output/dataset.jsonl \
+  --num_train_epochs 3 \
+  --output_dir ./output-finetune
+```
+
+---
+
+## Step 22 — Quantize and Release
+
+```bash
+# Export to GGUF via llama.cpp
+python convert_hf_to_gguf.py ./output-finetune --outtype f16
+llama-quantize model-f16.gguf model-q4_k_m.gguf Q4_K_M
+llama-quantize model-f16.gguf model-q3_k_m.gguf Q3_K_M
+```
+
+Target inference hardware:
+- RTX 3060 12GB: Q4_K_M (~5.5GB LM + ~2GB ViT = ~7.5GB + KV cache)
+- M3/M4 Mac 16GB unified: Q4_K_M with ~64K context
+- RTX 4070 12GB: Q3_K_M for more KV cache headroom
