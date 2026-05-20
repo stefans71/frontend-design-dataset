@@ -28,8 +28,8 @@ export async function renderComponent(htmlPath: string, outputDir: string): Prom
     const browser = await chromium.launch();
     const page = await browser.newPage();
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.setContent(html, { waitUntil: "networkidle" });
-    await page.waitForTimeout(1500);
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(3000);
     await page.screenshot({ path: desktopPath, fullPage: true });
     await browser.close();
   }
@@ -39,8 +39,8 @@ export async function renderComponent(htmlPath: string, outputDir: string): Prom
     const browser = await chromium.launch();
     const page = await browser.newPage();
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.setContent(html, { waitUntil: "networkidle" });
-    await page.waitForTimeout(1500);
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(3000);
     await page.screenshot({ path: mobilePath, fullPage: true });
     await browser.close();
   }

@@ -187,6 +187,39 @@ https://github.com/stefans71/frontend-design-dataset
 
 ---
 
+## Pending Tests
+
+### Test A — Tailwind CDN (must run before v2 test)
+
+**Goal:** Verify Tailwind CDN loads successfully on AutoDL's China network.
+
+**Changes to validate:**
+- `render.ts`: `waitUntil: "domcontentloaded"` + 3000ms buffer (was `networkidle` + 1500ms)
+- `generate.ts`: SYSTEM_PROMPT now instructs Tailwind CDN instead of inline CSS
+
+**Run:**
+```bash
+TEST_MODE=true TEST_COUNT=3 OUTPUT_SUFFIX=tailwind-test bun run generate
+TEST_MODE=true TEST_COUNT=3 OUTPUT_SUFFIX=tailwind-test bun run render
+```
+
+**Pass criteria (all 3 must pass):**
+1. All 6 screenshot PNGs exist and are > 15 KB each
+2. Screenshots show colored/styled elements — not plain browser defaults
+3. No Playwright timeout errors in render output
+
+**If PASS:** Tailwind CDN works — proceed to v2 test with Tailwind enabled.
+**If FAIL:** Revert both changes. Run v2 test with inline CSS as originally planned. Document failure reason.
+
+---
+
+### Test B — v2 A/B test (run only after Test A resolves)
+
+See `## OUTPUT_SUFFIX — Versioned Output Dirs` for run commands.
+Evaluate against FRONTEND-DESIGN-MODEL-CARD.md § 7.
+
+---
+
 ## Session Notes — 2026-05-20 08:43:21 JST
 
 ### Current Status
