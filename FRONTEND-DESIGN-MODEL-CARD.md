@@ -626,3 +626,271 @@ cp .env.example .env
 | `start.sh` | AutoDL `/root/autodl-tmp/` | Start both llama-server instances |
 | `setup-pi.sh` | AutoDL `/root/autodl-tmp/` | PI Agent setup (separate project) |
 | `AUTODL-SETUP.md` | pi-modular repo | Full AutoDL environment documentation |
+---
+
+## 13. Second Training Dataset — Qualifying Conversation Traces
+
+This is a separate dataset generated after the main component dataset. It teaches the model
+a distinct behavior: **when to ask follow-up questions and what to ask**.
+
+Without this dataset the fine-tuned model will generate immediately on every prompt regardless
+of vagueness — it has no examples showing it should pause and clarify first.
+
+---
+
+### Why It's a Separate Dataset
+
+The component dataset (6 record types, ~3,000 records) teaches:
+- Design quality — what good UI looks like vs bad
+- Visual reasoning — screenshot → critique → improvement
+- Code generation — prompt → production HTML/CSS
+
+It does NOT teach conversation flow. Every record is single-turn:
+```
+[input] → [output]
+```
+
+Qualifying conversation traces are multi-turn:
+```
+[user] → [model asks] → [user answers] → [model builds]
+```
+
+These require a different record format and different generation approach.
+
+---
+
+### The Decision Boundary the Model Must Learn
+
+The model needs to internalize one core rule:
+
+| Prompt type | Correct behavior | Example |
+|---|---|---|
+| Component request | Build immediately — scope is clear | "make me a login button" |
+| Partially specified | Build immediately — enough detail given | "dark pricing card with 3 tiers for my SaaS" |
+| Full page/site/app, vague | Ask 2-3 questions first | "build me a website for my bakery" |
+| Full page/site/app, specified | Build immediately | "one-page dark portfolio for a photographer, hero + work grid + contact" |
+| Screenshot input | Critique/improve immediately — visual is the spec | [uploads screenshot] "improve this" |
+
+Training examples must show BOTH sides — cases where the model asks AND cases where it builds
+immediately. Otherwise the model learns to always ask, which is equally wrong.
+
+---
+
+### Record Format
+
+Multi-turn ShareGPT format — different from the single-turn component records:
+
+```jsonl
+{
+  "id": "conv-042_bakery_website",
+  "type": "qualifying_conversation",
+  "messages": [
+    {
+      "role": "user",
+      "content": "build me a website for my bakery called Sunrise Breads"
+    },
+    {
+      "role": "assistant",
+      "content": "Happy to build this. Three quick questions so I get it right:\n\n1. **Purpose** — mainly for people to find you and call/visit, or do they need to order online?\n2. **Pages** — one scrolling page, or separate pages (Menu, About, Contact)?\n3. **Style** — warm and rustic, or clean and modern?"
+    },
+    {
+      "role": "user",
+      "content": "find us and visit, one page, warm and rustic"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect — a warm single-page HTML site with rustic character. Building it now...\n\n```html\n<!DOCTYPE html>\n<html lang=\"en\">\n...\n</html>\n```"
+    }
+  ]
+}
+```
+
+And the counter-example (no questions needed):
+
+```jsonl
+{
+  "id": "conv-043_button_immediate",
+  "type": "qualifying_conversation",
+  "messages": [
+    {
+      "role": "user",
+      "content": "make me a primary action button with a loading state"
+    },
+    {
+      "role": "assistant",
+      "content": "Here's a button component with default, loading, and disabled states:\n\n```html\n...\n```"
+    }
+  ]
+}
+```
+
+---
+
+### What Questions the Model Should Ask
+
+When a qualifying question turn IS appropriate, the model asks exactly **2-3 questions**, never more.
+The questions follow a consistent priority order:
+
+1. **Purpose** — what does the user actually need it to do?
+   - "Is this mainly for people to find you, or do they need to do something (book, buy, sign up)?"
+
+2. **Scope** — how much content?
+   - "One scrolling page, or separate pages?"
+   - "A single component, or a full page?"
+
+3. **Style** — only if not already stated
+   - "What vibe — professional and minimal, or bold and expressive?"
+   - Skip this if the user already mentioned colors or mood
+
+The model should NEVER ask about tech stack — it decides that based on the answers:
+- Contact/info site → plain HTML/CSS/JS
+- Booking/interactive → note React would be better but still deliver HTML
+- Component request → always HTML/CSS
+
+---
+
+### Generation Approach
+
+Generated on VPS using Codex CLI. Two passes needed:
+
+**Pass 1 — Vague requests (should ask questions):**
+```bash
+codex exec -m gpt-5.4 \
+  --dangerously-bypass-approvals-and-sandbox \
+  --ephemeral \
+  "Generate 10 multi-turn frontend design conversations in JSONL format.
+
+Each conversation MUST follow this exact pattern:
+1. User gives a vague website/app/page request (not a component)
+2. Assistant asks exactly 2-3 focused qualifying questions
+3. User answers briefly (1 sentence)
+4. Assistant confirms the approach in one sentence, then outputs complete HTML/CSS/JS
+
+Vary domains: restaurant, fitness studio, SaaS, personal portfolio, nonprofit,
+local service business, ecommerce, event page.
+Vary vagueness: some give brand name only, some give a bit more.
+The HTML output must be complete, self-contained, with inline CSS only.
+Output only valid JSONL — one JSON object per line, no markdown, no preamble." \
+  -o /tmp/conv-batch.txt
+
+cat /tmp/conv-batch.txt >> output/qualifying-conversations.jsonl
+```
+
+**Pass 2 — Clear requests (should NOT ask questions):**
+```bash
+codex exec -m gpt-5.4 \
+  --dangerously-bypass-approvals-and-sandbox \
+  --ephemeral \
+  "Generate 10 single-turn frontend design conversations in JSONL format.
+
+Each conversation:
+1. User gives a SPECIFIC component or well-described page request
+   (enough detail that no clarification is needed)
+2. Assistant builds immediately — NO questions asked
+
+Examples of specific enough requests:
+- 'make me a dark login form with email, password, and forgot password link'
+- 'three-tier pricing card for a SaaS, highlight the middle tier'
+- 'mobile bottom nav with 5 tabs for a fitness app'
+
+Vary: buttons, cards, forms, navbars, modals, data tables, marketing sections.
+HTML output complete, self-contained, inline CSS only.
+Output only valid JSONL — one JSON object per line." \
+  -o /tmp/conv-batch-immediate.txt
+
+cat /tmp/conv-batch-immediate.txt >> output/qualifying-conversations.jsonl
+```
+
+Run Pass 1: 15-20 times = 150-200 vague examples
+Run Pass 2: 10-15 times = 100-150 immediate examples
+**Total: 250-350 records — roughly 60% ask/40% immediate**
+
+---
+
+### Integration With Main Dataset
+
+The qualifying conversation records are packaged separately then merged:
+
+```bash
+# After generating all conversation traces:
+wc -l output/qualifying-conversations.jsonl   # expect 250-350
+
+# Validate format (every line must be valid JSON with 'messages' array)
+python3 -c "
+import json, sys
+errors = 0
+for i, line in enumerate(open('output/qualifying-conversations.jsonl')):
+    try:
+        d = json.loads(line)
+        assert 'messages' in d
+        assert len(d['messages']) >= 2
+    except Exception as e:
+        print(f'Line {i}: {e}')
+        errors += 1
+print(f'Valid: {i+1-errors}/{i+1}')
+"
+
+# Merge with main component dataset for fine-tuning
+cat output/dataset.jsonl output/qualifying-conversations.jsonl > output/dataset-final.jsonl
+wc -l output/dataset-final.jsonl   # expect ~3,250-3,350
+```
+
+---
+
+### Quality Check for Conversation Traces
+
+Before merging, verify the traces have the right balance and structure:
+
+```bash
+# Count ask vs immediate records
+python3 -c "
+import json
+ask, immediate = 0, 0
+for line in open('output/qualifying-conversations.jsonl'):
+    d = json.loads(line)
+    turns = len(d['messages'])
+    if turns >= 4:   # user → questions → answer → build
+        ask += 1
+    else:            # user → build immediately
+        immediate += 1
+print(f'Ask questions: {ask} | Build immediately: {immediate}')
+print(f'Ratio: {ask/(ask+immediate)*100:.0f}% ask')
+# Target: 55-65% ask, 35-45% immediate
+"
+
+# Spot check: read 5 random ask-type traces
+python3 -c "
+import json, random
+traces = [json.loads(l) for l in open('output/qualifying-conversations.jsonl')]
+ask_traces = [t for t in traces if len(t['messages']) >= 4]
+for t in random.sample(ask_traces, min(5, len(ask_traces))):
+    print('USER:', t['messages'][0]['content'][:80])
+    print('MODEL:', t['messages'][1]['content'][:120])
+    print('---')
+"
+```
+
+**Acceptance criteria for conversation traces:**
+- ≥ 250 total records
+- 55-65% are ask-type (4+ turns), 35-45% are immediate (2 turns)
+- No ask-type trace asks more than 3 questions
+- No immediate-type trace asks any questions
+- All records contain complete HTML output in the final assistant turn
+- HTML is self-contained (no external CDN)
+
+---
+
+### Why This Amount Is Sufficient
+
+Qwen3-VL-8B is a capable base model that already knows how to ask questions and how to build HTML.
+The fine-tune is teaching it **context-specific behavior**, not new capabilities:
+
+- When to ask → learned from the ask-type examples showing the decision boundary
+- What to ask → learned from the specific question patterns in 150-200 examples
+- When NOT to ask → learned from the immediate examples (equally important)
+
+Research benchmark: models learn simple behavioral rules from 200-500 high-quality examples.
+This is far simpler than capability training — it's a routing decision plus a question template.
+
+250-350 examples across both classes is sufficient. More is not necessarily better —
+too many ask-type examples would bias the model toward always asking even when unnecessary.
