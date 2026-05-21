@@ -120,6 +120,14 @@ async function pass1(): Promise<void> {
   console.log(`\n[Pass 1] Vague requests — ${ITERATIONS} batches of 10...`);
 
   for (let i = 0; i < ITERATIONS; i++) {
+    const existing = existsSync(OUTPUT_PATH)
+      ? readFileSync(OUTPUT_PATH, "utf-8").trim().split("\n").filter(Boolean).length
+      : 0;
+    if (existing >= 250) {
+      console.log(`[conversations] Target reached: ${existing} records. Done.`);
+      process.exit(0);
+    }
+
     const persona = pickRandom(PERSONAS);
     const domain = pickRandom(DOMAINS);
 
@@ -159,6 +167,14 @@ async function pass2(): Promise<void> {
   console.log(`\n[Pass 2] Specific requests — ${ITERATIONS} batches of 10...`);
 
   for (let i = 0; i < ITERATIONS; i++) {
+    const existing = existsSync(OUTPUT_PATH)
+      ? readFileSync(OUTPUT_PATH, "utf-8").trim().split("\n").filter(Boolean).length
+      : 0;
+    if (existing >= 250) {
+      console.log(`[conversations] Target reached: ${existing} records. Done.`);
+      process.exit(0);
+    }
+
     const transition = pickRandom(TRANSITIONS);
 
     const prompt = `Generate 5 single-turn frontend design conversations in JSONL format.
