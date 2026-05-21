@@ -294,6 +294,9 @@ swift sft \
   --num_train_epochs 1 \
   --max_steps 10 \
   --max_pixels $((1280 * 32 * 32)) \
+  --max_length 4096 \
+  --per_device_train_batch_size 1 \
+  --gradient_accumulation_steps 4 \
   --freeze_vit True \
   --gradient_checkpointing True \
   --quant_bits 4 \
@@ -302,6 +305,8 @@ swift sft \
 # Step 1 loss baseline (confirmed): 0.6491 (chat template OK, no mismatch)
 # Loss should drop further by step 5. Flat/spiking = config problem.
 # After step 10: check nvidia-smi VRAM → <20GB means BF16 is viable.
+# --max_length 4096: caps HTML sequence length — prevents OOM on long records
+# --gradient_accumulation_steps 4: reduces peak gradient memory vs default 16
 ```
 
 **Smoke test signals to watch:**
@@ -321,6 +326,9 @@ swift sft \
   --dataset output/dataset-final.jsonl \
   --num_train_epochs 3 \
   --max_pixels $((1280 * 32 * 32)) \
+  --max_length 4096 \
+  --per_device_train_batch_size 1 \
+  --gradient_accumulation_steps 4 \
   --freeze_vit True \
   --gradient_checkpointing True \
   --quant_bits 4 \

@@ -359,6 +359,9 @@ swift sft \
   --dataset output/dataset-final.jsonl \
   --num_train_epochs 3 \
   --max_pixels $((1280 * 32 * 32)) \
+  --max_length 4096 \
+  --per_device_train_batch_size 1 \
+  --gradient_accumulation_steps 4 \
   --freeze_vit True \
   --gradient_checkpointing True \
   --quant_bits 4 \
