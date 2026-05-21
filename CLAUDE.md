@@ -64,7 +64,7 @@ All records validated: 0 CDN links, 0 malformed, 95% scoring 8-9/9 on eval pass.
 | Install SWIFT + deps on V2 | ✅ ms-swift 4.2.1, qwen-vl-utils, decord, bitsandbytes |
 | Rsync dataset + PNGs to V2 | ✅ 3,090 records, 983 PNGs |
 | Download HF weights | ✅ /root/autodl-tmp/Qwen3-VL-8B-Instruct-HF (~16.5GB) |
-| Pre-training smoke test | ⏳ Step 1 loss 0.6491 confirmed — resolving OOM at step 2 |
+| Pre-training smoke test | ✅ PASSED — all 10 steps, no OOM (see results below) |
 | Full QLoRA fine-tune | ⏳ |
 | Export GGUF + quantize (Q4_K_M + Q3_K_M) | ⏳ |
 | Post-fine-tune validation (4 tests — see below) | ⏳ |
@@ -309,10 +309,20 @@ swift sft \
 # --gradient_accumulation_steps 4: reduces peak gradient memory vs default 16
 ```
 
-**Smoke test signals to watch:**
-- Step 1 loss **0.6491** confirmed — in normal range (2.0–4.0 is typical; <1.0 means model already knows the task)
-- If step 1 loss ≥ 8.0: chat template mismatch — stop and fix before continuing
-- VRAM at step 1: 22.44 GiB — acceptable on RTX 5090 32GB
+**Smoke test results (confirmed — smoke2, 2026-05-22 JST):**
+
+| Step | Loss | VRAM (GiB) | Speed (s/it) |
+|---|---|---|---|
+| 1 | **0.5289** | 22.44 | 5.003 (JIT overhead) |
+| 5 | 0.6556 | 22.65 | 3.594 |
+| 10 | 0.6026 | 22.88 | 3.634 |
+| final avg | 0.6164 | — | 3.785 |
+
+- Loss in normal range — no chat template mismatch (mismatch = step 1 ≥ 8.0)
+- VRAM 22.44 GiB = borderline zone → **keep QLoRA 4-bit** (BF16 needs <20 GiB to be safe)
+- Speed ~3.6 s/it = acceptable (2–10 s/it range)
+- **Full run estimate: ~2.3 hours** (2,318 steps × 3.6 s/it)
+- If step 1 loss ≥ 8.0 on a future run: chat template mismatch — stop and fix before continuing
 
 **Full fine-tune command:**
 ```bash
