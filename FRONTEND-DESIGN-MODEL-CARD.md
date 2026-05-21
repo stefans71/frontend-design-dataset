@@ -1,6 +1,6 @@
 # Frontend Design Expert — Model Card & Project Handoff
-> Last updated: 2026-05-20  
-> Status: Dataset pipeline complete (100 records), v2 A/B test pending AutoDL, scaling to 2,500+ records next  
+> Last updated: 2026-05-21 JST
+> Status: **DATASET COMPLETE — 3,089 records ready for fine-tuning**
 > GitHub: https://github.com/stefans71/frontend-design-dataset
 
 ---
@@ -35,7 +35,22 @@ Train a single fine-tuned vision-language model that a home user runs locally on
 | Target tok/s (RTX 3060 12GB) | ~40-60 tok/s |
 | Target tok/s (M3 16GB unified) | ~50-70 tok/s |
 
-**Why Qwen3-VL-8B:** Natively multimodal (text + image input), 256K context, Apache 2.0 license, already has strong frontend coding DNA from pretraining. Users can upload screenshots for critique and improvement workflows.
+**Why Qwen3-VL-8B:** Natively multimodal (text + image input), 256K context, Apache 2.0 license, strong frontend coding DNA from pretraining. Users upload screenshots for critique and improvement workflows.
+
+**Screenshot resolution guidance for inference:** Recommend users resize screenshots to max 1024×1024 before uploading. The vision encoder consumes fixed VRAM for image tokens — large screenshots on 12GB GPUs can cause OOM before any text generation begins.
+
+### Alternative candidates researched (2026-05-20)
+
+| Model | Params | QLoRA on 12GB | Notes |
+|---|---|---|---|
+| `Qwen/Qwen3-VL-4B-Instruct` | 4B | ✅ Comfortable | Best for 8GB GPU target |
+| `Qwen/Qwen3-VL-8B-Instruct` | 8B | ✅ Works | **Primary target** |
+| `Qwen3.5-9B` (early fusion) | 9B | ❌ Not recommended | Unsloth warns against QLoRA on Qwen3.5 |
+| `Qwen3.5-4B` (early fusion) | 4B | ⚠️ Borderline | 16-bit LoRA might fit at ~10-12GB |
+| `microsoft/Phi-4-multimodal` | 5.6B | ✅ | Strong coding, MIT license |
+| `InternVL2_5-8B` | 8B | ✅ | Strong on visual coding specifically |
+
+Decision: Qwen3-VL-8B chosen — QLoRA path is well-supported by Unsloth, official GGUF available, Ollama native. Qwen3.5 early fusion architecture is better but QLoRA incompatibility rules it out for 12GB training.
 
 ---
 
@@ -43,41 +58,44 @@ Train a single fine-tuned vision-language model that a home user runs locally on
 
 ### Core Concept
 
-We use a **teacher-student distillation** approach:
+**Teacher-student distillation:**
 
 ```
-Qwen3.6-27B (student, generates mediocre output)
-    ↓ produces HTML component
+Qwen3.6-27B (generates mediocre output)
+    ↓ HTML component
 Playwright (renders to PNG screenshot)
     ↓ screenshot sent to judge
 Codex GPT-5.4 (expert judge, critiques and improves)
-    ↓ produces improved HTML + critique
-Dataset record: [bad screenshot + bad code + critique] → [expert improved code]
+    ↓ critique.md + improved.html
+Dataset record: [screenshot + bad code + critique] → [expert improved code]
 ```
 
-The gap between Qwen's output and Codex's improvement IS the training signal. After fine-tuning on hundreds of these pairs, Qwen3-VL-8B internalizes expert design behavior into its weights — no system prompt needed at inference.
+The gap between Qwen's output and Codex's improvement IS the training signal. After fine-tuning, Qwen3-VL-8B internalizes expert design behavior into its weights — no special system prompt needed at inference.
 
 ### Why This Works
 
 - Qwen generates mediocre but structurally valid output (the "before")
 - Codex GPT-5.4 has seen millions of production UI components — it knows what "after" looks like
-- The critique explains WHY the improvement was made — the model learns design reasoning, not just patterns
+- The critique explains WHY the improvement was made — model learns design reasoning, not just patterns
 - Vision input (screenshot) means the model learns to reason about rendered output, not just code
+- Original prompt passed to improve.ts — Codex stays in scope (navbar → better navbar, not landing page)
+- Visual judgment (color selection, contrast, hover states, interactive behaviors) transfers via the before/after pairs
 
-### Training Data Types
+### Training Data Types — Final Dataset
 
-| Record Type | Input | Output | Count Target |
+| Record Type | Input | Output | Final Count |
 |---|---|---|---|
-| `prompt_to_html` | Natural language prompt | component.html | 500 |
-| `screenshot_to_critique` | Desktop PNG | critique.md | 500 |
-| `screenshot_to_code` | Desktop PNG | component.html | 500 |
-| `mobile_to_code` | Mobile PNG | component.html | 500 |
-| `screenshot_code_critique_to_improved` | PNG + HTML + critique + original prompt | improved.html | 500 |
-| `qualifying_conversation` | Vague user request | Questions → answers → full build | 200-400 |
-| `full_page_build` | Answered brief | Complete HTML/CSS/JS page | 200-400 |
-| **Total** | | | **~3,000-3,400** |
+| `prompt_to_html` | Natural language prompt | component.html | ~472 |
+| `screenshot_to_critique` | Desktop PNG | critique.md | ~472 |
+| `screenshot_to_code` | Desktop PNG | component.html | ~472 |
+| `mobile_to_code` | Mobile PNG | component.html | ~472 |
+| `screenshot_html_to_critique` | Desktop PNG + HTML | critique.md | ~472 |
+| `screenshot_code_critique_to_improved` | PNG + HTML + original prompt + critique | improved.html | ~472 |
+| `qualifying_conversation` | Vague user request | Questions → answers → full build | 150 (ask-type) |
+| `immediate_conversation` | Clear component request | Direct build, no questions | 104 |
+| **Total** | | | **3,089** |
 
-The first 5 types come from the automated pipeline. The last 2 (qualifying conversations and full page builds) are generated separately using Codex conversation traces.
+Component records come from 500 components × 6 record types = ~3,000 (minus ~165 skipped due to render failures). Conversation traces: 254 total (150 ask / 104 immediate = 59% ask ratio).
 
 ---
 
@@ -85,48 +103,109 @@ The first 5 types come from the automated pipeline. The last 2 (qualifying conve
 
 ### Pipeline — `frontend-design-dataset` repo
 
-A fully automated Bun/TypeScript pipeline running across two machines:
-
 ```
-AutoDL (RTX 5090, rented)          VPS Japan (hostdzire, owned)
-────────────────────────           ─────────────────────────────
-Stage 1: generate.ts               Stage 3: critique.ts
-  Qwen3.6-27B via llama-server       Codex GPT-5.4 via Codex CLI
-  → component.html                   → critique.md
+AutoDL (RTX 5090, westd)             VPS Japan (hostdzire)
+────────────────────────             ─────────────────────
+Stage 1: generate.ts                 Stage 3:  critique.ts
+  Qwen3.6-27B via llama-server         Codex GPT-5.4 / claude -p
+  → component.html                     → critique.md
 
-Stage 2: render.ts                 Stage 3b: improve.ts
-  Playwright Chromium                Codex GPT-5.4 via Codex CLI
-  → screenshot-desktop.png          → improved.html
+Stage 2: render.ts                   Stage 3b: improve.ts
+  Playwright Chromium                  Codex GPT-5.4 via Codex CLI
+  → screenshot-desktop.png             → improved.html
   → screenshot-mobile.png
-                                   Stage 4: package-dataset.ts
-         ↓ rsync                     → dataset.jsonl
-bash scripts/rsync-from-autodl.sh    → dataset-stats.json
+                                     Stage 4: package-dataset.ts
+         ↓ rsync                       → dataset-run{N}.jsonl
+bash scripts/rsync-from-autodl.sh      → dataset-stats.json
 
-                                   pipeline.ts — orchestrates all stages
+                                     Stage 5: evaluate.ts
+                                       → pre-scores.jsonl (Stage A regex)
+                                       → scores.jsonl (Stage B claude -p)
+                                       → dataset-clean.jsonl
+
+                                     Stage 6: generate-conversations.ts
+                                       → qualifying-conversations.jsonl
+
+                                     Final merge:
+                                       → dataset-final.jsonl (3,089 records)
 ```
 
-### Current Dataset Status
+### Final Dataset Status (2026-05-21) ✅ COMPLETE
 
-- **20 components generated** — all 5 file types per component
-- **100 JSONL training records** — all 5 record types
-- **Dataset size:** 1.5MB
-- **Score range:** 4/10 to 7/10 (median 6/10) — good training signal spread
-- **v2 A/B test:** code complete, pending AutoDL availability
+| Run | Temp | Components | Records | Status |
+|---|---|---|---|---|
+| run0 | 0.5 | 97/100 | 573 | Complete |
+| run1 | 0.7 | 93/100 | 558 | Complete |
+| run2 | 0.85 | 93/100 | 573 | Complete |
+| run3 | 1.0 | 89/100 | 534 | Complete |
+| run4 | 1.1 | 98/100 | 598 | Complete |
+| **Component total** | | **~470/500** | **~2,835** | ✅ |
+| Qualifying conversations | — | — | 254 | ✅ |
+| **Grand total** | | | **3,089** | ✅ |
+
+Missing ~30 components across all runs = Chromium OOM render failures. Unrecoverable, acceptable loss.
+
+### Evaluation Pass Results (Step 20.5) ✅
+
+Two-stage quality filter run on all 506 improved.html files before fine-tuning:
+
+| Stage | Method | Result |
+|---|---|---|
+| Stage A — Hard gate | Regex: CDN links, file length | 475 pass, 0 CDN failures, 25 missing files |
+| Stage A — Visual score | Regex: color count, measurements | All 475 scored visual=3 (GPT-5.4 consistently uses hex+px) |
+| Stage B — Alignment | `claude -p`, 5/batch | 465/475 scored, 10 parse failures (kept) |
+| Stage B — Interactivity | Context-aware LLM scoring | — |
+
+**Score distribution:**
+| Score | Components | % |
+|---|---|---|
+| 9/9 | 303 | 65% |
+| 8/9 | 141 | 30% |
+| 7/9 | 17 | 4% |
+| 6/9 | 4 | 1% |
+| <6 | 0 | 0% |
+
+**0 components excluded** — all passed the 6/9 threshold. Dataset is exceptionally high quality.
+`output/dataset-clean.jsonl` = 2,835 records (same as dataset.jsonl, no exclusions).
+
+### Evaluation Rubric (for reference / future runs)
+
+**Pre-filter (hard gate):**
+```javascript
+const hasExternalDeps = /https?:\/\/(?!www\.w3\.org|via\.placeholder\.com)/i.test(html);
+if (hasExternalDeps || html.length < 500) → FAIL
+```
+
+**Visual score (regex, 0-3):**
+```javascript
+const colorMatches = html.match(/(#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\(|var\(--)/ig) || [];
+const hasMeasurement = /\d+(px|rem|em|vh|vw|%)/i.test(html);
+// 3 = colorMatches>=3 AND hasMeasurement, 2 = either, 1 = neither
+```
+
+**Alignment (0-3):** LLM judges if HTML matches requested component type
+**Interactivity (0-3):** Context-aware — interactive types vs display types scored differently
+**Exclusion threshold:** total < 6/9
 
 ### Key Technical Discoveries (Do Not Revert)
 
-| Issue | Root Cause | Fix |
-|---|---|---|
-| Playwright networkidle timeout | CDN connections keep network active indefinitely | Switch to `domcontentloaded` + 3000ms buffer — CDN not blocked, just shouldn't use `networkidle` |
-| Codex CLI `-i` flag bug | `-i FILE...` is variadic — consumes prompt string as second image if placed after | Move CRITIQUE_PROMPT before `-i` flag |
-| Codex empty stdout | stdin not closed | Add `stdin: "ignore"` to Bun.spawn |
-| Codex stdout parsing | Token count lines appear after response | Strip lines after `tokens used\n{count}\n` |
-| improve.ts scope creep | Codex never received original prompt — inferred scope from screenshot | Pass original prompt from metadata.json as scope constraint |
-| AutoDL GitHub blocked | China network blocks github.com | Use `ghfast.top` mirror for git clone only |
-| AutoDL HuggingFace blocked | China network blocks huggingface.co | Use `hf-mirror.com` or ModelScope |
-| Playwright Chromium download slow | `cdn.playwright.dev` routes internationally from China (~4MB/s) | Download via `npmmirror.com` binary mirror using `aria2c -x 16` + `bsdtar` |
-| llama-server multi-turn crash | LCP prefix rollback incompatible with DeltaNet recurrent state | `--cache-reuse 0` flag in start.sh |
-| Bun not in PATH on AutoDL | Non-standard install path | Always `source autodl-run.sh` first |
+| # | Issue | Root Cause | Fix |
+|---|---|---|---|
+| 1 | `set -e` in run script killed entire job on one crash | Bash exits on any non-zero | Removed `-e` from `run-all-variants.sh` |
+| 2 | One Playwright crash killed entire render stage | No per-component error handling | try/catch per component in render.ts |
+| 3 | Playwright networkidle timeout | CDN/inline CSS keeps connections open | `domcontentloaded` + 3000ms — do not revert to networkidle |
+| 4 | run2 generate stopped at 56/100 | llama-server memory pressure | Resume support handles gaps |
+| 5 | Playwright deadlocked 52min on one component | No per-component browser launch timeout | Per-component timeout on browser launch |
+| 6 | llama-server died mid-run | Memory exhaustion | Restart with `bash start.sh`, resume handles gaps |
+| 7 | ~26 render OOM failures | Chromium OOM on complex components | Re-render pass — resume skips done PNGs |
+| 8 | Codex CLI `-i` flag consumed prompt as image | `-i FILE...` is variadic | CRITIQUE_PROMPT must come BEFORE `-i` flag |
+| 9 | Codex empty stdout | stdin not closed | `stdin: "ignore"` in Bun.spawn |
+| 10 | improve.ts scope creep (navbar → landing page) | Codex inferred scope from screenshot | Pass original prompt from metadata.json as scope constraint |
+| 11 | llama-server multi-turn crash | LCP prefix rollback + DeltaNet incompatible | `--cache-reuse 0` in start.sh — do not remove |
+| 12 | Playwright Chromium download slow from China | `cdn.playwright.dev` routes internationally | `aria2c -x 16` + npmmirror binary mirror + `bsdtar` |
+| 13 | Codex daily quota exhausted mid-run | ChatGPT plan daily limit on Codex CLI | Re-login: `codex login --device-auth`; or switch to `claude -p` |
+| 14 | Conversation trace diversity collapse risk | LLM repeats same phrasing in batch generation | Persona + domain injection per batch, batches of 5 not 10 |
+| 15 | Codex timeout on content-heavy domains | Restaurant/e-commerce HTML too long for 120s | Increased to 480s timeout in generate-conversations.ts |
 
 ---
 
@@ -140,34 +219,24 @@ bash scripts/rsync-from-autodl.sh    → dataset-stats.json
 | CUDA | 13.0 (driver 580.142), toolkit 12.8 |
 | OS | Ubuntu 22.04 Jammy |
 | Disk | 250GB persistent at `/root/autodl-tmp/` |
-| Region | AutoDL westDC3 China (use Huawei/npmmirror for downloads) |
+| Active instance | westd clone — `connect.westd.seetacloud.com` port 25180 |
+| Region | AutoDL Northwest B, China (use Huawei/npmmirror for downloads) |
 
-**SSH Access (port changes on every reboot — check AutoDL web UI):**
+**SSH Access:**
 ```bash
-ssh -i /root/.ssh/id_ed25519 -p 33472 root@connect.westc.seetacloud.com
-# 33472 is last known port — update after every reboot
+# ACTIVE — westd clone
+ssh -i /root/.ssh/id_ed25519 -p 25180 root@connect.westd.seetacloud.com
+# Port changes on every AutoDL reboot — check AutoDL web UI
 ```
 
-**AutoDL Startup Sequence (after every reboot):**
+**AutoDL Startup Sequence (after reboot):**
 ```bash
-# 1. SSH in with new port from AutoDL web UI
-ssh -i /root/.ssh/id_ed25519 -p <NEW_PORT> root@connect.westc.seetacloud.com
-
-# 2. Start both llama-server instances
+ssh -i /root/.ssh/id_ed25519 -p <NEW_PORT> root@connect.westd.seetacloud.com
 bash /root/autodl-tmp/start.sh
-# Waits up to 120s for generation server health check
-# Generation server ready in ~6s
-# Embedding server starts instantly (CPU only)
-
-# 3. Verify both servers healthy
 curl http://localhost:11434/health   # → {"status":"ok"}
-curl http://localhost:8081/health    # → {"status":"ok"}
-
-# 4. Update SSH tunnel on VPS if port changed
-# On VPS:
-sudo nano /etc/systemd/system/autodl-tunnel.service  # update port
-sudo systemctl daemon-reload
-sudo systemctl restart autodl-tunnel.service
+# Update VPS tunnel if port changed:
+sudo nano /etc/systemd/system/autodl-tunnel.service
+sudo systemctl daemon-reload && sudo systemctl restart autodl-tunnel.service
 ```
 
 **llama-server — Generation (GPU, port 11434):**
@@ -188,18 +257,6 @@ sudo systemctl restart autodl-tunnel.service
   --host 0.0.0.0 --port 8081
 ```
 
-**API Format (OpenAI-compatible):**
-```bash
-curl http://localhost:11434/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "qwen3.6-27b-mtp",
-    "messages": [{"role": "user", "content": "Hello"}],
-    "max_tokens": 256,
-    "chat_template_kwargs": {"enable_thinking": false}
-  }'
-```
-
 **Performance:**
 - Generation: 92-97 tok/s with MTP speculative decoding
 - VRAM at 131K context: 29.3/32.6 GB (3.3 GB headroom — do not exceed 131K)
@@ -208,70 +265,98 @@ curl http://localhost:11434/v1/chat/completions \
 **Key AutoDL Paths:**
 ```
 /root/autodl-tmp/
-├── Qwen3.6-27B-MTP-UD-Q5_K_XL.gguf   19GB  Generation model
-├── nomic-embed-text-v1.5.Q8_0.gguf    140MB Embedding model
-├── llama-mtp/llama-server              71MB  Inference binary
-├── bun/bin/bun                               Bun runtime
-├── node-v22.15.0-linux-x64/bin/              Node.js
-├── pw-browsers/                        636MB Playwright Chromium
-│   ├── chromium-1223/chrome-linux/           Chrome for Testing 148.0
-│   └── chromium_headless_shell-1223/
-├── frontend-design-dataset/                  Project (rsynced from VPS)
-├── start.sh                                  Startup script
-└── setup-pi.sh                               PI Agent setup (separate project)
+├── Qwen3.6-27B-MTP-UD-Q5_K_XL.gguf      19GB   Generation model (Qwen3.6-27B)
+├── nomic-embed-text-v1.5.Q8_0.gguf       140MB  Embedding model
+├── qwen3-vl-8b-gguf/                             Qwen3-VL-8B GGUF (baseline test)
+│   ├── Qwen3-VL-8B-Instruct-Q4_K_M.gguf  ~5GB   Fine-tune target model
+│   └── mmproj-*.gguf                      ~1GB   Vision encoder — required for image input
+├── llama-mtp/llama-server                 71MB   Inference binary (MTP branch)
+├── bun/bin/bun                                   Bun runtime
+├── node-v22.15.0-linux-x64/bin/                  Node.js
+├── pw-browsers/                           636MB  Playwright Chromium
+├── frontend-design-dataset/                      Project (rsynced from VPS)
+├── start.sh                                      Startup script (both llama-servers)
+└── setup-pi.sh                                   PI Agent setup (separate project)
 ```
 
-**AutoDL Run Environment:**
+### Qwen3-VL-8B Baseline Test (completed 2026-05-20)
+
+Downloaded via ModelScope to `/root/autodl-tmp/qwen3-vl-8b-gguf/`. Served on port 8080 via llama-server with `--mmproj` flag.
+
+**Results — confirmed fine-tune is required:**
+
+| Test | Score | Finding |
+|---|---|---|
+| Vision critique | 5/10 | Works but vague — no px measurements, no hex values |
+| Qualifying questions | 1/10 | Never asks — builds immediately (RLHF eager pleaser failure) |
+| Self-contained HTML | 7/10 | Good output quality |
+
+Test 2 (1/10) is definitive. System prompts cannot override RLHF eagerness to build. Qualifying behavior must be trained into weights. **Fine-tune confirmed required.**
+
+**Download command (for reference):**
 ```bash
-# Always source this first in any AutoDL session for this project
-source /root/autodl-tmp/frontend-design-dataset/autodl-run.sh
-# Sets PATH for bun + node, sets PLAYWRIGHT_BROWSERS_PATH, checks llama-server health
+pip install modelscope -q
+modelscope download \
+  --model Qwen/Qwen3-VL-8B-Instruct-GGUF \
+  --include '*Q4_K_M*' '*mmproj*' \
+  --local_dir /root/autodl-tmp/qwen3-vl-8b-gguf
+```
+
+**Serve command:**
+```bash
+/root/autodl-tmp/llama-mtp/llama-server \
+  -m /root/autodl-tmp/qwen3-vl-8b-gguf/Qwen3-VL-8B-Instruct-Q4_K_M.gguf \
+  --mmproj /root/autodl-tmp/qwen3-vl-8b-gguf/mmproj-Qwen3-VL-8B-Instruct-Q4_K_M.gguf \
+  -ngl 99 -c 32768 \
+  --host 0.0.0.0 --port 8080
 ```
 
 ### VPS (Japan — hostdzire)
 
-- Development machine — Claude Code runs here
-- Codex CLI installed at `/usr/bin/codex` (v0.118.0)
-- Codex auth: ChatGPT account OAuth (`~/.codex/auth.json`) — NOT API key based
-- If Codex auth fails: `codex logout && codex login --device-auth`
-- SSH tunnel to AutoDL for Continue.dev: `/etc/systemd/system/autodl-tunnel.service`
+- Development machine — Claude Code + Sonnet 4.6 runs here
+- Codex CLI at `/usr/bin/codex` (v0.118.0) — ChatGPT OAuth auth
+- If auth fails: `codex logout && codex login --device-auth`
+- Codex daily quota limit — if exhausted, switch to `claude -p` (same subprocess pattern)
+- `claude -p` works for all VPS generation tasks — used successfully for eval Stage B (95 batches, zero failures)
 
 **Key VPS Paths:**
 ```
 /root/tinkering/Local-LLMs/Local-LLM-Agent/
 ├── frontend-design-dataset/    ← THIS PROJECT
 │   ├── src/
-│   │   ├── pipeline.ts         Orchestrator — all 5 stages
-│   │   ├── generate.ts         Stage 1 — Qwen HTML generation
-│   │   ├── render.ts           Stage 2 — Playwright screenshots
-│   │   ├── critique.ts         Stage 3 — Codex design critique
-│   │   ├── improve.ts          Stage 3b — Codex improved HTML
-│   │   └── package-dataset.ts  Stage 4 — JSONL assembly
+│   │   ├── pipeline.ts                  Orchestrator — all stages
+│   │   ├── generate.ts                  Stage 1 — Qwen HTML generation + TEMPERATURE
+│   │   ├── render.ts                    Stage 2 — Playwright (domcontentloaded+3000ms)
+│   │   ├── critique.ts                  Stage 3 — Codex design critique
+│   │   ├── improve.ts                   Stage 3b — Codex improved HTML (scope-constrained)
+│   │   ├── package-dataset.ts           Stage 4 — 6-type JSONL assembly + stats
+│   │   ├── evaluate.ts                  Stage 5 — Two-stage eval (regex + claude -p)
+│   │   └── generate-conversations.ts    Stage 6 — Qualifying conversation traces
 │   ├── prompts/
-│   │   └── components.ts       COMPONENT_PROMPTS (expert/v1)
-│   │                           COMPONENT_PROMPTS_V2 (natural language)
+│   │   └── components.ts                COMPONENT_PROMPTS (v1) + COMPONENT_PROMPTS_V2 (100)
 │   ├── output/
-│   │   ├── component-000/      Per-component output dirs
-│   │   │   ├── component.html
-│   │   │   ├── metadata.json
-│   │   │   ├── screenshot-desktop.png
-│   │   │   ├── screenshot-mobile.png
-│   │   │   ├── critique.md
-│   │   │   └── improved.html
-│   │   ├── component-000-v2/   v2 test output (OUTPUT_SUFFIX=v2)
-│   │   ├── dataset.jsonl       Final training file
-│   │   └── dataset-stats.json  Record counts by type
+│   │   ├── component-000-run0/          Full run output (500 dirs)
+│   │   ├── component-099-run4/
+│   │   ├── dataset-run{0-4}.jsonl       Per-run datasets
+│   │   ├── dataset.jsonl                Concatenated component records (~2,835)
+│   │   ├── pre-scores.jsonl             Stage A eval results
+│   │   ├── scores.jsonl                 Final eval scores per component
+│   │   ├── eval-summary.json            Aggregate eval stats
+│   │   ├── dataset-clean.jsonl          Post-eval filtered (~2,835, 0 excluded)
+│   │   ├── qualifying-conversations.jsonl  254 conversation traces
+│   │   └── dataset-final.jsonl          ← FINE-TUNE INPUT (3,089 records)
 │   ├── scripts/
-│   │   ├── rsync-to-autodl.sh    Push code to AutoDL
-│   │   └── rsync-from-autodl.sh  Pull output from AutoDL
-│   ├── CLAUDE.md               Agent context file
-│   ├── PLAN.md                 Implementation plan
-│   └── autodl-run.sh           AutoDL environment setup
-└── pi-modular/                 PI Agent v1 (separate project)
+│   │   ├── rsync-to-autodl.sh
+│   │   ├── rsync-from-autodl.sh
+│   │   └── run-all-variants.sh          5-temperature full run (no set -e)
+│   ├── CLAUDE.md
+│   ├── PLAN.md
+│   ├── FRONTEND-DESIGN-MODEL-CARD.md
+│   └── autodl-run.sh
+└── pi-modular/                          PI Agent v1 (separate project)
 ```
 
 ### GitHub
-
 ```
 Repo: https://github.com/stefans71/frontend-design-dataset
 Branch: main
@@ -279,74 +364,38 @@ Branch: main
 
 ---
 
-## 6. Full Run Sequence
+## 6. Full Run Sequence (archived — dataset complete)
 
-### Standard Run (after AutoDL reboot)
+The 5-temperature full run is complete. This section preserved for reference if dataset regeneration is ever needed.
 
 ```bash
-# ── STEP 1: AutoDL startup ──────────────────────────────────────
-ssh -i /root/.ssh/id_ed25519 -p <PORT> root@connect.westc.seetacloud.com
-bash /root/autodl-tmp/start.sh
-# Wait for "Generation server ready"
-
-# ── STEP 2: Sync latest code to AutoDL (from VPS) ───────────────
-cd /root/tinkering/Local-LLMs/Local-LLM-Agent/frontend-design-dataset
-bash scripts/rsync-to-autodl.sh <PORT>
-
-# ── STEP 3: Run Stage 1 + 2 on AutoDL ───────────────────────────
-ssh -i /root/.ssh/id_ed25519 -p <PORT> root@connect.westc.seetacloud.com
-cd /root/autodl-tmp/frontend-design-dataset
+# AutoDL — generate + render all 5 variants
 source autodl-run.sh
 bun install --registry https://registry.npmmirror.com
-# For full run:
-TEST_MODE=false bun run generate
-TEST_MODE=false bun run render
-# For test run (3 components):
-TEST_MODE=true TEST_COUNT=3 bun run generate
-TEST_MODE=true TEST_COUNT=3 bun run render
+screen -dmS fullrun bash -c 'TEST_MODE=false bash scripts/run-all-variants.sh 2>&1 | tee /tmp/fullrun.log'
+tail -f /tmp/fullrun.log
 
-# ── STEP 4: Pull output to VPS ───────────────────────────────────
-# On VPS:
-bash scripts/rsync-from-autodl.sh <PORT>
+# VPS — critique + improve + package per suffix
+bash scripts/rsync-from-autodl.sh 25180
+screen -dmS vps-process bash -c '
+for SUFFIX in run0 run1 run2 run3 run4; do
+  OUTPUT_SUFFIX=$SUFFIX bun run critique &&
+  OUTPUT_SUFFIX=$SUFFIX bun run improve &&
+  DATASET_PATH=output/dataset-${SUFFIX}.jsonl OUTPUT_SUFFIX=$SUFFIX bun run package
+done 2>&1 | tee /tmp/vps-process.log'
 
-# ── STEP 5: Run Stage 3 + 3b + 4 on VPS ─────────────────────────
-TEST_MODE=false bun run critique
-TEST_MODE=false bun run improve
-bun run package
+# Concatenate
+cat output/dataset-run*.jsonl > output/dataset.jsonl
 
-# ── STEP 6: Push final dataset back to AutoDL (for fine-tuning) ──
-bash scripts/rsync-to-autodl.sh <PORT>
-```
+# Evaluate
+bun run evaluate
 
-### v2 A/B Test Run (5 components, pending)
+# Conversations
+bun run conversations
 
-```bash
-# Uses COMPONENT_PROMPTS_V2 (natural language prompts)
-# Output goes to component-000-v2/ etc (no v1 data touched)
-
-# AutoDL:
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run generate
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run render
-
-# VPS (after rsync):
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run critique
-TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run improve
-
-# Then compare v1 vs v2 visually for all 5 pairs
-```
-
-### Long Run Management (tmux for AutoDL)
-
-```bash
-# Start persistent session (survives SSH disconnect)
-tmux new-session -d -s generate -x 220 -y 50
-tmux send-keys -t generate "cd /root/autodl-tmp/frontend-design-dataset && source autodl-run.sh && TEST_MODE=false bun run generate 2>&1 | tee /tmp/generate.log" Enter
-
-# Monitor from VPS at any time
-ssh -i /root/.ssh/id_ed25519 -p <PORT> root@connect.westc.seetacloud.com "tail -10 /tmp/generate.log"
-
-# Reattach
-ssh ... then: tmux attach -t generate
+# Final merge
+cat output/dataset-clean.jsonl output/qualifying-conversations.jsonl > output/dataset-final.jsonl
+wc -l output/dataset-final.jsonl  # 3,089
 ```
 
 ---
@@ -355,226 +404,160 @@ ssh ... then: tmux attach -t generate
 
 ### Done ✅
 
-- [x] AutoDL environment: llama-server (Qwen3.6-27B MTP), Playwright Chromium, Bun — all working
-- [x] Pipeline: all 5 stages implemented and tested (generate, render, critique, improve, package)
-- [x] 20 components generated with all file types
-- [x] 100 JSONL training records across 5 record types
-- [x] resume support (skip-if-exists) in all stages
-- [x] OUTPUT_SUFFIX versioning for A/B testing
-- [x] v2 natural language prompts written (COMPONENT_PROMPTS_V2)
-- [x] improve.ts: original prompt passed as scope constraint
-- [x] CLAUDE.md and PLAN.md up to date
+- [x] AutoDL environment fully set up (llama-server, Playwright, Bun)
+- [x] All pipeline stages implemented (generate, render, critique, improve, package, evaluate, conversations)
+- [x] v2 A/B test VALIDATED — natural language prompts + scope constraint confirmed
+- [x] COMPONENT_PROMPTS_V2: 100 natural language prompts (~42% dark theme)
+- [x] TEMPERATURE env var + graceful HTML validation in generate.ts
+- [x] mobile_to_code as 6th record type
+- [x] run-all-variants.sh — 5-temperature orchestration
+- [x] Smoke test passed
+- [x] Full 500-component run complete (470 clean after OOM losses)
+- [x] Evaluation pass: 0 components excluded, 95% scoring 8-9/9
+- [x] Qualifying conversation traces: 254 records (59% ask, 41% immediate)
+- [x] **dataset-final.jsonl: 3,089 records COMPLETE**
+- [x] Baseline test confirmed fine-tune required (qualifying questions: 1/10)
 
-### Pending ⏳
+### Pending ⏳ — Fine-Tune Phase
 
-- [ ] **v2 A/B test** — waiting for AutoDL RTX 5090 availability
-  - Run 5 components with natural language prompts (COMPONENT_PROMPTS_V2)
-  - Output goes to `component-000-v2/` etc — v1 data untouched
-  - Confirm scope constraint in improve.ts keeps Codex focused on component type
+- [ ] **Pre-training smoke test on AutoDL**
+  - 10 steps, confirm loss drops by step 5
+  - Use correct 32×32 patch params (see Section 14)
+  - Kill any Ollama process before starting: `pkill -f ollama`
 
-- [ ] **Validate v2 results** — concrete acceptance criteria (not visual inspection)
+- [ ] **Full QLoRA fine-tune — Qwen3-VL-8B**
+  - SWIFT framework on AutoDL RTX 5090 (or H100 if available)
+  - See Section 14 for exact training parameters
+  - Input: `output/dataset-final.jsonl` (3,089 records)
 
-  ### v2 Acceptance Criteria — What "Better" Actually Means
+- [ ] **Export to GGUF + quantize**
+  - Q4_K_M (primary — 12GB GPU)
+  - Q3_K_M (tight 12GB — more KV cache)
 
-  "Better" is not subjective. Each of the 5 v2 components is evaluated against
-  5 measurable criteria. 4/5 components must pass all criteria to adopt v2 prompts.
+- [ ] **Post-fine-tune validation** — run 4-test protocol (Section 15)
+  - Target: qualifying questions 6+/10 (vs 1/10 baseline)
+  - Target: vision critique 7+/10 (vs 5/10 baseline)
 
-  | Criterion | How Measured | Pass Threshold |
-  |---|---|---|
-  | **Scope fidelity** | improved.html line count vs component type expected range | Navbar <400 lines, card <300 lines, full page <800 lines |
-  | **Prompt-to-output alignment** | Claude reads prompt + component.html, scores 1-3: 1=wrong component, 2=roughly correct, 3=matches intent | Score ≥ 2 on 4/5 components |
-  | **Training signal strength** | `improved.html line count ÷ component.html line count` | Ratio ≥ 1.4 (improved is 40%+ larger — meaningful changes were made) |
-  | **No external resources** | `grep -r "cdn\|https://" output/component-*-v2/*.html` | Zero hits across all output files |
-  | **Critique specificity** | critique.md word count + contains specific measurements | >300 words AND contains at least one px, rem, or % value |
+- [ ] **Test on Ollama** (RTX 3060 12GB target hardware)
 
-  **Scoring examples:**
+- [ ] **Release**
 
-  PASS — Scope fidelity:
-  ```
-  Prompt: "make me a navbar for TaskFlow SaaS"
-  improved.html: 280 lines — navbar with logo, links, mobile menu, hover states
-  → PASS (navbar, under 400 lines, stayed in scope)
-  ```
+### v2 Acceptance Criteria (completed — kept for reference)
 
-  FAIL — Scope fidelity:
-  ```
-  Prompt: "make me a navbar for TaskFlow SaaS"
-  improved.html: 1183 lines — full landing page with hero, features, dashboard
-  → FAIL (scope crept from component to full product)
-  ```
+Both fixes validated on 2026-05-20. v2 prompts adopted.
 
-  PASS — Prompt alignment:
-  ```
-  Prompt: "fun colorful contact page for my dog daycare Stay Fit"
-  component.html: colorful page with contact form, dog paw icons, friendly tone
-  → Score 3 (matches intent exactly)
-  ```
-
-  FAIL — Prompt alignment:
-  ```
-  Prompt: "fun colorful contact page for my dog daycare Stay Fit"
-  component.html: dark minimal SaaS pricing table
-  → Score 1 (completely wrong — Qwen ignored the natural language prompt)
-  ```
-
-  PASS — Training signal strength:
-  ```
-  component.html: 200 lines (Qwen's mediocre output)
-  improved.html: 380 lines (Codex's expert rewrite)
-  Ratio: 1.9 → PASS (strong training signal, significant improvement)
-  ```
-
-  FAIL — Training signal strength:
-  ```
-  component.html: 200 lines
-  improved.html: 215 lines (trivial changes — a few color tweaks)
-  Ratio: 1.07 → FAIL (weak signal, not worth training on)
-  ```
-
-  **How Claude runs this check (paste into session after v2 run):**
-  ```
-  Read CLAUDE.md. The v2 test is complete. For each of the 5 v2 components,
-  evaluate all 5 acceptance criteria from the model card Section 7.
-  Read the actual files — component.html, improved.html, critique.md, metadata.json.
-  Produce a results table with PASS/FAIL per criterion per component.
-  Final verdict: adopt v2 prompts if 4/5 components pass all criteria.
-  ```
-
-- [ ] **Decision: adopt v2 prompts** — based on acceptance criteria results above
-  - If 4/5 pass → write 80 more prompts in natural language style (total: 100)
-  - If fewer pass → identify which criterion failed, fix the specific issue, retest
-  - Update PLAN.md only after decision is confirmed by criteria
-
-- [ ] **Scale to 2,500 records**
-  - 100 prompts × 5 quality variants = 500 components
-  - × 5 record types = 2,500 JSONL records
-  - Estimated time: ~8-12 hours on AutoDL + VPS
-
-- [ ] **Qualifying conversation traces (200-400 records)**
-  - Generate using Codex on VPS
-  - Multi-turn: vague request → qualifying questions → user answers → full build
-  - Teaches the model WHEN to ask and WHAT to ask
-
-- [ ] **Full page build traces (200-400 records)**
-  - After qualifying conversation resolves to a full page request
-  - Complete HTML/CSS/JS with real interactions (no CDN constraint for this type)
-  - Smooth scrolling, hover states, CSS animations, Intersection Observer lazy loading
-
-- [ ] **Fine-tune Qwen3-VL-8B**
-  - SWIFT framework on AutoDL (or separate H100 instance)
-  - QLoRA NF4 + BF16 adapters, rank 32
-  - Training data: ~3,000-3,400 records combined
-
-- [ ] **Quantize and release**
-  - Export to GGUF
-  - Q4_K_M build (primary — 12GB GPU)
-  - Q3_K_M build (tight 12GB — more KV cache)
-  - Test on Ollama
+| Criterion | Result |
+|---|---|
+| Scope fidelity | ✅ component-003: 1182L → 452L |
+| Prompt alignment | ✅ All 5 scored 3/3 |
+| Training signal | ✅ 4/5 ratio ≥1.4 |
+| No external resources | ✅ All clean |
+| Critique specificity | ✅ 733-1041 words with measurements |
 
 ---
 
 ## 8. Design Decisions & Rationale
 
-### Why inline CSS (Tailwind CDN tested and not blocked, but inline CSS still preferred)
+### Why inline CSS (not Tailwind CDN)
 
-Tailwind CDN was tested on AutoDL westd China zone (2026-05-20) and confirmed to load successfully — `cdn.tailwindcss.com` is not blocked. The original `networkidle` timeout issue was fixed by switching render.ts to `domcontentloaded` + 3000ms buffer.
+Tailwind CDN confirmed NOT blocked on AutoDL westd (tested 2026-05-20). Original timeout was `networkidle` waiting for CDN connections — fixed by `domcontentloaded` + 3000ms.
 
-Inline CSS is still used because: (1) training data quality — the fine-tuned model should learn to write real CSS properties that work everywhere, not Tailwind utility classes that only work in Tailwind projects; (2) COMPONENT_PROMPTS_V2 explicitly instruct "Use only inline CSS" so the model follows the prompt regardless of the system prompt; (3) the fine-tuned model's target users run it offline — teaching it Tailwind vocabulary doesn't help users without Tailwind installed.
+Inline CSS still used because: the fine-tuned model should learn real CSS that works offline without Tailwind installed. COMPONENT_PROMPTS_V2 enforce it at the prompt level. Target home users run offline.
 
 ### Why Codex CLI not OpenAI REST API
 
-Codex CLI uses ChatGPT account auth (OAuth) — included in the ChatGPT Plus/Pro plan with no per-token cost beyond the subscription. REST API would incur per-token charges. For a dataset generation run of 2,500+ critique+improve calls this is significant.
+Codex CLI uses ChatGPT account OAuth — no per-token cost. REST API would incur significant charges for 2,500+ critique+improve calls. Note: Codex has daily quota limits — if exhausted, `claude -p` is a reliable substitute (proven in eval Stage B: 95 batches, zero failures).
 
 ### Why the original prompt is passed to improve.ts
 
-Without it, Codex infers scope from the screenshot. A sparse navbar with empty space below it gets "improved" into a complete SaaS landing page — because that's what Codex's training data says should go there. Passing the original prompt ("build a navbar") constrains the output to the correct scope.
+Without it, Codex infers scope from the screenshot and expands it. Component-003 (navbar prompt) became a 1,182-line SaaS landing page without the prompt constraint. With the prompt: 452 lines, correct scope, score improved 4→6.
 
 ### Why natural language prompts (v2)
 
-The fine-tuned model will be used at inference by non-designers typing natural requests. Training on expert Tailwind-class prompts creates a mismatch — the model learns to respond to expert input, not normal user input. Natural language prompts match real inference conditions.
+Training on expert Tailwind-class prompts creates inference mismatch — model learns expert input, not normal user input. v2 results: avg score 5.7→6.4, scope fidelity dramatically improved.
 
 ### Why 200-400 qualifying conversation traces
 
-Qwen3-VL-8B already knows how to ask questions — it's a capable base model. You're teaching it WHEN and WHAT to ask in the frontend design context, not a new capability. Behavioral nudges require far fewer examples than capability training. 200-400 high-quality multi-turn examples is sufficient to establish consistent qualifying behavior.
+Qwen3-VL-8B already knows how to ask questions — it's a behavioral nudge (when/what to ask), not a new capability. 200-400 examples is sufficient. Final dataset: 254 traces (150 ask, 104 immediate = 59/41 split).
 
 ### Why not two models
 
-A single fine-tuned model is the only practical choice for a home user product. Two models means two downloads, two GPU loads, routing logic, and complexity the user shouldn't see. Everything — qualifying questions, component generation, screenshot critique, full page builds — goes into one fine-tuned Qwen3-VL-8B.
+Single fine-tuned model is the only practical product for home users. Two models = two downloads, two GPU loads, routing logic the user shouldn't see.
+
+### Why temperature variants (5 runs)
+
+Training data diversity — same 100 prompts at 5 temperatures produces varied output styles. Quality gate: if run median < 5/10, skip that run. All 5 runs passed (scores 6-7/10 median across runs).
+
+### Why `claude -p` over Codex for future generation tasks
+
+Codex CLI has daily quota limits and inconsistent timeouts on long HTML generation. `claude -p` subprocess pattern is identical, uses Max subscription with no daily quota, and proved more reliable in eval Stage B. Recommend switching `generate-conversations.ts` to `claude -p` if regeneration is ever needed.
 
 ---
 
 ## 9. Prompt Design Principles (v2 Standard)
 
-All prompts in the training dataset must follow these rules:
+All prompts must follow these rules:
 
 **DO:**
 - Write as a real non-designer user would type
-- Include brand name and/or domain context ("my dog daycare called Stay Fit")
+- Include brand name / domain context ("my dog daycare called Stay Fit")
 - Include rough style direction ("fun and colorful", "clean and minimal", "dark theme")
 - Specify component type OR page type — not both
-- Include key content elements ("menu links: Services, Pricing, About, Contact")
+- Include key content elements
 
 **DON'T:**
 - Use Tailwind class names (`bg-blue-600`, `px-8 py-3`)
 - Specify exact pixel values or font weights
 - Include implementation details the user wouldn't know
-- Write prompts only an expert could write
 
-**Good example:**
+**Good:**
 ```
-"Make a top navigation bar for my project management SaaS called TaskFlow. 
-Logo on the left, nav links in the middle (Features, Pricing, Docs, Blog), 
-Sign In and a blue Get Started button on the right. Should work on mobile."
+"Make a top navigation bar for my SaaS called TaskFlow. Logo on the left, 
+nav links in the middle (Features, Pricing, Docs, Blog), Sign In and a 
+blue Get Started button on the right. Should work on mobile."
 ```
 
-**Bad example:**
+**Bad:**
 ```
-"Build a responsive navbar. bg-white border-b border-gray-200 w-full px-6 py-4 
-flex items-center justify-between. Left: blue square SVG + font-semibold text-gray-900 
-text-lg..."
+"Build a navbar. bg-white border-b border-gray-200 w-full px-6 py-4 
+flex items-center justify-between..."
 ```
 
 ---
 
 ## 10. What the Fine-Tuned Model Should Do
 
-When a home user runs this model locally via Ollama:
-
-**Scenario 1 — Vague request:**
+**Scenario 1 — Vague request (ask questions):**
 ```
 User: "build me a website for my dog daycare called Stay Fit"
 
 Model: "Happy to build this. Three quick questions:
-1. Is this mainly for people to find and contact you, or 
-   do they need to book appointments online?
+1. Is this mainly so people can find and contact you, or do they book online?
 2. One scrolling page or separate pages (Services, About, Contact)?
-3. Fun and playful vibe or clean and professional?"
+3. Fun and playful, or clean and professional?"
 
-User: "just contact info, one page, fun colors"
+User: "contact info, one page, fun colors"
 
-Model: "Perfect — building a single-page HTML site now..."
-[produces complete HTML/CSS/JS with smooth scroll, hover states, animations]
+Model: [produces complete HTML/CSS/JS with smooth scroll, hover states, animations]
 ```
 
-**Scenario 2 — Screenshot input:**
+**Scenario 2 — Screenshot input (critique + improve):**
 ```
-User: [uploads screenshot of their existing site]
-      "Can you improve this design?"
+User: [uploads screenshot] "Can you improve this design?"
 
-Model: "I can see several issues here:
-- The heading hierarchy is too flat — everything feels the same weight
-- 32px gap between sections is too tight — needs 64px minimum
-- The CTA button lacks contrast (3.2:1 vs WCAG AA 4.5:1 minimum)
+Model: "I can see several issues:
+- Heading hierarchy too flat — everything the same weight
+- 32px between sections too tight — needs 64px minimum
+- CTA button contrast 3.2:1, below WCAG AA (4.5:1 minimum)
 
 Here's the improved version..."
-[produces improved HTML/CSS]
 ```
 
-**Scenario 3 — Component request:**
+**Scenario 3 — Component request (build immediately):**
 ```
 User: "make me a pricing card with three tiers for my SaaS"
 
-Model: [no questions needed — scope is clear]
+Model: [no questions — scope is clear]
 [produces complete three-tier pricing card with all states]
 ```
 
@@ -582,24 +565,20 @@ Model: [no questions needed — scope is clear]
 
 ## 11. Next Session Startup
 
-For any new Claude session working on this project:
-
 ```
-1. Read CLAUDE.md in /root/tinkering/Local-LLMs/Local-LLM-Agent/frontend-design-dataset/
-2. Read PLAN.md in the same directory
-3. Check AutoDL web UI for current SSH port
-4. Run: bash scripts/rsync-to-autodl.sh <PORT> to sync latest code
-5. Follow the pending tasks list in Section 7 of this model card
+1. Read CLAUDE.md — start with ⚡ Continue From Here section
+2. Read PLAN.md — check Implementation Checklist
+3. Check AutoDL web UI for current SSH port (port changes on reboot)
+4. Do not restart any screen sessions without checking screen -ls first
 ```
 
-**If starting completely fresh on a new machine:**
+**Fresh machine setup:**
 ```bash
 git clone https://github.com/stefans71/frontend-design-dataset.git
 cd frontend-design-dataset
 bun install
 cp .env.example .env
-# Fill in .env — LLAMA_SERVER_URL, CODEX_MODEL
-# AutoDL setup: follow Section 5 Infrastructure
+# AutoDL setup: follow Section 5
 ```
 
 ---
@@ -609,288 +588,174 @@ cp .env.example .env
 | File | Location | Purpose |
 |---|---|---|
 | `CLAUDE.md` | project root | Agent context — read first every session |
-| `PLAN.md` | project root | Detailed implementation plan |
+| `PLAN.md` | project root | Implementation checklist |
 | `FRONTEND-DESIGN-MODEL-CARD.md` | project root | This file — project overview and handoff |
 | `autodl-run.sh` | project root | AutoDL env setup — source before every run |
 | `src/pipeline.ts` | src/ | Orchestrator — all stages with JST timestamps |
-| `src/generate.ts` | src/ | Stage 1 — Qwen HTML generation |
-| `src/render.ts` | src/ | Stage 2 — Playwright screenshots |
+| `src/generate.ts` | src/ | Stage 1 — Qwen HTML generation + TEMPERATURE |
+| `src/render.ts` | src/ | Stage 2 — Playwright (domcontentloaded+3000ms) |
 | `src/critique.ts` | src/ | Stage 3 — Codex design critique |
-| `src/improve.ts` | src/ | Stage 3b — Codex improved HTML |
-| `src/package-dataset.ts` | src/ | Stage 4 — JSONL assembly |
-| `prompts/components.ts` | prompts/ | v1 expert prompts + v2 natural language |
+| `src/improve.ts` | src/ | Stage 3b — Codex improved HTML (scope-constrained) |
+| `src/package-dataset.ts` | src/ | Stage 4 — 6-type JSONL assembly + stats |
+| `src/evaluate.ts` | src/ | Stage 5 — Two-stage eval (regex + claude -p LLM) |
+| `src/generate-conversations.ts` | src/ | Stage 6 — Qualifying conversation traces |
+| `prompts/components.ts` | prompts/ | COMPONENT_PROMPTS (v1) + COMPONENT_PROMPTS_V2 (100) |
 | `scripts/rsync-to-autodl.sh` | scripts/ | Push code/data to AutoDL |
 | `scripts/rsync-from-autodl.sh` | scripts/ | Pull output from AutoDL |
-| `output/dataset.jsonl` | output/ | Final training file |
-| `output/dataset-stats.json` | output/ | Record counts by type |
-| `start.sh` | AutoDL `/root/autodl-tmp/` | Start both llama-server instances |
+| `scripts/run-all-variants.sh` | scripts/ | 5-temperature full run orchestration |
+| `output/dataset-final.jsonl` | output/ | ← FINE-TUNE INPUT — 3,089 records |
+| `output/dataset-clean.jsonl` | output/ | Post-eval component records (2,835) |
+| `output/qualifying-conversations.jsonl` | output/ | 254 conversation traces |
+| `output/scores.jsonl` | output/ | Per-component eval scores |
+| `output/eval-summary.json` | output/ | Aggregate eval stats |
+| `output/dataset-run{N}.jsonl` | output/ | Per-temperature-run datasets |
+| `start.sh` | AutoDL `/root/autodl-tmp/` | Starts both llama-server instances |
 | `setup-pi.sh` | AutoDL `/root/autodl-tmp/` | PI Agent setup (separate project) |
-| `AUTODL-SETUP.md` | pi-modular repo | Full AutoDL environment documentation |
+
 ---
 
 ## 13. Second Training Dataset — Qualifying Conversation Traces
 
-This is a separate dataset generated after the main component dataset. It teaches the model
-a distinct behavior: **when to ask follow-up questions and what to ask**.
+### Purpose
 
-Without this dataset the fine-tuned model will generate immediately on every prompt regardless
-of vagueness — it has no examples showing it should pause and clarify first.
+Teaches the model when to ask follow-up questions vs build immediately. Without this dataset the fine-tuned model builds immediately on every prompt regardless of vagueness — the baseline test confirmed this (1/10 on qualifying questions).
 
----
+### The Decision Boundary
 
-### Why It's a Separate Dataset
+| Prompt type | Correct behavior |
+|---|---|
+| Component request ("make me a button") | Build immediately |
+| Partially specified ("dark pricing card, 3 tiers") | Build immediately |
+| Full page/site/app, vague ("build me a website") | Ask 2-3 questions |
+| Full page, specified ("one-page dark portfolio, hero + grid + contact") | Build immediately |
+| Screenshot input | Critique/improve immediately |
 
-The component dataset (6 record types, ~3,000 records) teaches:
-- Design quality — what good UI looks like vs bad
-- Visual reasoning — screenshot → critique → improvement
-- Code generation — prompt → production HTML/CSS
+Training must show BOTH sides — ask AND immediate. Final split: 59% ask / 41% immediate.
 
-It does NOT teach conversation flow. Every record is single-turn:
-```
-[input] → [output]
-```
+### Questions the Model Should Ask (max 2-3)
 
-Qualifying conversation traces are multi-turn:
-```
-[user] → [model asks] → [user answers] → [model builds]
-```
+1. **Purpose** — what does it need to do? (find/contact vs book/buy/sign up)
+2. **Scope** — one page or multiple? Component or full page?
+3. **Style** — only if not already stated (professional vs playful, dark vs light)
 
-These require a different record format and different generation approach.
+Never ask about tech stack — model decides based on answers.
 
----
+### Generation Notes
 
-### The Decision Boundary the Model Must Learn
-
-The model needs to internalize one core rule:
-
-| Prompt type | Correct behavior | Example |
-|---|---|---|
-| Component request | Build immediately — scope is clear | "make me a login button" |
-| Partially specified | Build immediately — enough detail given | "dark pricing card with 3 tiers for my SaaS" |
-| Full page/site/app, vague | Ask 2-3 questions first | "build me a website for my bakery" |
-| Full page/site/app, specified | Build immediately | "one-page dark portfolio for a photographer, hero + work grid + contact" |
-| Screenshot input | Critique/improve immediately — visual is the spec | [uploads screenshot] "improve this" |
-
-Training examples must show BOTH sides — cases where the model asks AND cases where it builds
-immediately. Otherwise the model learns to always ask, which is equally wrong.
+- Generated via Codex CLI with persona + domain injection per batch
+- 5 conversations per batch (not 10 — reduces timeout risk)
+- 480s timeout (content-heavy domains like restaurant generate long HTML)
+- If Codex quota exhausted: switch to `claude -p` — identical subprocess pattern, no daily quota
+- Diversity via: 5 personas × 14 domains = 70 combinations, plus transition style variation
 
 ---
 
-### Record Format
+## 14. Fine-Tune Configuration — Qwen3-VL-8B QLoRA
 
-Multi-turn ShareGPT format — different from the single-turn component records:
+### CRITICAL: Qwen3-VL Patch Size
 
-```jsonl
-{
-  "id": "conv-042_bakery_website",
-  "type": "qualifying_conversation",
-  "messages": [
-    {
-      "role": "user",
-      "content": "build me a website for my bakery called Sunrise Breads"
-    },
-    {
-      "role": "assistant",
-      "content": "Happy to build this. Three quick questions so I get it right:\n\n1. **Purpose** — mainly for people to find you and call/visit, or do they need to order online?\n2. **Pages** — one scrolling page, or separate pages (Menu, About, Contact)?\n3. **Style** — warm and rustic, or clean and modern?"
-    },
-    {
-      "role": "user",
-      "content": "find us and visit, one page, warm and rustic"
-    },
-    {
-      "role": "assistant",
-      "content": "Perfect — a warm single-page HTML site with rustic character. Building it now...\n\n```html\n<!DOCTYPE html>\n<html lang=\"en\">\n...\n</html>\n```"
-    }
-  ]
-}
-```
+Qwen3-VL uses **32×32 pixel patches**, NOT 28×28 like Qwen2.5-VL. Copying a Qwen2.5-VL config silently mis-sizes images and causes OOM on 1200+ token images.
 
-And the counter-example (no questions needed):
-
-```jsonl
-{
-  "id": "conv-043_button_immediate",
-  "type": "qualifying_conversation",
-  "messages": [
-    {
-      "role": "user",
-      "content": "make me a primary action button with a loading state"
-    },
-    {
-      "role": "assistant",
-      "content": "Here's a button component with default, loading, and disabled states:\n\n```html\n...\n```"
-    }
-  ]
-}
-```
-
----
-
-### What Questions the Model Should Ask
-
-When a qualifying question turn IS appropriate, the model asks exactly **2-3 questions**, never more.
-The questions follow a consistent priority order:
-
-1. **Purpose** — what does the user actually need it to do?
-   - "Is this mainly for people to find you, or do they need to do something (book, buy, sign up)?"
-
-2. **Scope** — how much content?
-   - "One scrolling page, or separate pages?"
-   - "A single component, or a full page?"
-
-3. **Style** — only if not already stated
-   - "What vibe — professional and minimal, or bold and expressive?"
-   - Skip this if the user already mentioned colors or mood
-
-The model should NEVER ask about tech stack — it decides that based on the answers:
-- Contact/info site → plain HTML/CSS/JS
-- Booking/interactive → note React would be better but still deliver HTML
-- Component request → always HTML/CSS
-
----
-
-### Generation Approach
-
-Generated on VPS using Codex CLI. Two passes needed:
-
-**Pass 1 — Vague requests (should ask questions):**
-```bash
-codex exec -m gpt-5.4 \
-  --dangerously-bypass-approvals-and-sandbox \
-  --ephemeral \
-  "Generate 10 multi-turn frontend design conversations in JSONL format.
-
-Each conversation MUST follow this exact pattern:
-1. User gives a vague website/app/page request (not a component)
-2. Assistant asks exactly 2-3 focused qualifying questions
-3. User answers briefly (1 sentence)
-4. Assistant confirms the approach in one sentence, then outputs complete HTML/CSS/JS
-
-Vary domains: restaurant, fitness studio, SaaS, personal portfolio, nonprofit,
-local service business, ecommerce, event page.
-Vary vagueness: some give brand name only, some give a bit more.
-The HTML output must be complete, self-contained, with inline CSS only.
-Output only valid JSONL — one JSON object per line, no markdown, no preamble." \
-  -o /tmp/conv-batch.txt
-
-cat /tmp/conv-batch.txt >> output/qualifying-conversations.jsonl
-```
-
-**Pass 2 — Clear requests (should NOT ask questions):**
-```bash
-codex exec -m gpt-5.4 \
-  --dangerously-bypass-approvals-and-sandbox \
-  --ephemeral \
-  "Generate 10 single-turn frontend design conversations in JSONL format.
-
-Each conversation:
-1. User gives a SPECIFIC component or well-described page request
-   (enough detail that no clarification is needed)
-2. Assistant builds immediately — NO questions asked
-
-Examples of specific enough requests:
-- 'make me a dark login form with email, password, and forgot password link'
-- 'three-tier pricing card for a SaaS, highlight the middle tier'
-- 'mobile bottom nav with 5 tabs for a fitness app'
-
-Vary: buttons, cards, forms, navbars, modals, data tables, marketing sections.
-HTML output complete, self-contained, inline CSS only.
-Output only valid JSONL — one JSON object per line." \
-  -o /tmp/conv-batch-immediate.txt
-
-cat /tmp/conv-batch-immediate.txt >> output/qualifying-conversations.jsonl
-```
-
-Run Pass 1: 15-20 times = 150-200 vague examples
-Run Pass 2: 10-15 times = 100-150 immediate examples
-**Total: 250-350 records — roughly 60% ask/40% immediate**
-
----
-
-### Integration With Main Dataset
-
-The qualifying conversation records are packaged separately then merged:
+### Required Parameters
 
 ```bash
-# After generating all conversation traces:
-wc -l output/qualifying-conversations.jsonl   # expect 250-350
-
-# Validate format (every line must be valid JSON with 'messages' array)
-python3 -c "
-import json, sys
-errors = 0
-for i, line in enumerate(open('output/qualifying-conversations.jsonl')):
-    try:
-        d = json.loads(line)
-        assert 'messages' in d
-        assert len(d['messages']) >= 2
-    except Exception as e:
-        print(f'Line {i}: {e}')
-        errors += 1
-print(f'Valid: {i+1-errors}/{i+1}')
-"
-
-# Merge with main component dataset for fine-tuning
-cat output/dataset.jsonl output/qualifying-conversations.jsonl > output/dataset-final.jsonl
-wc -l output/dataset-final.jsonl   # expect ~3,250-3,350
+swift sft \
+  --model Qwen/Qwen3-VL-8B-Instruct \
+  --tuner_type lora \
+  --lora_rank 32 \
+  --dataset output/dataset-final.jsonl \
+  --num_train_epochs 3 \
+  --image_min_pixels $((256 * 32 * 32)) \
+  --image_max_pixels $((1280 * 32 * 32)) \
+  --tune_mm_vision False \
+  --gradient_checkpointing True \
+  --output_dir ./output-finetune
 ```
 
----
+Environment variable required:
+```bash
+export PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'
+```
 
-### Quality Check for Conversation Traces
+Config:
+```python
+load_in_4bit = True   # QLoRA — safe for Qwen3-VL (NOT safe for Qwen3.5)
+```
 
-Before merging, verify the traces have the right balance and structure:
+### Pre-training Smoke Test (always run first)
 
 ```bash
-# Count ask vs immediate records
-python3 -c "
-import json
-ask, immediate = 0, 0
-for line in open('output/qualifying-conversations.jsonl'):
-    d = json.loads(line)
-    turns = len(d['messages'])
-    if turns >= 4:   # user → questions → answer → build
-        ask += 1
-    else:            # user → build immediately
-        immediate += 1
-print(f'Ask questions: {ask} | Build immediately: {immediate}')
-print(f'Ratio: {ask/(ask+immediate)*100:.0f}% ask')
-# Target: 55-65% ask, 35-45% immediate
-"
-
-# Spot check: read 5 random ask-type traces
-python3 -c "
-import json, random
-traces = [json.loads(l) for l in open('output/qualifying-conversations.jsonl')]
-ask_traces = [t for t in traces if len(t['messages']) >= 4]
-for t in random.sample(ask_traces, min(5, len(ask_traces))):
-    print('USER:', t['messages'][0]['content'][:80])
-    print('MODEL:', t['messages'][1]['content'][:120])
-    print('---')
-"
+# 10 steps only — confirm loss drops by step 5
+swift sft [above params] --max_steps 10
+# Check tensorboard or loss output — should decrease from step 1→5
+# If loss is flat or spiking → config problem, fix before full run
 ```
 
-**Acceptance criteria for conversation traces:**
-- ≥ 250 total records
-- 55-65% are ask-type (4+ turns), 35-45% are immediate (2 turns)
-- No ask-type trace asks more than 3 questions
-- No immediate-type trace asks any questions
-- All records contain complete HTML output in the final assistant turn
-- HTML is self-contained (no external CDN)
+### Before Starting
+
+```bash
+pkill -f ollama   # Kill any Ollama process — holds VRAM and blocks training
+nvidia-smi        # Confirm GPU free
+```
 
 ---
 
-### Why This Amount Is Sufficient
+## 15. Post-Fine-Tune Validation Protocol
 
-Qwen3-VL-8B is a capable base model that already knows how to ask questions and how to build HTML.
-The fine-tune is teaching it **context-specific behavior**, not new capabilities:
+Run all 4 tests after fine-tuning before releasing. Compare against baseline.
 
-- When to ask → learned from the ask-type examples showing the decision boundary
-- What to ask → learned from the specific question patterns in 150-200 examples
-- When NOT to ask → learned from the immediate examples (equally important)
+### Test A — Vision critique quality
+Upload a 4/10 component screenshot. Ask for design critique.
+- **PASS:** Mentions specific measurements, hex/color contrast, named design principles, scores component
+- **FAIL:** Generic feedback only
+- **Target:** 7+/10 (baseline: 5/10)
 
-Research benchmark: models learn simple behavioral rules from 200-500 high-quality examples.
-This is far simpler than capability training — it's a routing decision plus a question template.
+### Test B — Qualifying questions (10 vague prompts)
+Run all 10 prompts, count how many trigger qualifying questions vs immediate build.
+- **PASS:** Asks questions on ≥6/10
+- **FAIL:** <6/10
+- **Target:** 8+/10 (baseline: 1/10)
 
-250-350 examples across both classes is sufficient. More is not necessarily better —
-too many ask-type examples would bias the model toward always asking even when unnecessary.
+**10 test prompts:**
+1. "build me a website for my dog daycare called Stay Fit"
+2. "make me an app for my restaurant"
+3. "I need a landing page for my startup"
+4. "build something for my photography business"
+5. "create a site for my yoga studio"
+6. "I want a web presence for my law firm"
+7. "make me a dashboard"
+8. "build a portfolio for me"
+9. "I need an online store"
+10. "create something for my fitness coaching business"
+
+### Test C — System prompt length tax
+Measure tokens in system prompt needed for correct behavior.
+- **PASS:** ≤200 tokens achieves correct behavior (baked into weights)
+- **FAIL:** >500 tokens needed (eats KV cache on 12GB GPU)
+- **Target:** Near-zero system prompt (baseline: untested, RLHF overrides any prompt)
+
+### Test D — Markdown chatter
+Ask for a component 3 times. Count non-code tokens per response.
+- **PASS:** Clean HTML output, <20 wrapper tokens
+- **FAIL:** Consistent preamble + markdown fences + explanation text
+- **Target:** Minimal chatter (baseline: typical LLM verbosity)
+
+### Fine-tune passed if:
+- Test A: 7+/10
+- Test B: ≥6/10 vague prompts trigger questions
+- Test C: ≤200 token system prompt sufficient
+- Test D: Clean output, minimal chatter
+
+---
+
+## 16. Section Notes (from Gemini review, 2026-05-20)
+
+Items flagged for future dataset regeneration or model card accuracy:
+
+1. **Visual score metric** — Line count ratio (≥1.4) was replaced with regex quality check (hex colors + measurements). The eval rubric in Section 7 reflects the final approach.
+
+2. **"Inline CSS" wording** — Prompts say "inline CSS" meaning a `<style>` block in `<head>`, NOT `style=""` attributes on elements. The `<style>` block approach preserves `:hover`, `@media`, and CSS transitions. Never revert to inline style attributes.
+
+3. **Screenshot resolution for inference** — Documented in Section 2. Users on 12GB GPUs should resize screenshots to max 1024×1024 before uploading to avoid vision encoder OOM.
+
+4. **Conversation trace diversity** — Batches of 5 (not 10) with persona + domain injection prevents diversity collapse. If regenerating, maintain this batch size and inject variation per call.

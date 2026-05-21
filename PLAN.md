@@ -2,11 +2,9 @@
 
 ## Status
 
-Full 500-component run IN PROGRESS on AutoDL westd (2026-05-20).
-Run0+run1 generate+render complete. Run2 partial (56/100). Run3 in progress. Run4 queued.
-VPS processing critique+improve for run0+run1 in parallel.
-
-See CLAUDE.md `## Current Run Status` table for live state.
+**DATASET COMPLETE — 2026-05-21 JST**
+3,089 records in `output/dataset-final.jsonl`. Fine-tune phase next.
+All data pipeline steps complete. See checklist below.
 
 ---
 
@@ -64,7 +62,7 @@ Two exported arrays:
 
 ---
 
-## Stage 1 — generate.ts
+## Stage 1 — generate.ts ✅ COMPLETE
 
 ### Env vars
 - `LLAMA_SERVER_URL` — llama-server base URL (default: http://localhost:11434)
@@ -87,11 +85,7 @@ Two exported arrays:
 
 ---
 
-## Stage 2 — render.ts
-
-### Env vars
-- `OUTPUT_SUFFIX` — filters component dirs by suffix
-- `PLAYWRIGHT_BROWSERS_PATH` — must be set (autodl-run.sh handles this)
+## Stage 2 — render.ts ✅ COMPLETE
 
 ### Function: `renderAll(): Promise<void>`
 - Desktop screenshot: 1280×900, fullPage
@@ -103,11 +97,7 @@ Two exported arrays:
 
 ---
 
-## Stage 3 — critique.ts
-
-### Env vars
-- `OUTPUT_SUFFIX` — filters dirs
-- `CODEX_MODEL` — model string (default: gpt-5.4)
+## Stage 3 — critique.ts ✅ COMPLETE
 
 ### Function: `critiqueAll(): Promise<void>`
 - **CRITICAL:** prompt must come BEFORE `-i` flag in Codex CLI command
@@ -115,70 +105,53 @@ Two exported arrays:
 - Sequential only — no parallelism
 - Timeout: 120s per component
 - Skip if `critique.md` exists (resume support)
+- Fallback: `claude -p` if Codex daily quota exhausted (identical subprocess pattern)
 
 ---
 
-## Stage 3b — improve.ts
+## Stage 3b — improve.ts ✅ COMPLETE
 
 ### Function: `improveComponent(id, originalPrompt?): Promise<void>`
 - Reads `screenshot-desktop.png` + `component.html` + `critique.md`
-- Passes `originalPrompt` as scope constraint in Codex prompt:
-  > "Original user intent: [prompt]. Improve the component staying within this scope."
-- Falls back to generic scope instruction if no prompt provided
-- Timeout: 300s (HTML output 3–5× larger than critique)
+- Passes `originalPrompt` as scope constraint in Codex prompt
+- Timeout: 480s (increased from 300s — content-heavy components need more time)
 - Skip if `improved.html` exists (resume support)
-
-### Function: `improveAll(testMode, testCount): Promise<void>`
-- Reads `OUTPUT_SUFFIX` from env, filters dirs
-- Reads `metadata.json` per component → passes prompt to `improveComponent`
 
 ---
 
-## Stage 4 — package-dataset.ts
+## Stage 4 — package-dataset.ts ✅ COMPLETE
 
-### Six record types per component *(mobile_to_code added 2026-05-20)*
+### Six record types per component
 
 1. **`prompt_to_html`** — text prompt → original HTML
 2. **`screenshot_to_critique`** — desktop PNG → critique text
 3. **`screenshot_to_code`** — desktop PNG → original HTML
-4. **`mobile_to_code`** — mobile PNG → original HTML *(free extra record, same HTML target)*
+4. **`mobile_to_code`** — mobile PNG → original HTML
 5. **`screenshot_html_to_critique`** — desktop PNG + HTML → critique
 6. **`screenshot_code_critique_to_improved`** — desktop PNG + original prompt + HTML + critique → improved HTML **(most valuable)**
 
 Record type 6 includes original prompt so the model learns scope fidelity alongside design improvement.
 
-### Function: `packageAll(): void`
-- Reads `OUTPUT_SUFFIX` from env, filters dirs
-- Writes to `DATASET_PATH` env var (default: `output/dataset.jsonl`)
-- Writes `dataset-stats.json` alongside JSONL
-
-### Expected counts (full run)
-- 500 components × 6 record types = **~3,000 JSONL records**
+**Actual counts:** ~2,835 records across 5 runs (some lost to Chromium OOM render failures)
 
 ---
 
-## Temperature Variants — run-all-variants.sh
+## Temperature Variants — run-all-variants.sh ✅ COMPLETE
 
-Five runs with different temperatures for training data diversity:
+| Run | Temperature | Components | Status |
+|-----|-------------|-----------|--------|
+| run0 | 0.5 | 97/100 | ✅ |
+| run1 | 0.7 | 93/100 | ✅ |
+| run2 | 0.85 | 93/100 | ✅ |
+| run3 | 1.0 | 89/100 | ✅ |
+| run4 | 1.1 | 98/100 | ✅ |
 
-| Run  | Temperature | Expected output style |
-|------|-------------|----------------------|
-| run0 | 0.5 | Conservative, precise, fewer hallucinations |
-| run1 | 0.7 | Balanced (default) |
-| run2 | 0.85 | Slightly more creative |
-| run3 | 1.0 | More varied, occasional quirks |
-| run4 | 1.1 | Most creative, monitor for malformed output |
-
-**Quality monitoring:** After each run, check median critique score.
-- Target range: 5–7/10
-- If run4 median < 5 → skip for training (too noisy)
-- If run0 median > 7 → consider raising minimum temperature
-
-**run-all-variants.sh** — do NOT use `set -e`. One crash should log and continue, not kill the job.
+All runs scored median 6-7/10 — all 5 kept in training set.
+**run-all-variants.sh** — does NOT use `set -e`. One crash logs and continues.
 
 ---
 
-## Output Directory Structure
+## Output Directory Structure (final)
 
 ```
 output/
@@ -189,14 +162,20 @@ output/
 │   ├── screenshot-mobile.png
 │   ├── critique.md
 │   └── improved.html
-├── component-000-run1/        ← run1, temp=0.7
 ├── ...
 ├── component-099-run4/        ← run4, temp=1.1
-├── dataset-run0.jsonl         ← per-run JSONL
-├── dataset-run1.jsonl
-├── ...
-├── dataset.jsonl              ← final concatenated (all 5 runs)
-└── dataset-stats.json
+├── dataset-run0.jsonl         ← per-run JSONL (573 records)
+├── dataset-run1.jsonl         ← 558 records
+├── dataset-run2.jsonl         ← 573 records
+├── dataset-run3.jsonl         ← 534 records
+├── dataset-run4.jsonl         ← 598 records
+├── dataset.jsonl              ← concatenated ~2,836 records
+├── pre-scores.jsonl           ← Stage A eval results
+├── scores.jsonl               ← final per-component scores
+├── eval-summary.json          ← aggregate eval stats
+├── dataset-clean.jsonl        ← post-eval (2,835 records, 0 excluded)
+├── qualifying-conversations.jsonl  ← 254 conversation traces
+└── dataset-final.jsonl        ← ← ← FINE-TUNE INPUT (3,089 records)
 ```
 
 ---
@@ -220,80 +199,200 @@ output/
 15. ✅ **Full 500-component run complete** — all 5 runs done
 16. ✅ Resume run2 (93/100 final), re-render pass complete
 17. ✅ Re-render pass all 5 runs (Chromium OOM failures recovered)
-18. ✅ VPS critique+improve+package all 5 runs — run4 complete 2026-05-21 ~07:30 UTC
-19. ✅ Concatenate: `output/dataset.jsonl` — **2,836 records** (573+558+573+534+598)
-20.5. ✅ Two-stage eval pass complete — 465/500 clean, 0 excluded by score, dataset-clean.jsonl = 2,835 records
-     Score dist: 9→303, 8→141, 7→17, 6→4 | 10 unscored (stage_b_failed, included) | 25 missing improved.html
-20. ⏳ Generate 200-300 qualifying conversation traces on VPS (Codex CLI)
-21. ⏳ Pre-training smoke test (10 steps, confirm loss dropping by step 5)
-22. ⏳ Fine-tune Qwen3-VL-8B on combined dataset (~3,200-3,400 records, QLoRA)
-23. ⏳ Quantize to Q4_K_M + Q3_K_M GGUF
-24. ⏳ Post-training baseline retest (target: critique 7+/10, questions 8+/10)
-22. ⏳ Quantize to Q4_K_M + Q3_K_M GGUF
-23. ⏳ Test on Ollama (RTX 3060 12GB target)
+18. ✅ VPS critique+improve+package all 5 runs — complete 2026-05-21
+19. ✅ Concatenate: `output/dataset.jsonl` — **2,836 records**
+20. ✅ **Step 20.5 — Eval pass complete** — 0 excluded, 95% scoring 8-9/9, `dataset-clean.jsonl` = 2,835
+21. ✅ **Step 20 — Qualifying conversation traces** — 254 records (150 ask / 104 immediate, 59% ask ratio)
+22. ✅ **Final merge** — `output/dataset-final.jsonl` = **3,089 records** ← fine-tune input
+23. ✅ Baseline test confirmed fine-tune required (qualifying questions: 1/10)
+24. ⏳ **Verify V2 fine-tune instance health** (port 25615)
+25. ⏳ **Install SWIFT on V2 instance**
+26. ⏳ **Rsync dataset-final.jsonl to V2 instance**
+27. ⏳ **Pre-training smoke test** (10 steps, loss drops by step 5)
+28. ⏳ **Full QLoRA fine-tune** — see Step 21 below
+29. ⏳ **Export GGUF + quantize** — see Step 22 below
+30. ⏳ **Post-fine-tune validation** — 4-test protocol (see CLAUDE.md)
+31. ⏳ **Test on Ollama** (RTX 3060 12GB target hardware)
+32. ⏳ **Release**
 
 ---
 
-## Step 20 — Qualifying Conversation Traces ✅ COMPLETE (254 records, 59% ask ratio)
+## Step 20 — Qualifying Conversation Traces ✅ COMPLETE
 
-    see also ## 13. Second Training Dataset — Qualifying Conversation Traces in:
-      /root/tinkering/Local-LLMs/Local-LLM-Agent/frontend-design-dataset/FRONTEND-DESIGN-MODEL-CARD.md
+**Result:** 254 records (150 ask / 104 immediate = 59% ask ratio — within 55-65% target)
 
 **Files:**
 - Script: `src/generate-conversations.ts`
 - Output: `output/qualifying-conversations.jsonl`
 - Final merged: `output/dataset-final.jsonl` (dataset-clean.jsonl + qualifying-conversations.jsonl)
 
-**Run (in screen session on VPS):**
+**Generation notes (for if regeneration ever needed):**
+- Two passes: Pass 1 (vague → questions), Pass 2 (clear → immediate build)
+- 5 conversations per batch (not 10 — reduces timeout risk)
+- 480s Codex timeout — content-heavy domains generate long HTML
+- Persona × domain injection per batch for diversity (5 personas × 14 domains)
+- Early exit guard at 250 total records
+- If Codex daily quota exhausted: switch to `claude -p` (identical pattern, no quota)
+- Spot-check before merging: ask/immediate ratio, CDN links, malformed records
+
+**Trigger logic model learns:**
+- Ask questions when: full page/site/app requested with no detail
+- Don't ask when: component request, or user already specified enough
+
+---
+
+## Step 20.5 — Evaluation Pass ✅ COMPLETE
+
+**Results:** 475 passed Stage A, 0 excluded by score, `dataset-clean.jsonl` = 2,835 records
+Score distribution: 9→303 (65%), 8→141 (30%), 7→17 (4%), 6→4 (1%), <6→0
+
+### Files
+- Script: `src/evaluate.ts`
+- Input: `output/component-*-run*/improved.html` (506 files)
+- Input: `output/component-*-run*/metadata.json` (prompt source)
+- Input: `output/dataset.jsonl` (2,836 records to filter)
+- Output: `output/pre-scores.jsonl` (Stage A results)
+- Output: `output/scores.jsonl` (final scores per component)
+- Output: `output/eval-summary.json` (aggregate stats)
+- Output: `output/dataset-clean.jsonl` ← filtered dataset (2,835 records)
+
+### Scoring rubric (max 9 points)
+
+**Stage A — Bun regex (visual score, 0-3):**
+- Color regex: `/(#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\(|var\(--)/ig`
+- Measurement regex: `/\d+(px|rem|em|vh|vw|%)/i`
+- Hard gate: fail if `https://` in file (except w3.org/placeholder.com) OR file <500 chars
+
+**Stage B — `claude -p` LLM scoring (5 per batch):**
+- ALIGNMENT (0-3): does HTML match requested component type?
+- INTERACTIVITY (0-3): context-aware — interactive vs display types
+- Exclusion threshold: total < 6/9
+
+---
+
+## Step 21 — Fine-Tune Qwen3-VL-8B ⏳
+
+**Instance:** frontend-dataset-clone-V2
+**SSH:** `ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com`
+**Input:** `output/dataset-final.jsonl` (3,089 records)
+
+Pre-conditions:
+- dataset-final.jsonl complete ✅ (3,089 records)
+- Baseline confirmed fine-tune needed ✅ (Test 2: 1/10)
+- V2 instance provisioned ✅ (port 25615, CUDA 13.2, 200GB disk)
+
+### SWIFT Install on V2
+
 ```bash
-screen -dmS conversations bash -c 'bun run conversations 2>&1 | tee /tmp/conversations.log'
-tail -f /tmp/conversations.log
+ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com
+pip install ms-swift -U
+# If pip is slow on China network:
+pip install ms-swift --index-url https://pypi.tuna.tsinghua.edu.cn/simple
+swift --version   # confirm install
 ```
 
-**Step 20a — Spot-check before merging (run all 4, report full output):**
+### Pre-run checklist
+
 ```bash
-# 1. Show 3 random ask-type records (4+ turns)
-python3 -c "
-import json, random
-lines = [l for l in open('output/qualifying-conversations.jsonl') if l.strip()]
-records = []
-for l in lines:
-    try:
-        d = json.loads(l)
-        if len(d.get('messages', [])) >= 4:
-            records.append(d)
-    except: pass
-sample = random.sample(records, min(3, len(records)))
-for r in sample:
-    print('TYPE:', r.get('type'))
-    print('DOMAIN:', r.get('domain', 'unknown'))
-    print('TURN 1 (user):', r['messages'][0]['content'][:100])
-    print('TURN 2 (assistant questions):', r['messages'][1]['content'][:200])
-    print('TURN 3 (user answer):', r['messages'][2]['content'][:100])
-    print('TURN 4 (assistant builds):', r['messages'][3]['content'][:150])
-    print('---')
-"
+pkill -f ollama          # free VRAM (mmproj holds 1.08GB idle)
+nvidia-smi               # confirm GPU free
+export PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'
+```
 
-# 2. Show 2 random immediate-type records (2 turns)
-python3 -c "
-import json, random
-lines = [l for l in open('output/qualifying-conversations.jsonl') if l.strip()]
-records = []
-for l in lines:
-    try:
-        d = json.loads(l)
-        if len(d.get('messages', [])) == 2:
-            records.append(d)
-    except: pass
-sample = random.sample(records, min(2, len(records)))
-for r in sample:
-    print('TYPE:', r.get('type'))
-    print('TURN 1 (user):', r['messages'][0]['content'][:100])
-    print('TURN 2 (assistant):', r['messages'][1]['content'][:200])
-    print('---')
-"
+### CRITICAL — 32×32 patch size
 
-# 3. Check ask/immediate ratio (target 55-65% ask)
+Qwen3-VL uses **32×32 pixel patches**, NOT 28×28 like Qwen2.5-VL.
+Wrong value = silent image mis-sizing → OOM on 1200+ token images.
+
+### Smoke test (always run first)
+
+```bash
+PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True' \
+swift sft \
+  --model Qwen/Qwen3-VL-8B-Instruct \
+  --tuner_type lora \
+  --lora_rank 32 \
+  --dataset /root/autodl-tmp/frontend-design-dataset/output/dataset-final.jsonl \
+  --num_train_epochs 1 \
+  --max_steps 10 \
+  --image_min_pixels $((256 * 32 * 32)) \
+  --image_max_pixels $((1280 * 32 * 32)) \
+  --tune_mm_vision False \
+  --gradient_checkpointing True \
+  --load_in_4bit True \
+  --output_dir /root/autodl-tmp/finetune-smoke
+# Loss should drop by step 5. Flat/spiking = config problem — fix before full run.
+```
+
+### Full fine-tune command
+
+```bash
+PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True' \
+swift sft \
+  --model Qwen/Qwen3-VL-8B-Instruct \
+  --tuner_type lora \
+  --lora_rank 32 \
+  --dataset /root/autodl-tmp/frontend-design-dataset/output/dataset-final.jsonl \
+  --num_train_epochs 3 \
+  --image_min_pixels $((256 * 32 * 32)) \
+  --image_max_pixels $((1280 * 32 * 32)) \
+  --tune_mm_vision False \
+  --gradient_checkpointing True \
+  --load_in_4bit True \
+  --output_dir /root/autodl-tmp/finetune-output
+```
+
+- Framework: SWIFT (Alibaba's official Qwen training toolkit)
+- Method: QLoRA NF4 + BF16 adapters, rank 32
+- Hardware: RTX 5090 on V2 instance (fits at 8B QLoRA — 32GB VRAM)
+- Training time estimate: ~3-5 hours for 3,089 records at rank 32
+- Output: merged checkpoint at `/root/autodl-tmp/finetune-output`
+
+---
+
+## Step 22 — Quantize and Release ⏳
+
+```bash
+# Export to GGUF via llama.cpp
+python convert_hf_to_gguf.py /root/autodl-tmp/finetune-output --outtype f16
+llama-quantize model-f16.gguf model-q4_k_m.gguf Q4_K_M
+llama-quantize model-f16.gguf model-q3_k_m.gguf Q3_K_M
+```
+
+Target inference hardware:
+- RTX 3060 12GB: Q4_K_M (~5.5GB LM + ~2GB ViT = ~7.5GB + KV cache)
+- M3/M4 Mac 16GB unified: Q4_K_M with ~64K context
+- RTX 4070 12GB: Q3_K_M for more KV cache headroom
+
+---
+
+## Step 23 — Post-Fine-Tune Validation ⏳
+
+Run 4-test protocol from CLAUDE.md before releasing. Targets:
+- Test A (vision critique): 7+/10 (baseline: 5/10)
+- Test B (qualifying questions): 6+/10 vague prompts trigger questions (baseline: 1/10)
+- Test C (system prompt tax): ≤200 token system prompt sufficient
+- Test D (markdown chatter): <20 wrapper tokens per response
+
+See CLAUDE.md `## Post-Fine-Tune Validation Protocol` for full test prompts and pass criteria.
+
+---
+
+## Step 20 Detail — Qualifying Conversation Traces (preserved for reference)
+
+see also `## 13. Second Training Dataset — Qualifying Conversation Traces` in:
+`/root/tinkering/Local-LLMs/Local-LLM-Agent/frontend-design-dataset/FRONTEND-DESIGN-MODEL-CARD.md`
+
+**Two pass approach (completed):**
+- Pass 1 (20 batches × 5): vague request → clarifying questions → build (qualifying_conversation)
+- Pass 2 (15 batches × 5): specific request → build immediately (immediate_conversation)
+- Personas (5) + domains (14) randomized per batch — diversity via combinatorics
+- Target: 200+ total, 55-65% ask type
+- **Actual: 254 records, 59% ask ratio ✅**
+
+**Spot-check commands (for future regeneration):**
+```bash
+# Check ask/immediate ratio
 python3 -c "
 import json
 ask, immediate, malformed = 0, 0, 0
@@ -305,150 +404,9 @@ for line in open('output/qualifying-conversations.jsonl'):
         elif turns == 2: immediate += 1
         else: malformed += 1
     except: malformed += 1
-print(f'Ask (4+ turns): {ask}')
-print(f'Immediate (2 turns): {immediate}')
-print(f'Malformed/other: {malformed}')
-print(f'Ask ratio: {ask/(ask+immediate)*100:.0f}% (target 55-65%)')
+print(f'Ask: {ask} | Immediate: {immediate} | Ask ratio: {ask/(ask+immediate)*100:.0f}%')
 "
 
-# 4. Check for CDN links
+# Check for CDN links
 grep -c "cdn\|googleapis\|jsdelivr" output/qualifying-conversations.jsonl || echo "0 CDN hits"
 ```
-Flag any malformed, truncated, or CDN-linked records before merging.
-
-**After spot-check passes — merge with clean dataset:**
-```bash
-cat output/dataset-clean.jsonl output/qualifying-conversations.jsonl > output/dataset-final.jsonl
-wc -l output/dataset-final.jsonl   # expect ~3,035-3,135
-```
-
-After the main dataset is complete, generate multi-turn conversations that teach the model
-to ask follow-up questions on vague prompts. These are generated on VPS using Codex CLI.
-
-**Why needed:** ~200-400 examples is sufficient to teach behavioral nudges (when/what to ask).
-Base model already knows how to ask questions — we're teaching context-specific behavior.
-
-**Two pass approach:**
-- Pass 1 (20 batches × 10): vague request → clarifying questions → build (qualifying_conversation)
-- Pass 2 (15 batches × 10): specific request → build immediately (immediate_conversation)
-- Personas (5) + domains (14) randomized per batch — diversity via combinatorics, not prompting
-- Target: 200+ total, 55-65% ask type
-
-**Trigger logic the model learns:**
-- Ask questions when: full page/site/app requested with no tech stack or content detail
-- Don't ask when: component request ("make me a button"), or user already specified enough
-
----
-
-## Step 20.5 — Evaluation Pass
-
-Run after `cat output/dataset-run*.jsonl > output/dataset.jsonl`.
-Before qualifying conversation traces.
-
-### Files
-- Script: `src/evaluate.ts`
-- Input: `output/component-*-run*/improved.html` (506 files)
-- Input: `output/component-*-run*/metadata.json` (prompt source)
-- Input: `output/dataset.jsonl` (2,836 records to filter)
-- Output: `output/pre-scores.jsonl` (Stage A results)
-- Output: `output/scores.jsonl` (final scores per component)
-- Output: `output/eval-summary.json` (aggregate stats)
-- Output: `output/dataset-clean.jsonl` ← final training file
-
-### Run sequence
-```bash
-bun run evaluate          # Stage A + B together
-# Script filters dataset.jsonl automatically after scoring
-wc -l output/dataset-clean.jsonl   # expect ~2,400-2,700
-```
-
-### Scoring rubric (max 9 points)
-
-**Stage A — Bun regex (visual score, 0-3):**
-- Color regex: `/(#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\(|var\(--)/ig`
-- Measurement regex: `/\d+(px|rem|em|vh|vw|%)/i`
-- 3 = colorCount>=3 AND hasMeasurement
-- 2 = colorCount>=1 OR hasMeasurement
-- 1 = neither
-
-**Hard gate (fail = skip LLM, exclude from training):**
-- Any `https://` in file except w3.org/placeholder.com
-- File length < 500 chars
-
-**Stage B — LLM (alignment 0-3 + interactivity 0-3):**
-
-ALIGNMENT:
-- 3 = exact component type match
-- 2 = mostly correct, minor details missing
-- 1 = wrong type or major scope mismatch
-- 0 = garbage
-
-INTERACTIVITY (context-aware — LLM classifies type first):
-- Interactive types (modal, dropdown, tabs, accordion, carousel, mobile navbar):
-  - 3=JS+CSS, 2=CSS only, 1=partial, 0=static when required
-- Display types (card, hero, footer, pricing table, badge, stat, testimonial):
-  - 3=correct+hover polish, 2=correct no polish, 1=unnecessary JS, 0=broken
-
-**Exclusion: total < 6/9**
-
-### Checklist
-- [ ] `bun run evaluate` Stage A completes — report pass/fail counts
-- [ ] Stage B LLM scoring completes — report score distribution
-- [ ] `output/dataset-clean.jsonl` written
-- [ ] `output/eval-summary.json` written
-- [ ] Commit: `git commit -m "feat: evaluation pass complete — N clean records"`
-
----
-
-## Step 21 — Fine-Tune Qwen3-VL-8B
-
-Pre-condition: dataset-final.jsonl complete ✅
-Pre-condition: baseline confirmed fine-tune needed ✅ (Test 2: 1/10)
-
-Post-fine-tune validation: run 4-test protocol from CLAUDE.md before release.
-
-- Framework: SWIFT (Alibaba's official Qwen training toolkit)
-- Method: QLoRA NF4 + BF16 adapters, rank 32
-- Hardware: AutoDL H100 instance (or RTX 5090 — fits at 8B QLoRA)
-- Training time estimate: ~3-5 hours for 3,400 records at rank 32
-- Output: merged checkpoint → GGUF export
-
-**CRITICAL — Qwen3-VL uses 32×32 patches (NOT 28×28 like Qwen2.5-VL). Wrong value = silent OOM.**
-
-**SWIFT command:**
-```bash
-PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True' \
-swift sft \
-  --model Qwen/Qwen3-VL-8B-Instruct \
-  --tuner_type lora \
-  --lora_rank 32 \
-  --dataset output/dataset.jsonl \
-  --num_train_epochs 3 \
-  --output_dir ./output-finetune \
-  --image_min_pixels $((256 * 32 * 32)) \
-  --image_max_pixels $((1280 * 32 * 32)) \
-  --tune_mm_vision False \
-  --gradient_checkpointing True \
-  --load_in_4bit True
-```
-
-**Pre-run checklist:**
-- `pkill -f ollama` — free VRAM (mmproj holds 1.08GB idle)
-- Smoke test first: add `--max_steps 10`, confirm loss drops by step 5
-- Verify `image_min_pixels` uses `32*32` not `28*28`
-
----
-
-## Step 22 — Quantize and Release
-
-```bash
-# Export to GGUF via llama.cpp
-python convert_hf_to_gguf.py ./output-finetune --outtype f16
-llama-quantize model-f16.gguf model-q4_k_m.gguf Q4_K_M
-llama-quantize model-f16.gguf model-q3_k_m.gguf Q3_K_M
-```
-
-Target inference hardware:
-- RTX 3060 12GB: Q4_K_M (~5.5GB LM + ~2GB ViT = ~7.5GB + KV cache)
-- M3/M4 Mac 16GB unified: Q4_K_M with ~64K context
-- RTX 4070 12GB: Q3_K_M for more KV cache headroom

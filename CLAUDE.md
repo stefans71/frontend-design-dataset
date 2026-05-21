@@ -7,21 +7,66 @@ Synthetic frontend design training data pipeline for fine-tuning **Qwen3-VL-8B**
 
 ## Last Updated
 
-2026-05-21 ~15:00 UTC
+2026-05-21 JST
 
 ---
 
 ## ⚡ Continue From Here (after /compact)
 
 Read in this order before doing anything:
-1. **This file** (CLAUDE.md) — full context, especially Current Status below
-2. **TEST-QWEN35-9B.md** — active test plan for model evaluation
-3. **PLAN.md** — full pipeline implementation checklist (do not overwrite)
-4. **FRONTEND-DESIGN-MODEL-CARD.md** — acceptance criteria §7, training strategy §3
+1. **This file** (CLAUDE.md) — full context, especially Fine-Tune Status below
+2. **PLAN.md** — full pipeline implementation checklist (do not overwrite)
+3. **FRONTEND-DESIGN-MODEL-CARD.md** — Sections 14+15 for fine-tune params and validation protocol
 
 **Current situation:** Dataset COMPLETE — 3,089 records in `output/dataset-final.jsonl`.
 Fine-tune phase starting. Active instance is frontend-dataset-clone-V2 (port 25615).
 Do not touch the dataset instance (port 25180 — switched off, data preserved).
+
+**First task in any new session:** Check V2 instance is healthy before doing anything:
+```bash
+ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com \
+  "nvidia-smi --query-gpu=name,memory.total --format=csv,noheader && df -h /root/autodl-tmp"
+```
+
+---
+
+## Pending Doc Updates (after fine-tuning completes)
+
+- §7 acceptance criteria: replace line count ratio ≥1.4 with CSS property
+  quality check (flex/grid/transition/box-shadow introduced in improved.html)
+- §9 prompt wording: clarify "inline CSS" means `<style>` block in `<head>`,
+  not `style=""` attributes — reword to avoid confusion
+- §13 conversation trace generation: add temperature variation, persona
+  injection, generate in batches of 1-2 not 10 (diversity collapse risk)
+- §2 add screenshot resolution guidance for inference: max 1024x1024
+  recommended to avoid vision encoder VRAM OOM on 12GB GPUs
+- Fine-tune instance SSH updated: port 25615, connect.westd.seetacloud.com
+- CUDA 13.2 on V2 instance — backward compatible, no config changes needed
+- Archive completed session notes to CLAUDE-ARCHIVE.md after fine-tune
+
+---
+
+## Dataset Status — COMPLETE ✅
+
+| File | Records | Status |
+|---|---|---|
+| `output/dataset-final.jsonl` | 3,089 | ✅ Ready for fine-tuning — this is the input |
+| `output/dataset-clean.jsonl` | 2,835 | ✅ Component records (post-eval) |
+| `output/qualifying-conversations.jsonl` | 254 (150 ask / 104 immediate) | ✅ Conversation traces |
+
+All records validated: 0 CDN links, 0 malformed, 95% scoring 8-9/9 on eval pass.
+
+## Fine-Tune Status
+
+| Step | Status |
+|---|---|
+| Verify V2 instance clone health | ⏳ Next |
+| Install SWIFT on V2 instance | ⏳ |
+| Rsync dataset-final.jsonl to V2 | ⏳ |
+| Pre-training smoke test (10 steps, loss drops by step 5) | ⏳ |
+| Full QLoRA fine-tune | ⏳ |
+| Export GGUF + quantize (Q4_K_M + Q3_K_M) | ⏳ |
+| Post-fine-tune validation (4 tests — see below) | ⏳ |
 
 ---
 
@@ -40,7 +85,7 @@ eagerness to build. Qualifying behavior must be trained into weights.
 
 ## Post-Fine-Tune Validation Protocol
 
-Run these 4 tests after fine-tuning before releasing. Pass criteria below.
+Run these 4 tests after fine-tuning before releasing. Compare against baseline.
 
 ### Test A — Vision critique quality
 Upload one 4/10 component screenshot. Ask for design critique.
@@ -85,43 +130,6 @@ Target: <20 tokens of wrapper text per response
 
 ---
 
-## Pending Doc Updates (after dataset complete)
-
-- §7 acceptance criteria: replace line count ratio ≥1.4 with CSS property
-  quality check (flex/grid/transition/box-shadow introduced in improved.html)
-- §9 prompt wording: clarify "inline CSS" means `<style>` block in `<head>`,
-  not `style=""` attributes — reword to avoid confusion
-- §13 conversation trace generation: add temperature variation, persona
-  injection, generate in batches of 1-2 not 10 (diversity collapse risk)
-- §2 add screenshot resolution guidance for inference: max 1024x1024
-  recommended to avoid vision encoder VRAM OOM on 12GB GPUs
-- Fine-tune instance SSH updated: port 25615, connect.westd.seetacloud.com
-- CUDA 13.2 on V2 instance — backward compatible, no config changes needed
-
----
-
-## Dataset Status — COMPLETE ✅
-
-| File | Records | Status |
-|---|---|---|
-| `output/dataset-final.jsonl` | 3,089 | ✅ Ready for fine-tuning |
-| `output/dataset-clean.jsonl` | 2,835 | ✅ Component records |
-| `output/qualifying-conversations.jsonl` | 254 | ✅ Conversation traces |
-
-## Fine-Tune Status
-
-| Step | Status |
-|---|---|
-| Verify V2 instance clone health | ⏳ Next |
-| Install SWIFT on V2 instance | ⏳ |
-| Rsync dataset-final.jsonl to V2 | ⏳ |
-| Pre-training smoke test (10 steps) | ⏳ |
-| Full QLoRA fine-tune | ⏳ |
-| Export GGUF + quantize | ⏳ |
-| Post-fine-tune validation (4 tests) | ⏳ |
-
----
-
 ## What Went Wrong & Fixes Applied (do not revert)
 
 | # | Problem | Fix |
@@ -133,8 +141,10 @@ Target: <20 tokens of wrapper text per response
 | 5 | run2 render deadlocked on component-028 for 52min — no Playwright launch timeout | Per-component timeout needed — add `setTimeout` kill to browser launch |
 | 6 | llama-server died mid-run — run3+run4 got 3 components then ConnectionRefused | Restart llama-server (`bash start.sh`), new screen session handles resume |
 | 7 | ~26 render failures across run0+run1 (Chromium OOM crashes) | Re-render pass after full run — resume skips already-done PNGs |
+| 8 | Codex daily quota exhausted mid-run | Re-login: `codex login --device-auth`; or switch to `claude -p` |
+| 9 | Conversation trace diversity collapse | Persona + domain injection per batch, batches of 5 not 10, 480s timeout |
 
-**Additional permanent fixes (from earlier sessions):**
+**Additional permanent fixes:**
 - **generate.ts system prompt:** inline CSS only — CDN not blocked but inline CSS is better training data
 - **critique.ts:** `CRITIQUE_PROMPT` must come **before** `-i` flag — `-i FILE...` is variadic and eats the prompt as a second image path if placed after; `stdin: "ignore"` required
 - **improve.ts:** reads `metadata.json` and passes original prompt as scope constraint — prevents Codex expanding a navbar into a full landing page
@@ -177,9 +187,9 @@ ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com
 Both scripts accept `PORT` (arg 1) and optional `HOST` (arg 2, default: connect.westd.seetacloud.com):
 
 ```bash
-bash scripts/rsync-to-autodl.sh 25180                                          # push code to westd
-bash scripts/rsync-from-autodl.sh 25180                                        # pull output from westd
-bash scripts/rsync-to-autodl.sh <PORT> connect.westc.seetacloud.com            # use westc
+bash scripts/rsync-to-autodl.sh 25615                    # push to V2 fine-tune instance
+bash scripts/rsync-from-autodl.sh 25615                  # pull from V2
+bash scripts/rsync-to-autodl.sh 25180                    # push to dataset instance (switched off)
 ```
 
 ## AutoDL Startup Sequence (after reboot)
@@ -187,7 +197,7 @@ bash scripts/rsync-to-autodl.sh <PORT> connect.westc.seetacloud.com            #
 ```bash
 # 1. SSH in with new port from AutoDL web UI
 ssh -i /root/.ssh/id_ed25519 -p <NEW_PORT> root@connect.westd.seetacloud.com
-# 2. Start both llama-server instances
+# 2. Start both llama-server instances (for data pipeline — not needed for fine-tuning)
 bash /root/autodl-tmp/start.sh
 # 3. Verify healthy
 curl http://localhost:11434/health   # → {"status":"ok"}
@@ -195,235 +205,6 @@ curl http://localhost:11434/health   # → {"status":"ok"}
 sudo nano /etc/systemd/system/autodl-tunnel.service   # update port
 sudo systemctl daemon-reload && sudo systemctl restart autodl-tunnel.service
 ```
-
----
-
-## Architecture — Two Machine Split
-
-```
-AutoDL (RTX 5090, westd)             VPS Japan (hostdzire)
-────────────────────────             ─────────────────────
-Stage 1: bun run generate            Stage 3:  bun run critique
-Stage 2: bun run render              Stage 3b: bun run improve
-         ↓ rsync                     Stage 4:  bun run package
-bash scripts/rsync-from-autodl.sh
-```
-
----
-
-## Full Run Sequence
-
-### Standard full run (fresh)
-```bash
-# AutoDL — always use screen/tmux for long runs
-source autodl-run.sh
-bun install --registry https://registry.npmmirror.com
-screen -dmS fullrun bash -c 'TEST_MODE=false bash scripts/run-all-variants.sh 2>&1 | tee /tmp/fullrun.log'
-
-# Monitor
-tail -f /tmp/fullrun.log
-screen -list   # check session is alive
-
-# VPS — after AutoDL generate+render complete
-bash scripts/rsync-from-autodl.sh 25180
-screen -dmS vps-process bash -c 'for SUFFIX in run0 run1 run2 run3 run4; do echo "=== $SUFFIX ===" && OUTPUT_SUFFIX=$SUFFIX bun run critique && OUTPUT_SUFFIX=$SUFFIX bun run improve && DATASET_PATH=output/dataset-${SUFFIX}.jsonl OUTPUT_SUFFIX=$SUFFIX bun run package; done 2>&1 | tee /tmp/vps-process.log'
-
-# Final concatenation
-cat output/dataset-run*.jsonl > output/dataset.jsonl
-wc -l output/dataset.jsonl   # expect ~3,000
-```
-
-### Next steps after concat
-```
-⬜ concat all runs → output/dataset.jsonl
-⬜ sub-agent eval pass → scores.jsonl (exclude <5/8)
-⬜ generate 200-300 qualifying conversation traces → append to dataset.jsonl
-⬜ pre-training smoke test (10 steps, confirm loss dropping)
-⬜ full QLoRA fine-tune on AutoDL
-⬜ export → GGUF Q4_K_M
-⬜ post-training baseline retest (critique 7+/10, questions 8+/10)
-```
-
-### Resume a partial run (after crash/restart)
-```bash
-# Resume generate for a specific run (skips existing component.html files)
-OUTPUT_SUFFIX=run2 TEMPERATURE=0.85 TEST_MODE=false bun run generate
-
-# Re-render pass (skips existing PNGs)
-OUTPUT_SUFFIX=run2 TEST_MODE=false bun run render
-
-# Re-render ALL runs (catches Chromium OOM failures)
-for SUFFIX in run0 run1 run2 run3 run4; do
-  OUTPUT_SUFFIX=$SUFFIX TEST_MODE=false bun run render
-done
-```
-
-### Long run monitoring
-```bash
-# Check progress from VPS at any time
-ssh -i /root/.ssh/id_ed25519 -p 25180 root@connect.westd.seetacloud.com "tail -5 /tmp/fullrun.log"
-
-# Check component count per run
-ssh -i /root/.ssh/id_ed25519 -p 25180 root@connect.westd.seetacloud.com \
-  "for s in run0 run1 run2 run3 run4; do echo -n \"\$s: \"; ls /root/autodl-tmp/frontend-design-dataset/output/ | grep \$s | wc -l; done"
-```
-
----
-
-## OUTPUT_SUFFIX — Versioned Output Dirs
-
-Set `OUTPUT_SUFFIX=run0` to write to `component-000-run0/` dirs. All stages read this env var.
-When OUTPUT_SUFFIX is set, generate.ts automatically uses `COMPONENT_PROMPTS_V2`.
-
-```bash
-# Single suffix run
-OUTPUT_SUFFIX=run2 TEMPERATURE=0.85 TEST_MODE=false bun run generate
-OUTPUT_SUFFIX=run2 TEST_MODE=false bun run render
-
-# Full 5-temperature run (run-all-variants.sh handles this automatically)
-TEST_MODE=false bash scripts/run-all-variants.sh
-```
-
----
-
-## Pipeline Stages
-
-1. **generate.ts** — HTML/CSS components via llama-server (`TEMPERATURE` env var, default 0.7)
-2. **render.ts** — Desktop (1280×900) + mobile (390×844) PNGs via Playwright
-3. **critique.ts** — Codex CLI design critique → `critique.md`
-4. **improve.ts** — Codex CLI improved HTML → `improved.html` (scope-constrained by original prompt)
-5. **package-dataset.ts** — Assembles 6 JSONL record types per component
-6. **pipeline.ts** — Orchestrates all stages with JST timestamps
-
-## Training Record Types
-
-1. `prompt_to_html` — text prompt → original HTML
-2. `screenshot_to_critique` — desktop PNG → critique
-3. `screenshot_to_code` — desktop PNG → original HTML
-4. `mobile_to_code` — mobile PNG → original HTML *(added 2026-05-20)*
-5. `screenshot_html_to_critique` — PNG + HTML → critique
-6. `screenshot_code_critique_to_improved` — PNG + HTML + original prompt + critique → improved HTML **(most valuable)**
-
-Expected total: 500 components × 6 types = **~3,000 records**
-
----
-
-## llama-server API
-
-```bash
-curl http://localhost:11434/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "qwen3.6-27b-mtp",
-    "messages": [{"role": "user", "content": "Hello"}],
-    "max_tokens": 4096,
-    "temperature": 0.7,
-    "chat_template_kwargs": {"enable_thinking": false}
-  }'
-```
-
-- **Always** include `enable_thinking: false` — model defaults to thinking mode
-- Model string: `qwen3.6-27b-mtp`
-- Max safe context: 131K tokens (29.3/32.6 GB VRAM at 131K)
-- Speed: 92–97 tok/s with MTP speculative decoding
-
-## Codex CLI
-
-```bash
-# CRITICAL: prompt MUST come before -i flag
-codex exec -m gpt-5.4 --dangerously-bypass-approvals-and-sandbox --ephemeral "prompt text" -i screenshot.png -o output.txt
-```
-
-- Auth: ChatGPT OAuth (`~/.codex/auth.json`) — no API key needed
-- If auth fails: `codex logout && codex login --device-auth`
-- Output: use `-o output.txt` and read file — more reliable than stdout parsing
-- Sequential only — no parallelism (Codex CLI limitation)
-- Timeouts: critique 120s, improve 300s
-
-## Playwright on AutoDL
-
-```bash
-export PLAYWRIGHT_BROWSERS_PATH=/root/autodl-tmp/pw-browsers
-```
-
-- One browser per component (open → screenshot → close) — prevents OOM accumulation
-- Wait strategy: `domcontentloaded` + 3000ms (NOT networkidle)
-- Per-component try/catch — failures log and continue, don't crash the run
-- Chromium OOM is possible on complex components — resume support handles re-render
-
-## AutoDL Environment
-
-```bash
-# Always source this first
-source /root/autodl-tmp/frontend-design-dataset/autodl-run.sh
-# Sets: PATH (bun + node), PLAYWRIGHT_BROWSERS_PATH, checks llama-server health
-
-# Key paths
-/root/autodl-tmp/bun/bin/bun                          # Bun runtime
-/root/autodl-tmp/node-v22.15.0-linux-x64/bin/         # Node.js
-/root/autodl-tmp/pw-browsers/                         # Playwright Chromium
-/root/autodl-tmp/Qwen3.6-27B-MTP-UD-Q5_K_XL.gguf     # 19GB generation model
-/root/autodl-tmp/start.sh                             # starts both llama-server instances
-```
-
----
-
-## Tailwind CDN — Status
-
-- **Not blocked** on AutoDL westd China zone — CDN loads correctly
-- **render.ts uses** `domcontentloaded` + 3000ms — works for both CDN and inline CSS pages
-- **generate.ts uses inline CSS** — COMPONENT_PROMPTS_V2 enforce it; inline CSS produces better training data (model learns real CSS, not utility classes)
-- Do not add Tailwind CDN to generate.ts system prompt — prompts already override it and the conflict causes inconsistent output
-
----
-
-## Key Constraints
-
-- Codex CLI sequential — no parallel critique/improve calls
-- One Playwright browser per component
-- Resume support: all stages skip components with existing output files
-- `TEST_MODE=true` + `TEST_COUNT=3` limits to first 3 components
-- HTML must be self-contained (inline CSS) — no external CDN resources in generated output
-- AutoDL single slot (`-np 1`) — one llama-server request at a time
-
----
-
-## Evaluation Pass (Step 20.5)
-
-Two-stage pipeline. Run after dataset concat, before qualifying traces.
-
-### Stage A — Bun script (deterministic, free, instant)
-File: `src/evaluate.ts`
-Run: `bun run evaluate`
-Output: `output/pre-scores.jsonl`
-
-Checks every `output/component-*-run*/improved.html`:
-- Hard gate: fail if any `https://` found in file (except w3.org, placeholder.com) OR file <500 chars
-- Signals: hasScript (document. in <script>), hasHover (:hover/:focus/transition), colorCount, hasMeasurement
-- Visual score: colorCount>=3 AND hasMeasurement=3, colorCount>=1 OR hasMeasurement=2, else=1
-
-### Stage B — LLM scoring (Claude API, 5 per batch)
-File: `src/evaluate.ts` (same file, separate function)
-Output: `output/scores.jsonl`
-
-Two dimensions per component (prompt + HTML provided):
-- ALIGNMENT (0-3): does HTML match the requested component type?
-- INTERACTIVITY (0-3): context-aware — interactive types (modal/dropdown/tabs) vs display types (card/hero/badge)
-  - Interactive: 3=JS+CSS working, 2=CSS only, 1=minimal, 0=static when JS required
-  - Display: 3=correct+hover polish, 2=correct no polish, 1=unnecessary JS, 0=broken
-
-### Stage C — Combine + filter
-total = visualScore + alignment + interactivity (max 9)
-exclude if total < 6
-Output: `output/dataset-clean.jsonl` (filtered from dataset.jsonl)
-Also writes: `output/eval-summary.json`
-
-### Key file locations
-- Script: `src/evaluate.ts`
-- Pre-scores: `output/pre-scores.jsonl`
-- Final scores: `output/scores.jsonl`
-- Eval summary: `output/eval-summary.json`
-- Clean dataset: `output/dataset-clean.jsonl` ← this is what goes to fine-tuning
 
 ---
 
@@ -442,17 +223,182 @@ PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'  # reduces fragmentation spik
 load_in_4bit = True                       # QLoRA — safe for Qwen3-VL (NOT Qwen3.5)
 ```
 
-**Vision encoder VRAM note:** mmproj is 1.08GB at F16. Ollama idle holds VRAM and will
-block training. Kill it before starting:
+**Before training — kill Ollama:**
 ```bash
-pkill -f ollama
+pkill -f ollama   # Ollama idle holds VRAM and blocks training
+nvidia-smi        # Confirm GPU free
 ```
 
-**Always run a smoke test before full fine-tune:**
+**Smoke test first (always):**
 ```bash
-# max_steps=10, then inspect loss — should be dropping by step 5
 swift sft ... --max_steps 10
+# Loss should drop by step 5. Flat/spiking = config problem.
 ```
+
+**SWIFT install on AutoDL:**
+```bash
+pip install ms-swift -U
+# Or from ModelScope if pip is slow:
+pip install ms-swift --index-url https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+**Full fine-tune command:**
+```bash
+export PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'
+swift sft \
+  --model Qwen/Qwen3-VL-8B-Instruct \
+  --tuner_type lora \
+  --lora_rank 32 \
+  --dataset /root/autodl-tmp/frontend-design-dataset/output/dataset-final.jsonl \
+  --num_train_epochs 3 \
+  --image_min_pixels $((256 * 32 * 32)) \
+  --image_max_pixels $((1280 * 32 * 32)) \
+  --tune_mm_vision False \
+  --gradient_checkpointing True \
+  --output_dir /root/autodl-tmp/finetune-output
+```
+
+---
+
+## Architecture — Two Machine Split (dataset pipeline — archived)
+
+Dataset generation is complete. This is preserved for reference only.
+
+```
+AutoDL (RTX 5090, westd)             VPS Japan (hostdzire)
+────────────────────────             ─────────────────────
+Stage 1: bun run generate            Stage 3:  bun run critique
+Stage 2: bun run render              Stage 3b: bun run improve
+         ↓ rsync                     Stage 4:  bun run package
+bash scripts/rsync-from-autodl.sh    Stage 5:  bun run evaluate
+                                     Stage 6:  bun run conversations
+                                     Final:    dataset-final.jsonl (3,089 records)
+```
+
+---
+
+## Pipeline Stages (all complete)
+
+1. **generate.ts** — HTML/CSS components via llama-server (`TEMPERATURE` env var, default 0.7)
+2. **render.ts** — Desktop (1280×900) + mobile (390×844) PNGs via Playwright
+3. **critique.ts** — Codex CLI / `claude -p` design critique → `critique.md`
+4. **improve.ts** — Codex CLI improved HTML → `improved.html` (scope-constrained by original prompt)
+5. **package-dataset.ts** — Assembles 6 JSONL record types per component
+6. **evaluate.ts** — Two-stage eval: regex (Stage A) + `claude -p` LLM scoring (Stage B)
+7. **generate-conversations.ts** — 254 qualifying conversation traces (59% ask / 41% immediate)
+8. **pipeline.ts** — Orchestrates all stages with JST timestamps
+
+## Training Record Types (final dataset)
+
+1. `prompt_to_html` — text prompt → original HTML
+2. `screenshot_to_critique` — desktop PNG → critique
+3. `screenshot_to_code` — desktop PNG → original HTML
+4. `mobile_to_code` — mobile PNG → original HTML
+5. `screenshot_html_to_critique` — PNG + HTML → critique
+6. `screenshot_code_critique_to_improved` — PNG + HTML + original prompt + critique → improved HTML **(most valuable)**
+7. `qualifying_conversation` — vague request → questions → answers → build (150 records)
+8. `immediate_conversation` — clear request → direct build (104 records)
+
+**Total: 3,089 records in `output/dataset-final.jsonl`**
+
+---
+
+## llama-server API (for data pipeline — not needed for fine-tuning)
+
+```bash
+curl http://localhost:11434/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen3.6-27b-mtp",
+    "messages": [{"role": "user", "content": "Hello"}],
+    "max_tokens": 4096,
+    "temperature": 0.7,
+    "chat_template_kwargs": {"enable_thinking": false}
+  }'
+```
+
+- Always include `enable_thinking: false` — model defaults to thinking mode
+- Model string: `qwen3.6-27b-mtp`
+- Max safe context: 131K tokens (29.3/32.6 GB VRAM at 131K)
+- Speed: 92–97 tok/s with MTP speculative decoding
+
+## Codex CLI
+
+```bash
+# CRITICAL: prompt MUST come before -i flag
+codex exec -m gpt-5.4 --dangerously-bypass-approvals-and-sandbox --ephemeral "prompt text" -i screenshot.png
+```
+
+- Auth: ChatGPT OAuth (`~/.codex/auth.json`) — no API key needed
+- If auth fails: `codex logout && codex login --device-auth`
+- Daily quota limit — if exhausted, switch to `claude -p` (identical subprocess pattern)
+- Sequential only — no parallelism
+
+## Playwright on AutoDL (data pipeline — not needed for fine-tuning)
+
+```bash
+export PLAYWRIGHT_BROWSERS_PATH=/root/autodl-tmp/pw-browsers
+```
+
+- Wait strategy: `domcontentloaded` + 3000ms (NOT networkidle)
+- Per-component try/catch — failures log and continue
+
+## AutoDL Environment
+
+```bash
+# Always source this first for data pipeline work
+source /root/autodl-tmp/frontend-design-dataset/autodl-run.sh
+# Sets: PATH (bun + node), PLAYWRIGHT_BROWSERS_PATH, checks llama-server health
+
+# Key paths
+/root/autodl-tmp/bun/bin/bun                               # Bun runtime
+/root/autodl-tmp/node-v22.15.0-linux-x64/bin/              # Node.js
+/root/autodl-tmp/pw-browsers/                              # Playwright Chromium
+/root/autodl-tmp/Qwen3.6-27B-MTP-UD-Q5_K_XL.gguf          # 19GB generation model
+/root/autodl-tmp/qwen3-vl-8b-gguf/                        # Qwen3-VL-8B baseline test files
+/root/autodl-tmp/start.sh                                  # starts both llama-server instances
+/root/autodl-tmp/frontend-design-dataset/output/dataset-final.jsonl  # ← fine-tune input
+```
+
+---
+
+## Tailwind CDN — Status
+
+- **Not blocked** on AutoDL westd China zone
+- **render.ts uses** `domcontentloaded` + 3000ms — works for both CDN and inline CSS pages
+- **generate.ts uses inline CSS** — COMPONENT_PROMPTS_V2 enforce it; inline CSS produces better training data
+- Do not add Tailwind CDN to generate.ts system prompt
+
+---
+
+## Key Constraints
+
+- Codex CLI sequential — no parallel critique/improve calls
+- One Playwright browser per component
+- Resume support: all stages skip components with existing output files
+- `TEST_MODE=true` + `TEST_COUNT=3` limits to first 3 components
+- HTML must be self-contained (inline CSS) — no external CDN resources in generated output
+- AutoDL single slot (`-np 1`) — one llama-server request at a time
+
+---
+
+## Evaluation Pass (Step 20.5) — COMPLETE ✅
+
+Results: 475 passed Stage A, 0 excluded (all scored ≥6/9), 95% scored 8-9/9.
+
+### Stage A — Bun script (deterministic)
+File: `src/evaluate.ts` | Output: `output/pre-scores.jsonl`
+- Hard gate: fail if `https://` found (except w3.org, placeholder.com) OR file <500 chars
+- Visual score via regex: color count + measurement units → 0-3
+
+### Stage B — LLM scoring (`claude -p`, 5 per batch)
+Output: `output/scores.jsonl`
+- ALIGNMENT (0-3): does HTML match requested component type?
+- INTERACTIVITY (0-3): context-aware — interactive vs display types
+
+### Stage C — Filter
+total = visual + alignment + interactivity (max 9) | exclude if <6
+Output: `output/dataset-clean.jsonl` (2,835 records, 0 excluded)
 
 ---
 
@@ -462,25 +408,25 @@ https://github.com/stefans71/frontend-design-dataset
 
 ---
 
-## Session Notes — 2026-05-20 ~13:00 JST
+## Session Notes — 2026-05-20 JST
 
-### Full Run Issues and Resolutions
-- `set -e` removed from `run-all-variants.sh` — one Playwright crash was killing entire job
-- Per-component try/catch added to `render.ts` — Chromium OOM failures now log and continue
-- llama-server died mid-run3 — restarted, new screen session `run34` handles run3+run4
-- run2 stopped at 56/100 — will resume after run3+run4 complete
-- ~26 render failures (OOM) across run0+run1 — re-render pass scheduled after full generate complete
-- VPS started processing run0+run1 critique in parallel (screen session `vps-run01`)
+### Full Run Issues (all resolved)
+- `set -e` removed from `run-all-variants.sh`
+- Per-component try/catch added to `render.ts`
+- llama-server died mid-run3 — restarted, resume handled gaps
+- run2 stopped at 56/100 — resumed after run3/run4 complete
+- ~26 render OOM failures — re-render pass completed
+- Codex daily quota exhausted 3× — re-logged each time
 
-### Components Visual Quality
-Natural language prompts (v2) producing significantly better output than expert prompts (v1).
-Component-026-run0 example: dark mode social feed with phone frame, Instagram-style layout, proper UI chrome.
+### Dataset Complete (2026-05-21)
+- 500 components generated (470 clean after OOM losses)
+- Eval pass: 0 excluded, 95% scoring 8-9/9
+- 254 qualifying conversation traces (59% ask, 41% immediate)
+- Final: 3,089 records in dataset-final.jsonl
+- Fine-tune confirmed required (qualifying questions baseline: 1/10)
 
-### After Full Run Completes
-1. Resume run2 generate (44 missing components)
-2. Re-render pass all 5 runs (26 failed OOM renders)
-3. Final rsync AutoDL → VPS
-4. VPS processes run2+run3+run4
-5. Concatenate all 5 datasets
-6. Generate 200-400 qualifying conversation traces on VPS (Codex CLI)
-7. Fine-tune Qwen3-VL-8B
+### New Instance (2026-05-21)
+- frontend-dataset-clone-V2 provisioned for fine-tuning
+- SSH: `ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com`
+- CUDA 13.2 — backward compatible
+- 200GB data disk
