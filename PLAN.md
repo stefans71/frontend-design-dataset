@@ -250,7 +250,73 @@ screen -dmS conversations bash -c 'bun run conversations 2>&1 | tee /tmp/convers
 tail -f /tmp/conversations.log
 ```
 
-**After complete — merge with clean dataset:**
+**Step 20a — Spot-check before merging (run all 4, report full output):**
+```bash
+# 1. Show 3 random ask-type records (4+ turns)
+python3 -c "
+import json, random
+lines = [l for l in open('output/qualifying-conversations.jsonl') if l.strip()]
+records = []
+for l in lines:
+    try:
+        d = json.loads(l)
+        if len(d.get('messages', [])) >= 4:
+            records.append(d)
+    except: pass
+sample = random.sample(records, min(3, len(records)))
+for r in sample:
+    print('TYPE:', r.get('type'))
+    print('DOMAIN:', r.get('domain', 'unknown'))
+    print('TURN 1 (user):', r['messages'][0]['content'][:100])
+    print('TURN 2 (assistant questions):', r['messages'][1]['content'][:200])
+    print('TURN 3 (user answer):', r['messages'][2]['content'][:100])
+    print('TURN 4 (assistant builds):', r['messages'][3]['content'][:150])
+    print('---')
+"
+
+# 2. Show 2 random immediate-type records (2 turns)
+python3 -c "
+import json, random
+lines = [l for l in open('output/qualifying-conversations.jsonl') if l.strip()]
+records = []
+for l in lines:
+    try:
+        d = json.loads(l)
+        if len(d.get('messages', [])) == 2:
+            records.append(d)
+    except: pass
+sample = random.sample(records, min(2, len(records)))
+for r in sample:
+    print('TYPE:', r.get('type'))
+    print('TURN 1 (user):', r['messages'][0]['content'][:100])
+    print('TURN 2 (assistant):', r['messages'][1]['content'][:200])
+    print('---')
+"
+
+# 3. Check ask/immediate ratio (target 55-65% ask)
+python3 -c "
+import json
+ask, immediate, malformed = 0, 0, 0
+for line in open('output/qualifying-conversations.jsonl'):
+    try:
+        d = json.loads(line.strip())
+        turns = len(d.get('messages', []))
+        if turns >= 4: ask += 1
+        elif turns == 2: immediate += 1
+        else: malformed += 1
+    except: malformed += 1
+print(f'Ask (4+ turns): {ask}')
+print(f'Immediate (2 turns): {immediate}')
+print(f'Malformed/other: {malformed}')
+print(f'Ask ratio: {ask/(ask+immediate)*100:.0f}% (target 55-65%)')
+"
+
+# 4. Check for CDN links
+grep -c "cdn\|googleapis\|jsdelivr" output/qualifying-conversations.jsonl || echo "0 CDN hits"
+```
+Flag any malformed, truncated, or CDN-linked records before merging.
+
+**After spot-check passes — merge with clean dataset:**
 ```bash
 cat output/dataset-clean.jsonl output/qualifying-conversations.jsonl > output/dataset-final.jsonl
 wc -l output/dataset-final.jsonl   # expect ~3,035-3,135
