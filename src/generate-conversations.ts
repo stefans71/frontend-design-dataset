@@ -123,7 +123,7 @@ async function pass1(): Promise<void> {
     const persona = pickRandom(PERSONAS);
     const domain = pickRandom(DOMAINS);
 
-    const prompt = `Generate 10 multi-turn frontend design conversations in JSONL format.
+    const prompt = `Generate 5 multi-turn frontend design conversations in JSONL format.
 
 Each conversation MUST follow this exact pattern:
 1. User gives a vague website/app/page request (not a specific component) for a ${domain} business
@@ -133,7 +133,7 @@ Each conversation MUST follow this exact pattern:
 
 PERSONA: ${persona}
 CRITICAL: Do NOT start responses with "Happy to build this."
-Vary greetings and transitions completely across all 10 conversations.
+Vary greetings and transitions completely across all 5 conversations.
 Vary the HTML output style — some minimal, some detailed, some dark theme.
 
 Output only valid JSONL — one JSON object per line, no markdown, no preamble.
@@ -161,7 +161,7 @@ async function pass2(): Promise<void> {
   for (let i = 0; i < ITERATIONS; i++) {
     const transition = pickRandom(TRANSITIONS);
 
-    const prompt = `Generate 10 single-turn frontend design conversations in JSONL format.
+    const prompt = `Generate 5 single-turn frontend design conversations in JSONL format.
 
 Each conversation:
 1. User gives a SPECIFIC, well-described component or page request (enough detail that no clarification is needed)
@@ -170,7 +170,7 @@ Each conversation:
 Vary component types: buttons, forms, cards, navbars, pricing tables, dashboards, modals, mobile components, landing sections, data tables.
 
 TRANSITION STYLE: ${transition}
-Vary phrasing heavily across all 10 examples.
+Vary phrasing heavily across all 5 examples.
 Output only complete, self-contained HTML with inline CSS — no CDN.
 
 Output only valid JSONL — one JSON object per line, no markdown.
