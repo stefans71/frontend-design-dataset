@@ -222,8 +222,8 @@ output/
 17. ✅ Re-render pass all 5 runs (Chromium OOM failures recovered)
 18. ✅ VPS critique+improve+package all 5 runs — run4 complete 2026-05-21 ~07:30 UTC
 19. ✅ Concatenate: `output/dataset.jsonl` — **2,836 records** (573+558+573+534+598)
-20.5. 🔄 Two-stage eval pass → `output/scores.jsonl` + `output/dataset-clean.jsonl`
-     Files: `src/evaluate.ts`, `output/pre-scores.jsonl`, `output/scores.jsonl`, `output/eval-summary.json`, `output/dataset-clean.jsonl`
+20.5. ✅ Two-stage eval pass complete — 465/500 clean, 0 excluded by score, dataset-clean.jsonl = 2,835 records
+     Score dist: 9→303, 8→141, 7→17, 6→4 | 10 unscored (stage_b_failed, included) | 25 missing improved.html
 20. ⏳ Generate 200-300 qualifying conversation traces on VPS (Codex CLI)
 21. ⏳ Pre-training smoke test (10 steps, confirm loss dropping by step 5)
 22. ⏳ Fine-tune Qwen3-VL-8B on combined dataset (~3,200-3,400 records, QLoRA)

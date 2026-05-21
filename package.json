@@ -11,7 +11,8 @@
     "package": "bun run src/package-dataset.ts",
     "improve": "bun run src/improve.ts",
     "test:pipeline": "TEST_MODE=true TEST_COUNT=3 bun run src/pipeline.ts",
-    "test:v2": "TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run src/pipeline.ts"
+    "test:v2": "TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run src/pipeline.ts",
+    "evaluate": "bun run src/evaluate.ts"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",
