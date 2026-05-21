@@ -67,7 +67,7 @@ async function runCodex(prompt: string): Promise<string> {
   const timer = setTimeout(() => {
     timedOut = true;
     proc.kill();
-  }, 300_000);
+  }, 480_000);
 
   const text = await new Response(proc.stdout).text();
   await proc.exited;
