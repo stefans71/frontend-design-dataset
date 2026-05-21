@@ -380,17 +380,114 @@ swift sft \
 
 ---
 
-## Step 22 — Quantize and Release ⏳
+## Step 22 — Export GGUF + Quantize ⏳
+
+**Confirmed workflow (researched 2026-05-22 while training runs):**
+- `llama-quantize` build started in background on V2 → `/tmp/build-quantize.log`
+- convert_hf_to_gguf.py at `/root/autodl-tmp/llama-mtp/convert_hf_to_gguf.py` — Qwen3-VL supported ✅
+- mmproj reuse confirmed (see below)
+
+### Pre-check: llama-quantize binary
 
 ```bash
-# Export to GGUF via llama.cpp
-python convert_hf_to_gguf.py /root/autodl-tmp/finetune-output --outtype f16
-llama-quantize model-f16.gguf model-q4_k_m.gguf Q4_K_M
-llama-quantize model-f16.gguf model-q3_k_m.gguf Q3_K_M
+# Verify build completed (started during training):
+ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com \
+  "tail -3 /tmp/build-quantize.log"
+# Expect: BUILD_DONE at end
+
+# If not done yet, build manually:
+ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com \
+  "cd /root/autodl-tmp/llama-mtp && cmake --build build --target llama-quantize -j\$(nproc)"
+
+# Binary after build:
+# /root/autodl-tmp/llama-mtp/build/bin/llama-quantize
+```
+
+### Vision encoder (mmproj) — REUSE EXISTING ✅
+
+`--freeze_vit True` was used → vision encoder weights unchanged.
+**No mmproj conversion needed.** Reuse directly:
+```
+/root/autodl-tmp/qwen-eval/qwen3-vl-8b-gguf/mmproj-F16.gguf  (1.1G)
+```
+
+### Checkpoint path
+
+`save_steps=500` → intermediate saves at steps 500, 1000, 1500, 2000.
+Final checkpoint (step 2319, after 3 epochs):
+```
+/root/autodl-tmp/finetune-output/v0-20260522-064424/checkpoint-2319
+```
+Verify after training: `ls /root/autodl-tmp/finetune-output/v0-20260522-064424/`
+
+### Disk check before starting
+
+```bash
+ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com "df -h /root/autodl-tmp"
+# Need: ~16GB (merge) + ~16GB (f16 GGUF) + ~5GB (Q4_K_M) + ~4GB (Q3_K_M) ≈ 41GB extra
+```
+
+### Part 1 — Merge LoRA adapters → HF format
+
+```bash
+# Run from dataset root (cd required — SWIFT uses relative paths for images)
+ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com bash <<'EOF'
+cd /root/autodl-tmp/frontend-design-dataset
+swift export \
+  --model /root/autodl-tmp/Qwen3-VL-8B-Instruct-HF \
+  --adapters /root/autodl-tmp/finetune-output/v0-20260522-064424/checkpoint-2319 \
+  --output_dir /root/autodl-tmp/finetune-merged \
+  --merge_lora True
+EOF
+# Output: full HF-format model at /root/autodl-tmp/finetune-merged/ (~16GB)
+```
+
+### Part 2 — Convert LM to GGUF
+
+**`--mmproj` flag is NOT used** → produces LM GGUF only (vision encoder excluded).
+We reuse the existing frozen mmproj instead.
+
+```bash
+ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com bash <<'EOF'
+cd /root/autodl-tmp/llama-mtp
+python convert_hf_to_gguf.py \
+  /root/autodl-tmp/finetune-merged \
+  --outtype f16 \
+  --outfile /root/autodl-tmp/frontend-design-expert-f16.gguf
+EOF
+# Output: /root/autodl-tmp/frontend-design-expert-f16.gguf (~16GB)
+```
+
+### Part 3 — Quantize
+
+```bash
+ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com bash <<'EOF'
+/root/autodl-tmp/llama-mtp/build/bin/llama-quantize \
+  /root/autodl-tmp/frontend-design-expert-f16.gguf \
+  /root/autodl-tmp/frontend-design-expert-Q4_K_M.gguf \
+  Q4_K_M
+
+/root/autodl-tmp/llama-mtp/build/bin/llama-quantize \
+  /root/autodl-tmp/frontend-design-expert-f16.gguf \
+  /root/autodl-tmp/frontend-design-expert-Q3_K_M.gguf \
+  Q3_K_M
+EOF
+# Q4_K_M: ~5GB | Q3_K_M: ~4GB
+```
+
+### Part 4 — Smoke test with llama-server
+
+```bash
+ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com \
+  "/root/autodl-tmp/llama-mtp/llama-server \
+    --model /root/autodl-tmp/frontend-design-expert-Q4_K_M.gguf \
+    --mmproj /root/autodl-tmp/qwen-eval/qwen3-vl-8b-gguf/mmproj-F16.gguf \
+    --port 11435 \
+    --ctx-size 8192"
 ```
 
 Target inference hardware:
-- RTX 3060 12GB: Q4_K_M (~5.5GB LM + ~2GB ViT = ~7.5GB + KV cache)
+- RTX 3060 12GB: Q4_K_M (~5GB LM + ~1.1GB mmproj = ~6.1GB + KV cache)
 - M3/M4 Mac 16GB unified: Q4_K_M with ~64K context
 - RTX 4070 12GB: Q3_K_M for more KV cache headroom
 
