@@ -4,28 +4,41 @@ Synthetic frontend design training data pipeline for fine-tuning **Qwen3-VL-8B**
 
 ## Last Updated
 
-2026-05-20 ~13:00 JST
+2026-05-21 ~01:00 UTC
 
 ---
 
 ## ⚡ Continue From Here (after /compact)
 
 Read in this order before doing anything:
-1. **This file** (CLAUDE.md) — full context, especially Current Run Status below
-2. **PLAN.md** — implementation checklist
-3. **FRONTEND-DESIGN-MODEL-CARD.md** — acceptance criteria §7, training strategy §3
+1. **This file** (CLAUDE.md) — full context, especially Current Status below
+2. **TEST-QWEN35-9B.md** — active test plan for model evaluation
+3. **PLAN.md** — full pipeline implementation checklist (do not overwrite)
+4. **FRONTEND-DESIGN-MODEL-CARD.md** — acceptance criteria §7, training strategy §3
 
-**Current situation:** 500-component full run is IN PROGRESS on AutoDL westd. Run0+run1 generate+render complete. Run2 partial (56/100). Run3 in progress (~70/100). Run4 queued. VPS is processing critique+improve for run0+run1 in parallel.
+**Current situation (2026-05-21 ~01:00 UTC):**
 
-**Do not restart anything without checking current screen sessions first:**
+Two parallel tracks:
+
+**Track A — VPS improve (background, Codex credits exhausted):**
+- run0+run1 improve+package complete ✅
+- run2: 71/~88 improved (Codex credits hit at 02:11 UTC reset)
+- run3: 0 improved, run4: 0 improved
+- No screen session running — wakeup scheduled to relaunch at credit reset
+- When credits available: `screen -dmS vps-improve bash -c 'cd /root/tinkering/Local-LLMs/Local-LLM-Agent/frontend-design-dataset && for SUFFIX in run2 run3 run4; do OUTPUT_SUFFIX=$SUFFIX bun run improve 2>&1 | tee /tmp/improve-${SUFFIX}c.log; DATASET_PATH=output/dataset-${SUFFIX}.jsonl OUTPUT_SUFFIX=$SUFFIX bun run package 2>&1 | tee /tmp/package-${SUFFIX}c.log; done; echo ALL_IMPROVE_DONE'`
+- Monitor: `bash scripts/monitor-improve.sh` → `/tmp/improve-monitor.log`
+
+**Track B — AutoDL qwen3.5:9b evaluation (active):**
+- See `TEST-QWEN35-9B.md` for full test plan
+- 3 tests: vision critique, qualifying questions, self-contained output
+- Result determines fine-tune target (or skip fine-tune entirely)
+- AutoDL port: 25180 (verify after reboot)
+- Shut down AutoDL immediately after tests complete
+
+**Do not restart the VPS improve session without first checking credits:**
 ```bash
-# AutoDL
-ssh -i /root/.ssh/id_ed25519 -p 25180 root@connect.westd.seetacloud.com "screen -list"
-tail -f /tmp/fullrun3.log   # or fullrun2.log — check which is active
-
-# VPS
-screen -list
-tail -f /tmp/vps-process.log
+screen -ls   # VPS — check if session exists
+codex exec -m gpt-5.4 --dangerously-bypass-approvals-and-sandbox --ephemeral "Reply with exactly: OK"   # test credits
 ```
 
 ---
@@ -151,6 +164,17 @@ screen -dmS vps-process bash -c 'for SUFFIX in run0 run1 run2 run3 run4; do echo
 # Final concatenation
 cat output/dataset-run*.jsonl > output/dataset.jsonl
 wc -l output/dataset.jsonl   # expect ~3,000
+```
+
+### Next steps after concat
+```
+⬜ concat all runs → output/dataset.jsonl
+⬜ sub-agent eval pass → scores.jsonl (exclude <5/8)
+⬜ generate 200-300 qualifying conversation traces → append to dataset.jsonl
+⬜ pre-training smoke test (10 steps, confirm loss dropping)
+⬜ full QLoRA fine-tune on AutoDL
+⬜ export → GGUF Q4_K_M
+⬜ post-training baseline retest (critique 7+/10, questions 8+/10)
 ```
 
 ### Resume a partial run (after crash/restart)
@@ -294,6 +318,73 @@ source /root/autodl-tmp/frontend-design-dataset/autodl-run.sh
 - `TEST_MODE=true` + `TEST_COUNT=3` limits to first 3 components
 - HTML must be self-contained (inline CSS) — no external CDN resources in generated output
 - AutoDL single slot (`-np 1`) — one llama-server request at a time
+
+---
+
+## Sub-Agent Evaluation Pass
+
+Run after `cat output/dataset-run*.jsonl > output/dataset.jsonl`.
+
+Spawn Claude Sonnet 4.6 sub-agents (via Task tool inside Claude Code) to score each
+component's `improved.html` by reading HTML source — not screenshots.
+Batch 20 components per sub-agent call to stay within context limits.
+
+**Scoring rubric (8 points total):**
+
+```
+INTERACTIVITY (0-3):
+  3 = JS event listeners + CSS transitions + state toggle logic present
+  2 = hover/focus states in CSS only
+  1 = static, no interactive behavior
+  0 = broken or missing JS
+
+VISUAL QUALITY (0-3):
+  3 = specific hex colors, exact px measurements, WCAG contrast considered
+  2 = named colors, relative sizing, some specificity
+  1 = vague descriptions only
+  0 = no styling
+
+HTML COMPLETENESS (0-2):
+  2 = self-contained, no CDN, responsive, working SVGs
+  1 = minor issues (broken SVG, unnecessary CDN)
+  0 = broken or incomplete
+```
+
+**Output:** `output/scores.jsonl` — one line per component:
+```json
+{"component": "component-003-run2", "interactivity": 2, "visual": 3, "completeness": 2, "total": 7, "notes": "..."}
+```
+
+**Exclusion threshold:** drop any component with `total < 5` from the training set before fine-tuning.
+
+---
+
+## OOM Prevention — Qwen3-VL Training Config
+
+**CRITICAL:** Qwen3-VL uses **32×32 pixel patches**, NOT 28×28 like Qwen2.5-VL.
+Copying a Qwen2.5-VL config will silently mis-size images and OOM on 1200+ images.
+
+Required parameters for all fine-tune runs:
+```bash
+--image_min_pixels $((256 * 32 * 32))    # 262,144 — do NOT use 28*28 value
+--image_max_pixels $((1280 * 32 * 32))   # 1,310,720 — increase for screenshot data
+--tune_mm_vision False                    # freeze vision encoder — saves ~4GB VRAM
+--gradient_checkpointing True             # required at batch_size > 1
+PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'  # reduces fragmentation spikes
+load_in_4bit = True                       # QLoRA — safe for Qwen3-VL (NOT Qwen3.5)
+```
+
+**Vision encoder VRAM note:** mmproj is 1.08GB at F16. Ollama idle holds VRAM and will
+block training. Kill it before starting:
+```bash
+pkill -f ollama
+```
+
+**Always run a smoke test before full fine-tune:**
+```bash
+# max_steps=10, then inspect loss — should be dropping by step 5
+swift sft ... --max_steps 10
+```
 
 ---
 

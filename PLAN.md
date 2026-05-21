@@ -217,19 +217,26 @@ output/
 12. ✅ `src/package-dataset.ts` — mobile_to_code (6th record type) + dataset-stats.json
 13. ✅ `scripts/run-all-variants.sh` — 5-temperature loop, no set -e
 14. ✅ Smoke test passed (3 components × 2 temps × 6 record types = 36 records)
-15. 🔄 **Full 500-component run IN PROGRESS** — run0+run1 done, run2 partial, run3 running, run4 queued
-16. ⏳ Resume run2 (44 missing components) after run3+run4 complete
-17. ⏳ Re-render pass all 5 runs (~26 Chromium OOM failures)
-18. ⏳ VPS critique+improve+package for run2+run3+run4
+15. ✅ **Full 500-component run complete** — all 5 runs done
+16. ✅ Resume run2 (93/100 final), re-render pass complete
+17. ✅ Re-render pass all 5 runs (Chromium OOM failures recovered)
+18. 🔄 VPS critique+improve+package for run2+run3+run4 (run4 in progress ~05:35 UTC)
 19. ⏳ Concatenate: `cat output/dataset-run*.jsonl > output/dataset.jsonl` (~3,000 records)
-20. ⏳ Generate 200-400 qualifying conversation traces on VPS (Codex CLI)
-21. ⏳ Fine-tune Qwen3-VL-8B on combined dataset (~3,200-3,400 records)
+20.5. ⏳ Sub-agent eval pass → `output/scores.jsonl` (exclude components scoring <5/8)
+20. ⏳ Generate 200-300 qualifying conversation traces on VPS (Codex CLI)
+21. ⏳ Pre-training smoke test (10 steps, confirm loss dropping by step 5)
+22. ⏳ Fine-tune Qwen3-VL-8B on combined dataset (~3,200-3,400 records, QLoRA)
+23. ⏳ Quantize to Q4_K_M + Q3_K_M GGUF
+24. ⏳ Post-training baseline retest (target: critique 7+/10, questions 8+/10)
 22. ⏳ Quantize to Q4_K_M + Q3_K_M GGUF
 23. ⏳ Test on Ollama (RTX 3060 12GB target)
 
 ---
 
 ## Step 20 — Qualifying Conversation Traces (200-400 records)
+    see also ## 13. Second Training Dataset — Qualifying Conversation Traces in:
+      /root/tinkering/Local-LLMs/Local-LLM-Agent/frontend-design-dataset/FRONTEND-DESIGN-MODEL-CARD.md
+      
 
 After the main dataset is complete, generate multi-turn conversations that teach the model
 to ask follow-up questions on vague prompts. These are generated on VPS using Codex CLI.
@@ -263,6 +270,25 @@ Run 20-40 times = 200-400 examples.
 
 ---
 
+## Step 20.5 — Sub-Agent Eval Pass
+
+After concat, before qualifying traces. Spawn Claude Sonnet 4.6 sub-agents via Task tool
+inside Claude Code. Read `improved.html` source (not screenshots). Batch 20 per call.
+
+**Scoring (8 pts total):**
+- Interactivity (0-3): JS listeners + CSS transitions + state toggle = 3; hover/focus CSS only = 2; static = 1; broken = 0
+- Visual Quality (0-3): hex colors + exact px + WCAG considered = 3; named colors + relative = 2; vague = 1; none = 0
+- HTML Completeness (0-2): self-contained + no CDN + responsive = 2; minor issues = 1; broken = 0
+
+**Output:** `output/scores.jsonl`:
+```json
+{"component": "component-003-run2", "interactivity": 2, "visual": 3, "completeness": 2, "total": 7, "notes": "..."}
+```
+
+**Exclusion:** filter `total < 5` before building final training split.
+
+---
+
 ## Step 21 — Fine-Tune Qwen3-VL-8B
 
 - Framework: SWIFT (Alibaba's official Qwen training toolkit)
@@ -271,16 +297,29 @@ Run 20-40 times = 200-400 examples.
 - Training time estimate: ~3-5 hours for 3,400 records at rank 32
 - Output: merged checkpoint → GGUF export
 
-**SWIFT command (approximate):**
+**CRITICAL — Qwen3-VL uses 32×32 patches (NOT 28×28 like Qwen2.5-VL). Wrong value = silent OOM.**
+
+**SWIFT command:**
 ```bash
+PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True' \
 swift sft \
   --model Qwen/Qwen3-VL-8B-Instruct \
   --tuner_type lora \
   --lora_rank 32 \
   --dataset output/dataset.jsonl \
   --num_train_epochs 3 \
-  --output_dir ./output-finetune
+  --output_dir ./output-finetune \
+  --image_min_pixels $((256 * 32 * 32)) \
+  --image_max_pixels $((1280 * 32 * 32)) \
+  --tune_mm_vision False \
+  --gradient_checkpointing True \
+  --load_in_4bit True
 ```
+
+**Pre-run checklist:**
+- `pkill -f ollama` — free VRAM (mmproj holds 1.08GB idle)
+- Smoke test first: add `--max_steps 10`, confirm loss drops by step 5
+- Verify `image_min_pixels` uses `32*32` not `28*28`
 
 ---
 
