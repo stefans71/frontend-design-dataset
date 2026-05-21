@@ -65,7 +65,7 @@ All records validated: 0 CDN links, 0 malformed, 95% scoring 8-9/9 on eval pass.
 | Rsync dataset + PNGs to V2 | ✅ 3,090 records, 983 PNGs |
 | Download HF weights | ✅ /root/autodl-tmp/Qwen3-VL-8B-Instruct-HF (~16.5GB) |
 | Pre-training smoke test | ✅ PASSED — all 10 steps, no OOM (see results below) |
-| Full QLoRA fine-tune | ⏳ |
+| Full QLoRA fine-tune | 🔄 RUNNING — screen session on V2, ~2.3 hours, log at /tmp/finetune.log |
 | Export GGUF + quantize (Q4_K_M + Q3_K_M) | ⏳ |
 | Post-fine-tune validation (4 tests — see below) | ⏳ |
 
@@ -519,3 +519,13 @@ https://github.com/stefans71/frontend-design-dataset
 - SSH: `ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com`
 - CUDA 13.2 — backward compatible
 - 200GB data disk
+
+## Session Notes — 2026-05-22 JST
+
+### Fine-Tune Launch
+- Full fine-tune launched on V2 (port 25615) in screen session
+- Smoke test passed: step1 loss 0.5289, VRAM 22.88GB, 3.6s/it
+- Fixes applied: --max_length 4096, --per_device_train_batch_size 1, --gradient_accumulation_steps 4
+- Estimated completion: ~2.3 hours from launch
+- Monitor: `ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com "tail -f /tmp/finetune.log"`
+- After completion: export GGUF → quantize Q4_K_M + Q3_K_M → run 4-test validation protocol
