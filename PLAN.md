@@ -214,7 +214,12 @@ output/
 29. ⏳ **Export GGUF + quantize** — see Step 22 below
 30. ⏳ **Post-fine-tune validation** — 4-test protocol (see CLAUDE.md)
 31. ⏳ **Test on Ollama** (RTX 3060 12GB target hardware)
-32. ⏳ **Release**
+32. ⏳ **Release (8B)**
+33. ⏳ **Download Qwen3-VL-4B-Instruct HF weights** (~9GB)
+34. ⏳ **Fine-tune Qwen3-VL-4B (Designer Lite)** — see Step 30
+35. ⏳ **Export 4B GGUF + quantize** — same workflow as Step 22
+36. ⏳ **Validate 4B** — 4-test protocol, target 5+/10 qualifying questions
+37. ⏳ **Release (4B Lite)**
 
 ---
 
@@ -502,6 +507,126 @@ Run 4-test protocol from CLAUDE.md before releasing. Targets:
 - Test D (markdown chatter): <20 wrapper tokens per response
 
 See CLAUDE.md `## Post-Fine-Tune Validation Protocol` for full test prompts and pass criteria.
+
+---
+
+## Step 30 — Designer Lite: Fine-Tune Qwen3-VL-4B ⏳
+
+Queue immediately after Step 22 (8B GGUF export) completes.
+Target: 8GB GPU users (RTX 3060, older laptops, entry-level Macs).
+
+**Download 4B weights (~9GB):**
+```bash
+ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com "
+source /etc/network_turbo
+modelscope download \
+  --model Qwen/Qwen3-VL-4B-Instruct \
+  --local_dir /root/autodl-tmp/Qwen3-VL-4B-Instruct-HF
+"
+```
+
+**Fine-tune command (BF16, no quantization needed on RTX 5090):**
+```bash
+ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com "
+cd /root/autodl-tmp/frontend-design-dataset
+export PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'
+screen -S finetune-4b
+swift sft \
+  --model /root/autodl-tmp/Qwen3-VL-4B-Instruct-HF \
+  --model_type qwen3_vl \
+  --tuner_type lora \
+  --lora_rank 32 \
+  --dataset output/dataset-final.jsonl \
+  --num_train_epochs 2 \
+  --max_length 4096 \
+  --max_pixels \$((1280 * 32 * 32)) \
+  --freeze_vit True \
+  --gradient_checkpointing True \
+  --per_device_train_batch_size 2 \
+  --gradient_accumulation_steps 2 \
+  --output_dir /root/autodl-tmp/finetune-output-4b \
+  2>&1 | tee /tmp/finetune-4b.log
+"
+```
+
+**Configuration rationale:**
+- BF16 (not 4-bit) — 4B has fewer parameters; cleaner gradients help it punch above its weight
+- batch_size 2 + accum 2 = effective batch 4 — safe at ~18-20GB VRAM
+- 2 epochs — 4B benefits from seeing data twice vs 8B's 3 epochs
+- Same dataset (3,090 records) — no additional data work needed
+
+**Expected:**
+- VRAM: ~18-20GB (safe on RTX 5090)
+- Speed: ~2.2 s/it (faster than 8B)
+- Duration: ~2.2 hours (2 epochs × ~1,546 steps)
+- Starting loss: expect ~0.5-0.7 (similar to 8B baseline)
+- If step 1 loss ≥ 8.0: chat template mismatch — stop immediately
+
+**Smoke test first (always):**
+```bash
+swift sft \
+  --model /root/autodl-tmp/Qwen3-VL-4B-Instruct-HF \
+  --model_type qwen3_vl \
+  --tuner_type lora \
+  --lora_rank 32 \
+  --dataset output/dataset-final.jsonl \
+  --num_train_epochs 1 \
+  --max_steps 10 \
+  --max_length 4096 \
+  --max_pixels $((1280 * 32 * 32)) \
+  --freeze_vit True \
+  --gradient_checkpointing True \
+  --per_device_train_batch_size 2 \
+  --gradient_accumulation_steps 2 \
+  --output_dir /root/autodl-tmp/finetune-smoke-4b
+```
+
+**Export after training (same workflow as 8B):**
+
+Get mmproj for 4B base first — need to either find a pre-built one or generate it:
+```bash
+# Option A: download pre-built 4B GGUF (has mmproj) from HuggingFace
+# Option B: generate mmproj from 4B weights using convert_hf_to_gguf.py --mmproj flag:
+cd /root/autodl-tmp/llama-mtp
+python convert_hf_to_gguf.py \
+  /root/autodl-tmp/Qwen3-VL-4B-Instruct-HF \
+  --mmproj \
+  --outfile /root/autodl-tmp/qwen3-vl-4b-mmproj-F16.gguf
+```
+
+```bash
+# Merge LoRA
+swift export \
+  --model /root/autodl-tmp/Qwen3-VL-4B-Instruct-HF \
+  --adapters /root/autodl-tmp/finetune-output-4b/v0-*/checkpoint-last \
+  --output_dir /root/autodl-tmp/finetune-merged-4b \
+  --merge_lora True
+
+# Convert LM (no --mmproj → LM only)
+cd /root/autodl-tmp/llama-mtp
+python convert_hf_to_gguf.py /root/autodl-tmp/finetune-merged-4b \
+  --outtype f16 \
+  --outfile /root/autodl-tmp/frontend-design-lite-f16.gguf
+
+# Quantize
+/root/autodl-tmp/llama-mtp/build/bin/llama-quantize \
+  /root/autodl-tmp/frontend-design-lite-f16.gguf \
+  /root/autodl-tmp/frontend-design-lite-Q4_K_M.gguf \
+  Q4_K_M
+
+/root/autodl-tmp/llama-mtp/build/bin/llama-quantize \
+  /root/autodl-tmp/frontend-design-lite-f16.gguf \
+  /root/autodl-tmp/frontend-design-lite-Q3_K_M.gguf \
+  Q3_K_M
+```
+
+**mmproj:** Reuse base Qwen3-VL-4B mmproj (vision encoder frozen — same as 8B approach).
+Note: 4B mmproj is different from 8B — do NOT reuse the 8B `mmproj-F16.gguf`.
+
+**Known limitation:** 4B may truncate complex HTML outputs more than 8B. Acceptable trade-off for 8GB GPU compatibility.
+
+**Post-training validation:** Same 4-test protocol as 8B (CLAUDE.md `## Post-Fine-Tune Validation Protocol`).
+Target: qualifying questions **5+/10** (lower bar than 8B's 6+/10 — smaller model).
 
 ---
 
