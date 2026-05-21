@@ -234,10 +234,27 @@ output/
 
 ---
 
-## Step 20 — Qualifying Conversation Traces (200-400 records)
+## Step 20 — Qualifying Conversation Traces (200-400 records) 🔄 IN PROGRESS
+
     see also ## 13. Second Training Dataset — Qualifying Conversation Traces in:
       /root/tinkering/Local-LLMs/Local-LLM-Agent/frontend-design-dataset/FRONTEND-DESIGN-MODEL-CARD.md
-      
+
+**Files:**
+- Script: `src/generate-conversations.ts`
+- Output: `output/qualifying-conversations.jsonl`
+- Final merged: `output/dataset-final.jsonl` (dataset-clean.jsonl + qualifying-conversations.jsonl)
+
+**Run (in screen session on VPS):**
+```bash
+screen -dmS conversations bash -c 'bun run conversations 2>&1 | tee /tmp/conversations.log'
+tail -f /tmp/conversations.log
+```
+
+**After complete — merge with clean dataset:**
+```bash
+cat output/dataset-clean.jsonl output/qualifying-conversations.jsonl > output/dataset-final.jsonl
+wc -l output/dataset-final.jsonl   # expect ~3,035-3,135
+```
 
 After the main dataset is complete, generate multi-turn conversations that teach the model
 to ask follow-up questions on vague prompts. These are generated on VPS using Codex CLI.
@@ -245,25 +262,11 @@ to ask follow-up questions on vague prompts. These are generated on VPS using Co
 **Why needed:** ~200-400 examples is sufficient to teach behavioral nudges (when/what to ask).
 Base model already knows how to ask questions — we're teaching context-specific behavior.
 
-**Generation command:**
-```bash
-codex exec -m gpt-5.4 \
-  --dangerously-bypass-approvals-and-sandbox \
-  --ephemeral \
-  "Generate 10 multi-turn frontend design conversations in JSONL format.
-
-Each conversation:
-- Starts with a vague user request (website, app, landing page, dashboard)
-- Assistant asks 2-3 focused qualifying questions
-- User answers briefly  
-- Assistant confirms tech approach and builds complete HTML/CSS/JS
-
-Vary domains: restaurants, fitness, SaaS, portfolio, ecommerce, local businesses.
-Vary vagueness: some very vague, some partially specified.
-Output only valid JSONL, one conversation object per line."
-```
-
-Run 20-40 times = 200-400 examples.
+**Two pass approach:**
+- Pass 1 (20 batches × 10): vague request → clarifying questions → build (qualifying_conversation)
+- Pass 2 (15 batches × 10): specific request → build immediately (immediate_conversation)
+- Personas (5) + domains (14) randomized per batch — diversity via combinatorics, not prompting
+- Target: 200+ total, 55-65% ask type
 
 **Trigger logic the model learns:**
 - Ask questions when: full page/site/app requested with no tech stack or content detail
