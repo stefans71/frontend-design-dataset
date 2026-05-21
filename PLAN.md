@@ -205,10 +205,11 @@ output/
 21. ✅ **Step 20 — Qualifying conversation traces** — 254 records (150 ask / 104 immediate, 59% ask ratio)
 22. ✅ **Final merge** — `output/dataset-final.jsonl` = **3,089 records** ← fine-tune input
 23. ✅ Baseline test confirmed fine-tune required (qualifying questions: 1/10)
-24. ⏳ **Verify V2 fine-tune instance health** (port 25615)
-25. ⏳ **Install SWIFT on V2 instance**
-26. ⏳ **Rsync dataset-final.jsonl to V2 instance**
-27. ⏳ **Pre-training smoke test** (10 steps, loss drops by step 5)
+24. ✅ **Verify V2 fine-tune instance health** — RTX 5090 32GB, 222GB free, CUDA 13.2
+25. ✅ **Install SWIFT on V2 instance** — ms-swift 4.2.1
+26. ✅ **Rsync dataset-final.jsonl + PNGs to V2** — 3,089 records, 983 PNGs confirmed
+26a. ✅ **Download Qwen3-VL-8B-Instruct HF weights** — /root/autodl-tmp/Qwen3-VL-8B-Instruct-HF (~16GB)
+27. ⏳ **Pre-training smoke test** (10 steps, loss drops by step 5, check VRAM for BF16 decision)
 28. ⏳ **Full QLoRA fine-tune** — see Step 21 below
 29. ⏳ **Export GGUF + quantize** — see Step 22 below
 30. ⏳ **Post-fine-tune validation** — 4-test protocol (see CLAUDE.md)
@@ -285,10 +286,12 @@ Pre-conditions:
 
 ```bash
 ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com
-pip install ms-swift -U
-# If pip is slow on China network:
-pip install ms-swift --index-url https://pypi.tuna.tsinghua.edu.cn/simple
-swift --version   # confirm install
+pip install ms-swift -U --index-url https://pypi.tuna.tsinghua.edu.cn/simple
+swift --version   # confirm: ms-swift 4.2.1
+
+# Also required (SWIFT 4.2.1 does not install these automatically):
+pip install qwen-vl-utils decord bitsandbytes \
+  --index-url https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 ### Pre-run checklist
@@ -304,12 +307,19 @@ export PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'
 Qwen3-VL uses **32×32 pixel patches**, NOT 28×28 like Qwen2.5-VL.
 Wrong value = silent image mis-sizing → OOM on 1200+ token images.
 
+### CRITICAL — Image paths are relative
+
+Dataset uses **relative paths** (`output/component-000-run0/screenshot-desktop.png`).
+Swift must be launched from `/root/autodl-tmp/frontend-design-dataset/` or paths won't resolve.
+
 ### Smoke test (always run first)
 
 ```bash
-PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True' \
+cd /root/autodl-tmp/frontend-design-dataset
+pkill -f ollama 2>/dev/null || true   # free VRAM before starting
+export PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'
 swift sft \
-  --model Qwen/Qwen3-VL-8B-Instruct \
+  --model /root/autodl-tmp/Qwen3-VL-8B-Instruct-HF \
   --tuner_type lora \
   --lora_rank 32 \
   --dataset /root/autodl-tmp/frontend-design-dataset/output/dataset-final.jsonl \
@@ -320,32 +330,49 @@ swift sft \
   --tune_mm_vision False \
   --gradient_checkpointing True \
   --load_in_4bit True \
-  --output_dir /root/autodl-tmp/finetune-smoke
+  --output_dir /root/autodl-tmp/finetune-smoke \
+  2>&1 | tee /tmp/smoke.log
 # Loss should drop by step 5. Flat/spiking = config problem — fix before full run.
+# After step 10: check nvidia-smi VRAM usage.
+#   <20GB used → safe to try BF16 (remove --load_in_4bit True for higher quality)
+#   >24GB used → keep 4-bit
 ```
+
+### BF16 vs QLoRA decision
+
+After smoke test, run `nvidia-smi` and check GPU memory used:
+- **Under 20GB**: Full BF16 fine-tune is viable. Remove `--load_in_4bit True`. Higher quality gradients, same 3 epochs.
+- **20–24GB**: Borderline — keep 4-bit to be safe.
+- **Over 24GB**: Keep `--load_in_4bit True` (required to fit in 32GB).
 
 ### Full fine-tune command
 
 ```bash
-PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True' \
+cd /root/autodl-tmp/frontend-design-dataset
+pkill -f ollama 2>/dev/null || true
+export PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'
 swift sft \
-  --model Qwen/Qwen3-VL-8B-Instruct \
+  --model /root/autodl-tmp/Qwen3-VL-8B-Instruct-HF \
+  --model_type qwen3_vl \
   --tuner_type lora \
   --lora_rank 32 \
-  --dataset /root/autodl-tmp/frontend-design-dataset/output/dataset-final.jsonl \
+  --dataset output/dataset-final.jsonl \
   --num_train_epochs 3 \
-  --image_min_pixels $((256 * 32 * 32)) \
-  --image_max_pixels $((1280 * 32 * 32)) \
-  --tune_mm_vision False \
+  --max_pixels $((1280 * 32 * 32)) \
+  --freeze_vit True \
   --gradient_checkpointing True \
-  --load_in_4bit True \
-  --output_dir /root/autodl-tmp/finetune-output
+  --quant_bits 4 \
+  --quant_method bnb \
+  --output_dir /root/autodl-tmp/finetune-output \
+  2>&1 | tee /tmp/finetune.log
 ```
 
-- Framework: SWIFT (Alibaba's official Qwen training toolkit)
+- Framework: SWIFT 4.2.1 (Alibaba's official Qwen training toolkit)
 - Method: QLoRA NF4 + BF16 adapters, rank 32
-- Hardware: RTX 5090 on V2 instance (fits at 8B QLoRA — 32GB VRAM)
-- Training time estimate: ~3-5 hours for 3,089 records at rank 32
+- Hardware: RTX 5090 on V2 instance (32GB VRAM)
+- Model path: `/root/autodl-tmp/Qwen3-VL-8B-Instruct-HF` (local, not HF hub string)
+- Dataset path: relative (`output/dataset-final.jsonl`) — must run from dataset root
+- Training time estimate: ~3-5 hours for 3,090 records at rank 32
 - Output: merged checkpoint at `/root/autodl-tmp/finetune-output`
 
 ---
