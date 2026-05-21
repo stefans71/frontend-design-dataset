@@ -336,6 +336,11 @@ INTERACTIVITY (context-aware — LLM classifies type first):
 
 ## Step 21 — Fine-Tune Qwen3-VL-8B
 
+Pre-condition: dataset-final.jsonl complete ✅
+Pre-condition: baseline confirmed fine-tune needed ✅ (Test 2: 1/10)
+
+Post-fine-tune validation: run 4-test protocol from CLAUDE.md before release.
+
 - Framework: SWIFT (Alibaba's official Qwen training toolkit)
 - Method: QLoRA NF4 + BF16 adapters, rank 32
 - Hardware: AutoDL H100 instance (or RTX 5090 — fits at 8B QLoRA)

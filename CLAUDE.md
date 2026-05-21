@@ -31,18 +31,76 @@ Two parallel tracks:
 - When credits available: `screen -dmS vps-improve bash -c 'cd /root/tinkering/Local-LLMs/Local-LLM-Agent/frontend-design-dataset && for SUFFIX in run2 run3 run4; do OUTPUT_SUFFIX=$SUFFIX bun run improve 2>&1 | tee /tmp/improve-${SUFFIX}c.log; DATASET_PATH=output/dataset-${SUFFIX}.jsonl OUTPUT_SUFFIX=$SUFFIX bun run package 2>&1 | tee /tmp/package-${SUFFIX}c.log; done; echo ALL_IMPROVE_DONE'`
 - Monitor: `bash scripts/monitor-improve.sh` → `/tmp/improve-monitor.log`
 
-**Track B — AutoDL qwen3.5:9b evaluation (active):**
-- See `TEST-QWEN35-9B.md` for full test plan
-- 3 tests: vision critique, qualifying questions, self-contained output
-- Result determines fine-tune target (or skip fine-tune entirely)
-- AutoDL port: 25180 (verify after reboot)
-- Shut down AutoDL immediately after tests complete
+**Track B — AutoDL qwen3.5:9b evaluation (COMPLETE ✅):**
+- See `TEST-QWEN35-9B.md` for test plan; results below
+- Fine-tune decision: CONFIRMED REQUIRED
+- AutoDL shut down after tests completed
 
 **Do not restart the VPS improve session without first checking credits:**
 ```bash
 screen -ls   # VPS — check if session exists
 codex exec -m gpt-5.4 --dangerously-bypass-approvals-and-sandbox --ephemeral "Reply with exactly: OK"   # test credits
 ```
+
+---
+
+## Baseline Test Results — Qwen3-VL-8B-Instruct (confirmed)
+
+Tested on AutoDL westd. Fine-tune decision: CONFIRMED REQUIRED.
+
+| Test | Score | Finding |
+|---|---|---|
+| Vision critique | 5/10 | Works but vague — no px measurements, no hex values |
+| Qualifying questions | 1/10 | Never asks — builds immediately (RLHF eager pleaser failure) |
+| Self-contained HTML | 7/10 | Good output quality |
+
+Test 2 (1/10) is definitive — system prompts cannot override RLHF
+eagerness to build. Qualifying behavior must be trained into weights.
+
+## Post-Fine-Tune Validation Protocol
+
+Run these 4 tests after fine-tuning before releasing. Pass criteria below.
+
+### Test A — Vision critique quality
+Upload one 4/10 component screenshot. Ask for design critique.
+PASS: mentions specific measurements, hex/color contrast, named design
+principles, scores component. FAIL: generic feedback only.
+Target: 7+/10 (vs 5/10 baseline)
+
+### Test B — Qualifying questions (10 vague prompts)
+Run all 10 prompts below, count how many trigger questions vs immediate build.
+PASS: asks questions on ≥6/10. FAIL: <6/10.
+Target: 8+/10 (vs 1/10 baseline)
+
+Vague prompts to use:
+1. "build me a website for my dog daycare called Stay Fit"
+2. "make me an app for my restaurant"
+3. "I need a landing page for my startup"
+4. "build something for my photography business"
+5. "create a site for my yoga studio"
+6. "I want a web presence for my law firm"
+7. "make me a dashboard"
+8. "build a portfolio for me"
+9. "I need an online store"
+10. "create something for my fitness coaching business"
+
+### Test C — System prompt length tax
+Measure tokens needed in system prompt to get reliable behavior.
+PASS: ≤200 token system prompt achieves correct behavior
+FAIL: needs >500 tokens (eats KV cache on 12GB GPU)
+Target: near-zero system prompt needed (behavior baked into weights)
+
+### Test D — Markdown chatter
+Ask for a component 3 times. Count non-code tokens in response.
+PASS: outputs clean HTML, no preamble, no "here is your code" wrapper
+FAIL: consistent markdown fences + explanation text around every output
+Target: <20 tokens of wrapper text per response
+
+### Fine-tune passed if:
+- Test A: 7+/10
+- Test B: ≥6/10 vague prompts trigger questions
+- Test C: ≤200 token system prompt sufficient
+- Test D: clean output, minimal chatter
 
 ---
 
