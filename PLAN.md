@@ -220,9 +220,10 @@ output/
 15. ✅ **Full 500-component run complete** — all 5 runs done
 16. ✅ Resume run2 (93/100 final), re-render pass complete
 17. ✅ Re-render pass all 5 runs (Chromium OOM failures recovered)
-18. 🔄 VPS critique+improve+package for run2+run3+run4 (run4 in progress ~05:35 UTC)
-19. ⏳ Concatenate: `cat output/dataset-run*.jsonl > output/dataset.jsonl` (~3,000 records)
-20.5. ⏳ Sub-agent eval pass → `output/scores.jsonl` (exclude components scoring <5/8)
+18. ✅ VPS critique+improve+package all 5 runs — run4 complete 2026-05-21 ~07:30 UTC
+19. ✅ Concatenate: `output/dataset.jsonl` — **2,836 records** (573+558+573+534+598)
+20.5. 🔄 Two-stage eval pass → `output/scores.jsonl` + `output/dataset-clean.jsonl`
+     Files: `src/evaluate.ts`, `output/pre-scores.jsonl`, `output/scores.jsonl`, `output/eval-summary.json`, `output/dataset-clean.jsonl`
 20. ⏳ Generate 200-300 qualifying conversation traces on VPS (Codex CLI)
 21. ⏳ Pre-training smoke test (10 steps, confirm loss dropping by step 5)
 22. ⏳ Fine-tune Qwen3-VL-8B on combined dataset (~3,200-3,400 records, QLoRA)
@@ -270,22 +271,63 @@ Run 20-40 times = 200-400 examples.
 
 ---
 
-## Step 20.5 — Sub-Agent Eval Pass
+## Step 20.5 — Evaluation Pass
 
-After concat, before qualifying traces. Spawn Claude Sonnet 4.6 sub-agents via Task tool
-inside Claude Code. Read `improved.html` source (not screenshots). Batch 20 per call.
+Run after `cat output/dataset-run*.jsonl > output/dataset.jsonl`.
+Before qualifying conversation traces.
 
-**Scoring (8 pts total):**
-- Interactivity (0-3): JS listeners + CSS transitions + state toggle = 3; hover/focus CSS only = 2; static = 1; broken = 0
-- Visual Quality (0-3): hex colors + exact px + WCAG considered = 3; named colors + relative = 2; vague = 1; none = 0
-- HTML Completeness (0-2): self-contained + no CDN + responsive = 2; minor issues = 1; broken = 0
+### Files
+- Script: `src/evaluate.ts`
+- Input: `output/component-*-run*/improved.html` (506 files)
+- Input: `output/component-*-run*/metadata.json` (prompt source)
+- Input: `output/dataset.jsonl` (2,836 records to filter)
+- Output: `output/pre-scores.jsonl` (Stage A results)
+- Output: `output/scores.jsonl` (final scores per component)
+- Output: `output/eval-summary.json` (aggregate stats)
+- Output: `output/dataset-clean.jsonl` ← final training file
 
-**Output:** `output/scores.jsonl`:
-```json
-{"component": "component-003-run2", "interactivity": 2, "visual": 3, "completeness": 2, "total": 7, "notes": "..."}
+### Run sequence
+```bash
+bun run evaluate          # Stage A + B together
+# Script filters dataset.jsonl automatically after scoring
+wc -l output/dataset-clean.jsonl   # expect ~2,400-2,700
 ```
 
-**Exclusion:** filter `total < 5` before building final training split.
+### Scoring rubric (max 9 points)
+
+**Stage A — Bun regex (visual score, 0-3):**
+- Color regex: `/(#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\(|var\(--)/ig`
+- Measurement regex: `/\d+(px|rem|em|vh|vw|%)/i`
+- 3 = colorCount>=3 AND hasMeasurement
+- 2 = colorCount>=1 OR hasMeasurement
+- 1 = neither
+
+**Hard gate (fail = skip LLM, exclude from training):**
+- Any `https://` in file except w3.org/placeholder.com
+- File length < 500 chars
+
+**Stage B — LLM (alignment 0-3 + interactivity 0-3):**
+
+ALIGNMENT:
+- 3 = exact component type match
+- 2 = mostly correct, minor details missing
+- 1 = wrong type or major scope mismatch
+- 0 = garbage
+
+INTERACTIVITY (context-aware — LLM classifies type first):
+- Interactive types (modal, dropdown, tabs, accordion, carousel, mobile navbar):
+  - 3=JS+CSS, 2=CSS only, 1=partial, 0=static when required
+- Display types (card, hero, footer, pricing table, badge, stat, testimonial):
+  - 3=correct+hover polish, 2=correct no polish, 1=unnecessary JS, 0=broken
+
+**Exclusion: total < 6/9**
+
+### Checklist
+- [ ] `bun run evaluate` Stage A completes — report pass/fail counts
+- [ ] Stage B LLM scoring completes — report score distribution
+- [ ] `output/dataset-clean.jsonl` written
+- [ ] `output/eval-summary.json` written
+- [ ] Commit: `git commit -m "feat: evaluation pass complete — N clean records"`
 
 ---
 

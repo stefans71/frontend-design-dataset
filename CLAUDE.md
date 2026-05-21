@@ -1,5 +1,8 @@
 # frontend-design-dataset
 
+> Note: This file is getting large. After fine-tuning completes, archive
+> completed session notes to CLAUDE-ARCHIVE.md and keep only active context here.
+
 Synthetic frontend design training data pipeline for fine-tuning **Qwen3-VL-8B**. A local LLM generates HTML components, Playwright renders them to screenshots, Codex CLI critiques the designs, and the results are packaged as JSONL training records.
 
 ## Last Updated
@@ -321,41 +324,42 @@ source /root/autodl-tmp/frontend-design-dataset/autodl-run.sh
 
 ---
 
-## Sub-Agent Evaluation Pass
+## Evaluation Pass (Step 20.5)
 
-Run after `cat output/dataset-run*.jsonl > output/dataset.jsonl`.
+Two-stage pipeline. Run after dataset concat, before qualifying traces.
 
-Spawn Claude Sonnet 4.6 sub-agents (via Task tool inside Claude Code) to score each
-component's `improved.html` by reading HTML source — not screenshots.
-Batch 20 components per sub-agent call to stay within context limits.
+### Stage A — Bun script (deterministic, free, instant)
+File: `src/evaluate.ts`
+Run: `bun run evaluate`
+Output: `output/pre-scores.jsonl`
 
-**Scoring rubric (8 points total):**
+Checks every `output/component-*-run*/improved.html`:
+- Hard gate: fail if any `https://` found in file (except w3.org, placeholder.com) OR file <500 chars
+- Signals: hasScript (document. in <script>), hasHover (:hover/:focus/transition), colorCount, hasMeasurement
+- Visual score: colorCount>=3 AND hasMeasurement=3, colorCount>=1 OR hasMeasurement=2, else=1
 
-```
-INTERACTIVITY (0-3):
-  3 = JS event listeners + CSS transitions + state toggle logic present
-  2 = hover/focus states in CSS only
-  1 = static, no interactive behavior
-  0 = broken or missing JS
+### Stage B — LLM scoring (Claude API, 5 per batch)
+File: `src/evaluate.ts` (same file, separate function)
+Output: `output/scores.jsonl`
 
-VISUAL QUALITY (0-3):
-  3 = specific hex colors, exact px measurements, WCAG contrast considered
-  2 = named colors, relative sizing, some specificity
-  1 = vague descriptions only
-  0 = no styling
+Two dimensions per component (prompt + HTML provided):
+- ALIGNMENT (0-3): does HTML match the requested component type?
+- INTERACTIVITY (0-3): context-aware — interactive types (modal/dropdown/tabs) vs display types (card/hero/badge)
+  - Interactive: 3=JS+CSS working, 2=CSS only, 1=minimal, 0=static when JS required
+  - Display: 3=correct+hover polish, 2=correct no polish, 1=unnecessary JS, 0=broken
 
-HTML COMPLETENESS (0-2):
-  2 = self-contained, no CDN, responsive, working SVGs
-  1 = minor issues (broken SVG, unnecessary CDN)
-  0 = broken or incomplete
-```
+### Stage C — Combine + filter
+total = visualScore + alignment + interactivity (max 9)
+exclude if total < 6
+Output: `output/dataset-clean.jsonl` (filtered from dataset.jsonl)
+Also writes: `output/eval-summary.json`
 
-**Output:** `output/scores.jsonl` — one line per component:
-```json
-{"component": "component-003-run2", "interactivity": 2, "visual": 3, "completeness": 2, "total": 7, "notes": "..."}
-```
-
-**Exclusion threshold:** drop any component with `total < 5` from the training set before fine-tuning.
+### Key file locations
+- Script: `src/evaluate.ts`
+- Pre-scores: `output/pre-scores.jsonl`
+- Final scores: `output/scores.jsonl`
+- Eval summary: `output/eval-summary.json`
+- Clean dataset: `output/dataset-clean.jsonl` ← this is what goes to fine-tuning
 
 ---
 
