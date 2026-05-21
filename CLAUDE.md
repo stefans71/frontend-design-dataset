@@ -182,6 +182,35 @@ ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com
 
 **Note:** Port 25615 may change on reboot — check AutoDL web UI.
 
+## AutoDL Academic Network Acceleration
+
+AutoDL provides built-in proxy acceleration for academic use (GitHub + HuggingFace).
+**Enable before any `git clone`, `pip install`, or `huggingface-cli download` call.**
+
+```bash
+# Enable (run once per session on AutoDL)
+source /etc/network_turbo
+
+# Disable when done (recommended — can affect normal network)
+unset http_proxy && unset https_proxy
+```
+
+Accelerates: `github.com`, `githubusercontent.com`, `githubassets.com`, `huggingface.co`
+
+**Public mirrors (fallback if built-in is slow):**
+- HuggingFace mirror: `https://hf-mirror.com/` — set via `HF_ENDPOINT=https://hf-mirror.com`
+- GitHub proxy: `https://ghproxy.link/` — prepend to raw GitHub URLs
+
+**Usage for HuggingFace model download:**
+```bash
+source /etc/network_turbo
+huggingface-cli download Qwen/Qwen3-VL-8B-Instruct --local-dir /root/autodl-tmp/Qwen3-VL-8B-Instruct
+
+# Or via ModelScope (no proxy needed — China-native):
+pip install modelscope -q
+modelscope download --model Qwen/Qwen3-VL-8B-Instruct --local_dir /root/autodl-tmp/Qwen3-VL-8B-Instruct
+```
+
 ## Rsync Scripts
 
 Both scripts accept `PORT` (arg 1) and optional `HOST` (arg 2, default: connect.westd.seetacloud.com):
