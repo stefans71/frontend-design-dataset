@@ -7,7 +7,7 @@ Synthetic frontend design training data pipeline for fine-tuning **Qwen3-VL-8B**
 
 ## Last Updated
 
-2026-05-21 ~01:00 UTC
+2026-05-21 ~15:00 UTC
 
 ---
 
@@ -19,28 +19,9 @@ Read in this order before doing anything:
 3. **PLAN.md** — full pipeline implementation checklist (do not overwrite)
 4. **FRONTEND-DESIGN-MODEL-CARD.md** — acceptance criteria §7, training strategy §3
 
-**Current situation (2026-05-21 ~01:00 UTC):**
-
-Two parallel tracks:
-
-**Track A — VPS improve (background, Codex credits exhausted):**
-- run0+run1 improve+package complete ✅
-- run2: 71/~88 improved (Codex credits hit at 02:11 UTC reset)
-- run3: 0 improved, run4: 0 improved
-- No screen session running — wakeup scheduled to relaunch at credit reset
-- When credits available: `screen -dmS vps-improve bash -c 'cd /root/tinkering/Local-LLMs/Local-LLM-Agent/frontend-design-dataset && for SUFFIX in run2 run3 run4; do OUTPUT_SUFFIX=$SUFFIX bun run improve 2>&1 | tee /tmp/improve-${SUFFIX}c.log; DATASET_PATH=output/dataset-${SUFFIX}.jsonl OUTPUT_SUFFIX=$SUFFIX bun run package 2>&1 | tee /tmp/package-${SUFFIX}c.log; done; echo ALL_IMPROVE_DONE'`
-- Monitor: `bash scripts/monitor-improve.sh` → `/tmp/improve-monitor.log`
-
-**Track B — AutoDL qwen3.5:9b evaluation (COMPLETE ✅):**
-- See `TEST-QWEN35-9B.md` for test plan; results below
-- Fine-tune decision: CONFIRMED REQUIRED
-- AutoDL shut down after tests completed
-
-**Do not restart the VPS improve session without first checking credits:**
-```bash
-screen -ls   # VPS — check if session exists
-codex exec -m gpt-5.4 --dangerously-bypass-approvals-and-sandbox --ephemeral "Reply with exactly: OK"   # test credits
-```
+**Current situation:** Dataset COMPLETE — 3,089 records in `output/dataset-final.jsonl`.
+Fine-tune phase starting. Active instance is frontend-dataset-clone-V2 (port 25615).
+Do not touch the dataset instance (port 25180 — switched off, data preserved).
 
 ---
 
@@ -114,25 +95,30 @@ Target: <20 tokens of wrapper text per response
   injection, generate in batches of 1-2 not 10 (diversity collapse risk)
 - §2 add screenshot resolution guidance for inference: max 1024x1024
   recommended to avoid vision encoder VRAM OOM on 12GB GPUs
+- Fine-tune instance SSH updated: port 25615, connect.westd.seetacloud.com
+- CUDA 13.2 on V2 instance — backward compatible, no config changes needed
 
 ---
 
-## Current Run Status (as of 2026-05-20 ~12:30 JST)
+## Dataset Status — COMPLETE ✅
 
-| Run  | Temp | Generate      | Render              | VPS Critique      | VPS Improve | Package |
-|------|------|---------------|---------------------|-------------------|-------------|---------|
-| run0 | 0.5  | 100/100 ✅    | 88/100 ✅ (12 failed) | 28/97 in progress | ⏳          | ⏳      |
-| run1 | 0.7  | 100/100 ✅    | 86/100 ✅ (14 failed) | queued after run0 | ⏳          | ⏳      |
-| run2 | 0.85 | 56/100 ⚠️     | 56/100 ✅             | not started       | ⏳          | ⏳      |
-| run3 | 1.0  | ~70/100 running | ⏳                  | not started       | ⏳          | ⏳      |
-| run4 | 1.1  | queued        | ⏳                  | not started       | ⏳          | ⏳      |
+| File | Records | Status |
+|---|---|---|
+| `output/dataset-final.jsonl` | 3,089 | ✅ Ready for fine-tuning |
+| `output/dataset-clean.jsonl` | 2,835 | ✅ Component records |
+| `output/qualifying-conversations.jsonl` | 254 | ✅ Conversation traces |
 
-**After AutoDL run3+run4 complete:**
-1. Fix run2 — `OUTPUT_SUFFIX=run2 bun run generate` fills ~44 missing (resume skips existing)
-2. Re-render pass all 5 runs — catches ~26 Chromium failures (resume skips done PNGs)
-3. Final rsync AutoDL → VPS
-4. VPS processes run2+run3+run4
-5. `cat output/dataset-run*.jsonl > output/dataset.jsonl` — expect ~3,000 records
+## Fine-Tune Status
+
+| Step | Status |
+|---|---|
+| Verify V2 instance clone health | ⏳ Next |
+| Install SWIFT on V2 instance | ⏳ |
+| Rsync dataset-final.jsonl to V2 | ⏳ |
+| Pre-training smoke test (10 steps) | ⏳ |
+| Full QLoRA fine-tune | ⏳ |
+| Export GGUF + quantize | ⏳ |
+| Post-fine-tune validation (4 tests) | ⏳ |
 
 ---
 
@@ -159,12 +145,32 @@ Target: <20 tokens of wrapper text per response
 ## SSH Access
 
 ```bash
-# ACTIVE instance (westd clone, port 25180)
+# ACTIVE fine-tune instance (V2, port 25615)
+ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com
+
+# Dataset reference instance (port 25180 — switched off, do not delete)
 ssh -i /root/.ssh/id_ed25519 -p 25180 root@connect.westd.seetacloud.com
 
 # Port changes on every AutoDL reboot — check AutoDL web UI after reboot
-# Original westc instance: on hold
 ```
+
+## AutoDL Instances
+
+| Name | ID | SSH | Status | Purpose |
+|---|---|---|---|---|
+| frontend-dataset-clone | 4yykv6xgt5-fbab8365 | `ssh -i /root/.ssh/id_ed25519 -p 25180 root@connect.westd.seetacloud.com` | Switched off | Dataset reference — do not delete |
+| frontend-dataset-clone-V2 | b4c84b981f-1532c4c1 | `ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com` | **Running** | **Active fine-tune instance** |
+
+**Active fine-tune instance:**
+```bash
+ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com
+# Northwest Area B / 984 Machine
+# CUDA 595.58.03 (13.2) — backward compatible with all existing tools
+# Data disk: 200GB
+# Clone of frontend-dataset-clone — all data should be present
+```
+
+**Note:** Port 25615 may change on reboot — check AutoDL web UI.
 
 ## Rsync Scripts
 
