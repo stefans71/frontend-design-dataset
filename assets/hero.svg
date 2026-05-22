@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 140" width="780" height="140">
+  <rect width="780" height="140" fill="#0d0d0d" rx="8"/>
+  <text x="390" y="48" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="28" font-weight="700" fill="white" text-anchor="middle">Frontend Design Expert</text>
+  <text x="390" y="76" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#888888" text-anchor="middle">Fine-tuned Qwen3-VL that asks before it builds</text>
+  <rect x="100" y="97" width="108" height="26" fill="#1a3a5c" rx="4"/>
+  <text x="154" y="115" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#60a5fa" text-anchor="middle">Qwen3-VL-8B</text>
+  <rect x="218" y="97" width="108" height="26" fill="#1a3a1a" rx="4"/>
+  <text x="272" y="115" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#4ade80" text-anchor="middle">GPT-5.4 trained</text>
+  <rect x="336" y="97" width="108" height="26" fill="#2a1a3a" rx="4"/>
+  <text x="390" y="115" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#c084fc" text-anchor="middle">3,090 records</text>
+  <rect x="454" y="97" width="108" height="26" fill="#3a2a0a" rx="4"/>
+  <text x="508" y="115" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#fb923c" text-anchor="middle">98.1% accuracy</text>
+  <rect x="572" y="97" width="108" height="26" fill="#1a1a1a" rx="4"/>
+  <text x="626" y="115" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#9ca3af" text-anchor="middle">Apache 2.0</text>
+</svg>

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 80" width="780" height="80">
+  <rect width="780" height="80" fill="#0d0d0d" rx="6"/>
+
+  <!-- Box 1: Natural Prompt -->
+  <rect x="10" y="17" width="110" height="46" fill="#1a1a2e" rx="4" stroke="#3b82f6" stroke-width="1"/>
+  <text x="65" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#93c5fd" text-anchor="middle">Natural</text>
+  <text x="65" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#93c5fd" text-anchor="middle">Prompt</text>
+
+  <!-- Arrow 1 -->
+  <line x1="121" y1="40" x2="138" y2="40" stroke="#4ade80" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Box 2: Qwen3.6-27B -->
+  <rect x="140" y="17" width="110" height="46" fill="#1a1a2e" rx="4" stroke="#3b82f6" stroke-width="1"/>
+  <text x="195" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#93c5fd" text-anchor="middle">Qwen3.6-27B</text>
+  <text x="195" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9" fill="#6b7280" text-anchor="middle">generates HTML</text>
+
+  <!-- Arrow 2 -->
+  <line x1="251" y1="40" x2="268" y2="40" stroke="#4ade80" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Box 3: Playwright -->
+  <rect x="270" y="17" width="110" height="46" fill="#1a1a2e" rx="4" stroke="#3b82f6" stroke-width="1"/>
+  <text x="325" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#93c5fd" text-anchor="middle">Playwright</text>
+  <text x="325" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9" fill="#6b7280" text-anchor="middle">renders PNG</text>
+
+  <!-- Arrow 3 -->
+  <line x1="381" y1="40" x2="398" y2="40" stroke="#4ade80" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Box 4: GPT-5.4 -->
+  <rect x="400" y="17" width="110" height="46" fill="#1a1a2e" rx="4" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="455" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#c4b5fd" text-anchor="middle">GPT-5.4</text>
+  <text x="455" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9" fill="#6b7280" text-anchor="middle">critiques + rewrites</text>
+
+  <!-- Arrow 4 -->
+  <line x1="511" y1="40" x2="528" y2="40" stroke="#4ade80" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Box 5: 3,090 Records -->
+  <rect x="530" y="17" width="110" height="46" fill="#1a1a2e" rx="4" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="585" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#c4b5fd" text-anchor="middle">3,090 Records</text>
+  <text x="585" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9" fill="#6b7280" text-anchor="middle">JSONL dataset</text>
+
+  <!-- Arrow 5 -->
+  <line x1="641" y1="40" x2="658" y2="40" stroke="#4ade80" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Box 6: Fine-tuned 8B -->
+  <rect x="660" y="17" width="110" height="46" fill="#0d2d0d" rx="4" stroke="#4ade80" stroke-width="1.5"/>
+  <text x="715" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#4ade80" text-anchor="middle">Fine-tuned 8B</text>
+  <text x="715" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9" fill="#6b7280" text-anchor="middle">Frontend Expert</text>
+
+  <defs>
+    <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L6,3 z" fill="#4ade80"/>
+    </marker>
+  </defs>
+</svg>
