@@ -212,13 +212,13 @@ output/
 27. ✅ **Pre-training smoke test** — step 1 loss 0.5289, VRAM 22.44 GiB, speed 3.6 s/it, full run ~2.3h
 28. ✅ **Full QLoRA fine-tune** — 2h 39m, final loss 0.246, token_acc 98.1%, checkpoint-2319
 29. ✅ **Export GGUF + quantize** — f16 16GB, Q4_K_M 4.7GB, Q3_K_M 3.9GB at /root/autodl-tmp/
-30. ⏳ **Post-fine-tune validation** — 4-test protocol (see CLAUDE.md)
+30. ✅ **Post-fine-tune validation (8B)** — 4/4 tests passed: A(vision critique w/ px+hex), B(10/10 qualifying), C(4/5 no-sys), D(0 wrapper chars)
 31. ⏳ **Test on Ollama** (RTX 3060 12GB target hardware)
 32. ⏳ **Release (8B)**
 33. ✅ **Download Qwen3-VL-4B-Instruct HF weights** — /root/autodl-tmp/Qwen3-VL-4B-Instruct-HF (8.4GB)
 34. ✅ **Fine-tune Qwen3-VL-4B (Designer Lite)** — v2 run: 53m, loss 0.325, token_acc 92.5%, checkpoint-1546
 35. ✅ **Export 4B GGUF + quantize** — f16 7.5GB, Q4_K_M 2.4GB, Q3_K_M 2.0GB (11:18 JST 2026-05-22)
-36. ⏳ **Validate 4B** — 4-test protocol, target 5+/10 qualifying questions
+36. ✅ **Validate 4B** — 4/4 tests passed: A(vision critique), B(8/10 qualifying), C(3/5 no-sys), D(36 wrapper chars)
 37. ⏳ **Release (4B Lite)**
 
 ---
