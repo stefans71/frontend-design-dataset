@@ -104,7 +104,7 @@ Component records come from 500 components × 6 record types = ~3,000 (minus ~16
 ### Pipeline — `frontend-design-dataset` repo
 
 ```
-AutoDL (RTX 5090, westd)             VPS Japan (hostdzire)
+AutoDL (RTX 5090, westd)             VPS Japan (<your-vps>)
 ────────────────────────             ─────────────────────
 Stage 1: generate.ts                 Stage 3:  critique.ts
   Qwen3.6-27B via llama-server         Codex GPT-5.4 / claude -p
@@ -219,19 +219,19 @@ const hasMeasurement = /\d+(px|rem|em|vh|vw|%)/i.test(html);
 | CUDA | 13.0 (driver 580.142), toolkit 12.8 |
 | OS | Ubuntu 22.04 Jammy |
 | Disk | 250GB persistent at `/root/autodl-tmp/` |
-| Active instance | westd clone — `connect.westd.seetacloud.com` port 25180 |
+| Active instance | westd clone — `<your-autodl-host>` port <PORT> |
 | Region | AutoDL Northwest B, China (use Huawei/npmmirror for downloads) |
 
 **SSH Access:**
 ```bash
 # ACTIVE — westd clone
-ssh -i /root/.ssh/id_ed25519 -p 25180 root@connect.westd.seetacloud.com
+ssh -i ~/.ssh/id_ed25519 -p <PORT> root@<your-autodl-host>
 # Port changes on every AutoDL reboot — check AutoDL web UI
 ```
 
 **AutoDL Startup Sequence (after reboot):**
 ```bash
-ssh -i /root/.ssh/id_ed25519 -p <NEW_PORT> root@connect.westd.seetacloud.com
+ssh -i ~/.ssh/id_ed25519 -p <NEW_PORT> root@<your-autodl-host>
 bash /root/autodl-tmp/start.sh
 curl http://localhost:11434/health   # → {"status":"ok"}
 # Update VPS tunnel if port changed:
@@ -311,7 +311,7 @@ modelscope download \
   --host 0.0.0.0 --port 8080
 ```
 
-### VPS (Japan — hostdzire)
+### VPS (Japan — <your-vps>)
 
 - Development machine — Claude Code + Sonnet 4.6 runs here
 - Codex CLI at `/usr/bin/codex` (v0.118.0) — ChatGPT OAuth auth
@@ -376,7 +376,7 @@ screen -dmS fullrun bash -c 'TEST_MODE=false bash scripts/run-all-variants.sh 2>
 tail -f /tmp/fullrun.log
 
 # VPS — critique + improve + package per suffix
-bash scripts/rsync-from-autodl.sh 25180
+bash scripts/rsync-from-autodl.sh <PORT>
 screen -dmS vps-process bash -c '
 for SUFFIX in run0 run1 run2 run3 run4; do
   OUTPUT_SUFFIX=$SUFFIX bun run critique &&

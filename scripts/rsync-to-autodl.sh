@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
+# Push project to AutoDL for generate/render stages
 # Usage: bash scripts/rsync-to-autodl.sh <PORT> [HOST]
-# HOST defaults to connect.westd.seetacloud.com
-PORT=${1:-33472}
-HOST=${2:-connect.westd.seetacloud.com}
+# HOST defaults to <your-autodl-host> — override with second arg
+SSH_KEY=${SSH_KEY:-~/.ssh/id_ed25519}
+PORT=${1:-<PORT>}
+HOST=${2:-<your-autodl-host>}
 rsync -avz \
   --exclude='node_modules' \
   --exclude='.git' \
   --exclude='output/' \
   --exclude='.env' \
-  /root/tinkering/Local-LLMs/Local-LLM-Agent/frontend-design-dataset/ \
-  -e "ssh -i /root/.ssh/id_ed25519 -p $PORT" \
+  ./ \
+  -e "ssh -i $SSH_KEY -p $PORT" \
   root@${HOST}:/root/autodl-tmp/frontend-design-dataset/
 echo "✓ Sync complete."

@@ -3,3 +3,6 @@ output/
 .env
 *.png
 *.jsonl
+
+CLAUDE.md
+TEST-QWEN35-9B.md

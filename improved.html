@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Theme Switcher Component</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --page-bg: #0b0d12;
+      --page-glow: rgba(61, 123, 255, 0.18);
+      --shell: rgba(255, 255, 255, 0.06);
+      --shell-line: rgba(255, 255, 255, 0.08);
+      --track: rgba(255, 255, 255, 0.055);
+      --track-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+      --pill: linear-gradient(180deg, #3f86ff 0%, #2a68ea 100%);
+      --pill-shadow: 0 10px 24px rgba(35, 98, 230, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      --text: #f3f6ff;
+      --muted: #97a3bf;
+      --preview-bg: #151922;
+      --preview-panel: linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.02) 100%);
+      --preview-line: rgba(148, 163, 184, 0.16);
+      --preview-title: #f5f7ff;
+      --preview-subtitle: #8f9ab3;
+      --preview-text: #c3cee4;
+      --preview-badge-bg: rgba(64, 129, 255, 0.16);
+      --preview-badge-text: #8cb3ff;
+      --button-bg: linear-gradient(180deg, #4f91ff 0%, #3677f0 100%);
+      --button-text: #f8fbff;
+      --button-shadow: 0 12px 24px rgba(49, 106, 224, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-family: "SF Pro Display", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 50% 28%, var(--page-glow), transparent 26%),
+        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.035), transparent 30%),
+        linear-gradient(180deg, #11141b 0%, var(--page-bg) 58%, #090b10 100%);
+    }
+
+    .theme-switcher {
+      width: min(100%, 330px);
+      display: grid;
+      gap: 18px;
+    }
+
+    .segmented-control {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      padding: 5px;
+      border-radius: 15px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, rgba(255, 255, 255, 0.02) 100%),
+        var(--track);
+      border: 1px solid var(--shell-line);
+      box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.35),
+        var(--track-shadow);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      isolation: isolate;
+    }
+
+    .selection-pill {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      width: calc((100% - 10px) / 3);
+      height: calc(100% - 10px);
+      border-radius: 11px;
+      background: var(--pill);
+      box-shadow: var(--pill-shadow);
+      transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 0;
+    }
+
+    .theme-option {
+      position: relative;
+      z-index: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 54px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 11px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      transition: color 180ms ease, transform 180ms ease;
+    }
+
+    .theme-option:hover {
+      color: #d8e2f7;
+    }
+
+    .theme-option[aria-checked="true"] {
+      color: #ffffff;
+    }
+
+    .theme-option:active {
+      transform: translateY(1px);
+    }
+
+    .theme-option:focus-visible {
+      outline: 2px solid rgba(124, 170, 255, 0.95);
+      outline-offset: 2px;
+    }
+
+    .theme-option svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: 0 0 auto;
+    }
+
+    .preview-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 18px;
+      padding: 20px;
+      background:
+        radial-gradient(circle at top right, rgba(64, 129, 255, 0.12), transparent 34%),
+        var(--preview-panel),
+        var(--preview-bg);
+      border: 1px solid var(--preview-line);
+      box-shadow:
+        0 20px 45px rgba(0, 0, 0, 0.36),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      transition:
+        background 220ms ease,
+        border-color 220ms ease,
+        box-shadow 220ms ease,
+        color 220ms ease;
+    }
+
+    .preview-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0));
+      pointer-events: none;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .card-title {
+      margin: 0 0 4px;
+      color: var(--preview-title);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .card-subtitle {
+      margin: 0;
+      color: var(--preview-subtitle);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .status-badge {
+      flex: 0 0 auto;
+      align-self: flex-start;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: var(--preview-badge-bg);
+      color: var(--preview-badge-text);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .card-text {
+      margin: 0 0 18px;
+      color: var(--preview-text);
+      font-size: 14px;
+      line-height: 1.58;
+      letter-spacing: -0.01em;
+    }
+
+    .card-button {
+      width: 100%;
+      min-height: 42px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--button-bg);
+      color: var(--button-text);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      box-shadow: var(--button-shadow);
+      cursor: pointer;
+      transition: transform 180ms ease, filter 180ms ease;
+    }
+
+    .card-button:hover {
+      filter: brightness(1.05);
+    }
+
+    .card-button:active {
+      transform: translateY(1px);
+    }
+
+    @media (max-width: 420px) {
+      body {
+        padding: 18px;
+      }
+
+      .theme-option {
+        gap: 6px;
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="theme-switcher">
+    <div class="segmented-control" role="radiogroup" aria-label="Theme selection">
+      <div class="selection-pill" aria-hidden="true"></div>
+
+      <button class="theme-option" type="button" role="radio" aria-checked="false" data-theme="light">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2.5v2.2M12 19.3v2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"></path>
+        </svg>
+        <span>Light</span>
+      </button>
+
+      <button class="theme-option" type="button" role="radio" aria-checked="true" data-theme="dark">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20.2 14.2A8.8 8.8 0 0 1 9.8 3.8a9.5 9.5 0 1 0 10.4 10.4Z"></path>
+        </svg>
+        <span>Dark</span>
+      </button>
+
+      <button class="theme-option" type="button" role="radio" aria-checked="false" data-theme="system">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="12" rx="2"></rect>
+          <path d="M9 20h6M12 16v4"></path>
+        </svg>
+        <span>System</span>
+      </button>
+    </div>
+
+    <div class="preview-card" data-preview-theme="dark">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Dark Mode Active</h3>
+          <p class="card-subtitle">High contrast UI elements</p>
+        </div>
+        <span class="status-badge">UI Kit</span>
+      </div>
+      <p class="card-text">
+        This card demonstrates the current theme settings. The background uses a deep charcoal tone to reduce eye strain while maintaining readability.
+      </p>
+      <button class="card-button" type="button">Explore Component</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var options = Array.prototype.slice.call(document.querySelectorAll(".theme-option"));
+      var pill = document.querySelector(".selection-pill");
+      var card = document.querySelector(".preview-card");
+      var title = document.querySelector(".card-title");
+      var subtitle = document.querySelector(".card-subtitle");
+      var text = document.querySelector(".card-text");
+      var media = window.matchMedia("(prefers-color-scheme: dark)");
+
+      var themes = {
+        dark: {
+          title: "Dark Mode Active",
+          subtitle: "High contrast UI elements",
+          text: "This card demonstrates the current theme settings. The background uses a deep charcoal tone to reduce eye strain while maintaining readability.",
+          vars: {
+            "--preview-bg": "#151922",
+            "--preview-panel": "linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.02) 100%)",
+            "--preview-line": "rgba(148, 163, 184, 0.16)",
+            "--preview-title": "#f5f7ff",
+            "--preview-subtitle": "#8f9ab3",
+            "--preview-text": "#c3cee4",
+            "--preview-badge-bg": "rgba(64, 129, 255, 0.16)",
+            "--preview-badge-text": "#8cb3ff",
+            "--button-bg": "linear-gradient(180deg, #4f91ff 0%, #3677f0 100%)",
+            "--button-text": "#f8fbff",
+            "--button-shadow": "0 12px 24px rgba(49, 106, 224, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.18)"
+          }
+        },
+        light: {
+          title: "Light Mode Active",
+          subtitle: "Bright surfaces and softer contrast",
+          text: "This card demonstrates the current theme settings. The preview shifts to a clean, airy surface while preserving legibility and emphasis.",
+          vars: {
+            "--preview-bg": "#f5f7fb",
+            "--preview-panel": "linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(244, 247, 252, 0.96) 100%)",
+            "--preview-line": "rgba(15, 23, 42, 0.08)",
+            "--preview-title": "#182033",
+            "--preview-subtitle": "#66738d",
+            "--preview-text": "#4b5874",
+            "--preview-badge-bg": "rgba(46, 110, 234, 0.12)",
+            "--preview-badge-text": "#2d63d9",
+            "--button-bg": "linear-gradient(180deg, #3f86ff 0%, #2d6be8 100%)",
+            "--button-text": "#ffffff",
+            "--button-shadow": "0 10px 20px rgba(45, 107, 232, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.2)"
+          }
+        }
+      };
+
+      function applyPreview(mode) {
+        var resolved = mode === "system" ? (media.matches ? "dark" : "light") : mode;
+        var config = themes[resolved];
+
+        card.setAttribute("data-preview-theme", resolved);
+        title.textContent = mode === "system" ? "System Preference" : config.title;
+        subtitle.textContent = mode === "system"
+          ? (resolved === "dark" ? "Following your device's dark appearance" : "Following your device's light appearance")
+          : config.subtitle;
+        text.textContent = mode === "system"
+          ? (resolved === "dark"
+              ? "This card is matching your system setting. Dark surfaces keep contrast strong while the page remains anchored to the original dark presentation."
+              : "This card is matching your system setting. Light surfaces brighten the preview while the overall component stays within the original dark page layout.")
+          : config.text;
+
+        Object.keys(config.vars).forEach(function (key) {
+          card.style.setProperty(key, config.vars[key]);
+        });
+      }
+
+      function movePill(index) {
+        pill.style.transform = "translateX(" + (index * 100) + "%)";
+      }
+
+      function setSelection(mode) {
+        options.forEach(function (option, index) {
+          var isActive = option.getAttribute("data-theme") === mode;
+          option.setAttribute("aria-checked", isActive ? "true" : "false");
+          if (isActive) {
+            movePill(index);
+          }
+        });
+        applyPreview(mode);
+      }
+
+      options.forEach(function (option) {
+        option.addEventListener("click", function () {
+          setSelection(option.getAttribute("data-theme"));
+        });
+      });
+
+      if (typeof media.addEventListener === "function") {
+        media.addEventListener("change", function () {
+          var active = document.querySelector('.theme-option[aria-checked="true"]');
+          if (active && active.getAttribute("data-theme") === "system") {
+            applyPreview("system");
+          }
+        });
+      }
+
+      setSelection("dark");
+    }());
+  </script>
+</body>
+</html>

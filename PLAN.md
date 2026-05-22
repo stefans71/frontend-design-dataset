@@ -279,18 +279,18 @@ Score distribution: 9→303 (65%), 8→141 (30%), 7→17 (4%), 6→4 (1%), <6→
 ## Step 21 — Fine-Tune Qwen3-VL-8B ⏳
 
 **Instance:** frontend-dataset-clone-V2
-**SSH:** `ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com`
+**SSH:** `ssh -i ~/.ssh/id_ed25519 -p <PORT> root@<your-autodl-host>`
 **Input:** `output/dataset-final.jsonl` (3,089 records)
 
 Pre-conditions:
 - dataset-final.jsonl complete ✅ (3,089 records)
 - Baseline confirmed fine-tune needed ✅ (Test 2: 1/10)
-- V2 instance provisioned ✅ (port 25615, CUDA 13.2, 200GB disk)
+- V2 instance provisioned ✅ (port <PORT>, CUDA 13.2, 200GB disk)
 
 ### SWIFT Install on V2
 
 ```bash
-ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com
+ssh -i ~/.ssh/id_ed25519 -p <PORT> root@<your-autodl-host>
 pip install ms-swift -U --index-url https://pypi.tuna.tsinghua.edu.cn/simple
 swift --version   # confirm: ms-swift 4.2.1
 
@@ -396,12 +396,12 @@ swift sft \
 
 ```bash
 # Verify build completed (started during training):
-ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com \
+ssh -i ~/.ssh/id_ed25519 -p <PORT> root@<your-autodl-host> \
   "tail -3 /tmp/build-quantize.log"
 # Expect: BUILD_DONE at end
 
 # If not done yet, build manually:
-ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com \
+ssh -i ~/.ssh/id_ed25519 -p <PORT> root@<your-autodl-host> \
   "cd /root/autodl-tmp/llama-mtp && cmake --build build --target llama-quantize -j\$(nproc)"
 
 # Binary after build:
@@ -428,7 +428,7 @@ Verify after training: `ls /root/autodl-tmp/finetune-output/v0-20260522-064424/`
 ### Disk check before starting
 
 ```bash
-ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com "df -h /root/autodl-tmp"
+ssh -i ~/.ssh/id_ed25519 -p <PORT> root@<your-autodl-host> "df -h /root/autodl-tmp"
 # Need: ~16GB (merge) + ~16GB (f16 GGUF) + ~5GB (Q4_K_M) + ~4GB (Q3_K_M) ≈ 41GB extra
 ```
 
@@ -436,7 +436,7 @@ ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com "df -h /
 
 ```bash
 # Run from dataset root (cd required — SWIFT uses relative paths for images)
-ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com bash <<'EOF'
+ssh -i ~/.ssh/id_ed25519 -p <PORT> root@<your-autodl-host> bash <<'EOF'
 cd /root/autodl-tmp/frontend-design-dataset
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 swift export \
@@ -459,7 +459,7 @@ We reuse the existing frozen mmproj instead.
 **Use `python3`** — `python` is not in PATH on this AutoDL instance.
 
 ```bash
-ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com bash <<'EOF'
+ssh -i ~/.ssh/id_ed25519 -p <PORT> root@<your-autodl-host> bash <<'EOF'
 cd /root/autodl-tmp/llama-mtp
 python3 convert_hf_to_gguf.py \
   /root/autodl-tmp/finetune-output/v0-20260522-064424/checkpoint-2319-merged \
@@ -473,7 +473,7 @@ EOF
 ### Part 3 — Quantize
 
 ```bash
-ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com bash <<'EOF'
+ssh -i ~/.ssh/id_ed25519 -p <PORT> root@<your-autodl-host> bash <<'EOF'
 /root/autodl-tmp/llama-mtp/build/bin/llama-quantize \
   /root/autodl-tmp/frontend-design-expert-f16.gguf \
   /root/autodl-tmp/frontend-design-expert-Q4_K_M.gguf \
@@ -490,7 +490,7 @@ EOF
 ### Part 4 — Smoke test with llama-server
 
 ```bash
-ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com \
+ssh -i ~/.ssh/id_ed25519 -p <PORT> root@<your-autodl-host> \
   "/root/autodl-tmp/llama-mtp/llama-server \
     --model /root/autodl-tmp/frontend-design-expert-Q4_K_M.gguf \
     --mmproj /root/autodl-tmp/qwen-eval/qwen3-vl-8b-gguf/mmproj-F16.gguf \
@@ -524,7 +524,7 @@ Target: 8GB GPU users (RTX 3060, older laptops, entry-level Macs).
 
 **Download 4B weights (~9GB):**
 ```bash
-ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com "
+ssh -i ~/.ssh/id_ed25519 -p <PORT> root@<your-autodl-host> "
 source /etc/network_turbo
 modelscope download \
   --model Qwen/Qwen3-VL-4B-Instruct \
@@ -534,7 +534,7 @@ modelscope download \
 
 **Fine-tune command (BF16, no quantization needed on RTX 5090):**
 ```bash
-ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com "
+ssh -i ~/.ssh/id_ed25519 -p <PORT> root@<your-autodl-host> "
 cd /root/autodl-tmp/frontend-design-dataset
 export PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'
 screen -S finetune-4b
