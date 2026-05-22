@@ -215,9 +215,9 @@ output/
 30. ⏳ **Post-fine-tune validation** — 4-test protocol (see CLAUDE.md)
 31. ⏳ **Test on Ollama** (RTX 3060 12GB target hardware)
 32. ⏳ **Release (8B)**
-33. ⏳ **Download Qwen3-VL-4B-Instruct HF weights** (~9GB)
-34. ⏳ **Fine-tune Qwen3-VL-4B (Designer Lite)** — see Step 30
-35. ⏳ **Export 4B GGUF + quantize** — same workflow as Step 22
+33. ✅ **Download Qwen3-VL-4B-Instruct HF weights** — /root/autodl-tmp/Qwen3-VL-4B-Instruct-HF (8.4GB)
+34. ✅ **Fine-tune Qwen3-VL-4B (Designer Lite)** — v2 run: 53m, loss 0.325, token_acc 92.5%, checkpoint-1546
+35. ✅ **Export 4B GGUF + quantize** — f16 7.5GB, Q4_K_M 2.4GB, Q3_K_M 2.0GB (11:18 JST 2026-05-22)
 36. ⏳ **Validate 4B** — 4-test protocol, target 5+/10 qualifying questions
 37. ⏳ **Release (4B Lite)**
 
@@ -517,7 +517,7 @@ See CLAUDE.md `## Post-Fine-Tune Validation Protocol` for full test prompts and 
 
 ---
 
-## Step 30 — Designer Lite: Fine-Tune Qwen3-VL-4B ⏳
+## Step 30 — Designer Lite: Fine-Tune Qwen3-VL-4B ✅ COMPLETE
 
 Queue immediately after Step 22 (8B GGUF export) completes.
 Target: 8GB GPU users (RTX 3060, older laptops, entry-level Macs).
