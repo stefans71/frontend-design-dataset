@@ -6,3 +6,5 @@ output/
 
 CLAUDE.md
 TEST-QWEN35-9B.md
+.claude/
+improved.html
