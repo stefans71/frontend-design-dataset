@@ -211,7 +211,7 @@ output/
 26a. ✅ **Download Qwen3-VL-8B-Instruct HF weights** — /root/autodl-tmp/Qwen3-VL-8B-Instruct-HF (~16GB)
 27. ✅ **Pre-training smoke test** — step 1 loss 0.5289, VRAM 22.44 GiB, speed 3.6 s/it, full run ~2.3h
 28. ✅ **Full QLoRA fine-tune** — 2h 39m, final loss 0.246, token_acc 98.1%, checkpoint-2319
-29. 🔄 **Export GGUF + quantize** — merge running in screen export-8b, log /tmp/export-sequence.log
+29. ✅ **Export GGUF + quantize** — f16 16GB, Q4_K_M 4.7GB, Q3_K_M 3.9GB at /root/autodl-tmp/
 30. ⏳ **Post-fine-tune validation** — 4-test protocol (see CLAUDE.md)
 31. ⏳ **Test on Ollama** (RTX 3060 12GB target hardware)
 32. ⏳ **Release (8B)**

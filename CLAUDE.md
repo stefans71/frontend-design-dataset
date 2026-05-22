@@ -66,9 +66,10 @@ All records validated: 0 CDN links, 0 malformed, 95% scoring 8-9/9 on eval pass.
 | Download HF weights | ✅ /root/autodl-tmp/Qwen3-VL-8B-Instruct-HF (~16.5GB) |
 | Pre-training smoke test | ✅ PASSED — all 10 steps, no OOM (see results below) |
 | Full QLoRA fine-tune | ✅ COMPLETE — 2h 39m, final loss 0.246, token_acc 98.1%, checkpoint-2319 |
-| Export GGUF + quantize (Q4_K_M + Q3_K_M) | 🔄 RUNNING — screen export-8b on V2, log /tmp/export-sequence.log |
+| Export GGUF + quantize (Q4_K_M + Q3_K_M) | ✅ COMPLETE — f16 16GB, Q4_K_M 4.7GB, Q3_K_M 3.9GB (09:36 JST) |
 | Post-fine-tune validation (4 tests — see below) | ⏳ |
-| 4B Designer Lite fine-tune (Qwen3-VL-4B) | ⏳ — queued after 8B export, weights downloaded |
+| 4B Designer Lite smoke test | 🔄 RUNNING — auto-4b.sh triggered, log /tmp/finetune-4b-smoke.log |
+| 4B Designer Lite full fine-tune | ⏳ — starts after smoke passes |
 
 ---
 
@@ -149,6 +150,10 @@ Target: <20 tokens of wrapper text per response
 | 11 | SWIFT 4.2.1 flag names differ from docs — `--image_min/max_pixels`, `--tune_mm_vision`, `--load_in_4bit` all rejected | Use: `--max_pixels`, `--freeze_vit True`, `--quant_bits 4 --quant_method bnb` |
 | 12 | SWIFT 4.2.1 can't auto-detect model_type from local path | Add `--model_type qwen3_vl` explicitly |
 | 13 | SWIFT 4.2.1 missing deps not auto-installed: qwen-vl-utils, decord, bitsandbytes | `pip install qwen-vl-utils decord bitsandbytes` before first run |
+| 14 | `swift export --merge_lora` OOM: defaults to float32 (32GB > 31.36 GiB GPU) | Add `--torch_dtype bfloat16` — halves VRAM to ~16GB |
+| 15 | `swift export --merge_lora` ignores `--output_dir` | Merged model saves to `checkpoint-N-merged/` alongside the adapter, not to `--output_dir` |
+| 16 | `python` not in PATH on AutoDL V2 | Use `python3 convert_hf_to_gguf.py` not `python` |
+| 17 | `swift export --merge_lora` OOM race: merge ran before training CUDA context released | Wait for GPU to show 0 MiB (nvidia-smi) before running merge — do not start immediately |
 
 **Additional permanent fixes:**
 - **generate.ts system prompt:** inline CSS only — CDN not blocked but inline CSS is better training data
