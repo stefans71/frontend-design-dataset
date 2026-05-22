@@ -18,7 +18,7 @@ Read in this order before doing anything:
 2. **PLAN.md** — full pipeline implementation checklist (do not overwrite)
 3. **FRONTEND-DESIGN-MODEL-CARD.md** — Sections 14+15 for fine-tune params and validation protocol
 
-**Current situation:** 8B fine-tune + GGUF export COMPLETE. 4B full fine-tune RUNNING on V2 (ETA ~11:10 JST 2026-05-22). After 4B training: export GGUF → run 4-test validation on both models. Active instance is frontend-dataset-clone-V2 (port 25615). Do not touch the dataset instance (port 25180 — switched off, data preserved).
+**Current situation:** 8B fine-tune + GGUF export COMPLETE. 4B full fine-tune STOPPED at step 540 — VRAM hit 28.21 GiB (threshold 28GB). checkpoint-500 saved (loss 0.274, token_acc 91.7%). Retry with batch_size 1 + grad_accum 4 — see Fix #18. GPU now free. Active instance is frontend-dataset-clone-V2 (port 25615). Do not touch the dataset instance (port 25180 — switched off, data preserved).
 
 **First task in any new session:** Check V2 instance is healthy before doing anything:
 ```bash
@@ -67,8 +67,8 @@ All records validated: 0 CDN links, 0 malformed, 95% scoring 8-9/9 on eval pass.
 | Export GGUF + quantize (Q4_K_M + Q3_K_M) | ✅ COMPLETE — f16 16GB, Q4_K_M 4.7GB, Q3_K_M 3.9GB (09:36 JST) |
 | Post-fine-tune validation (4 tests — see below) | ⏳ |
 | 4B Designer Lite smoke test | ✅ PASSED — step1 loss 0.557, VRAM 26.1 GiB, step10 loss 0.630 |
-| 4B Designer Lite full fine-tune | 🔄 RUNNING — step 45/1546, loss 0.315, VRAM 27.63 GiB, ETA ~1h 30m (auto-4b.sh PID 21298) |
-| 4B Export GGUF + quantize | ⏳ |
+| 4B Designer Lite full fine-tune | ❌ STOPPED — VRAM hit 28.21 GiB at step 540 (threshold ≥28GB), checkpoint-500 saved. Loss 0.274, token_acc 91.7% — training was healthy. Retry with batch_size 1 + grad_accum 4. |
+| 4B Export GGUF + quantize | ⏳ — pending retry decision |
 | Post-fine-tune validation — 8B + 4B (4 tests each) | ⏳ |
 
 ---
@@ -154,6 +154,7 @@ Target: <20 tokens of wrapper text per response
 | 15 | `swift export --merge_lora` ignores `--output_dir` | Merged model saves to `checkpoint-N-merged/` alongside the adapter, not to `--output_dir` |
 | 16 | `python` not in PATH on AutoDL V2 | Use `python3 convert_hf_to_gguf.py` not `python` |
 | 17 | `swift export --merge_lora` OOM race: merge ran before training CUDA context released | Wait for GPU to show 0 MiB (nvidia-smi) before running merge — do not start immediately |
+| 18 | 4B full fine-tune VRAM crept from 27.63→28.21 GiB between step 90 and step 540 (batch_size 2) | Use `--per_device_train_batch_size 1 --gradient_accumulation_steps 4` for 4B (matches 8B config) — keeps VRAM ~26 GiB. checkpoint-500 (loss 0.274) preserved at finetune-output-4b/v0-20260522-093804/ |
 
 **Additional permanent fixes:**
 - **generate.ts system prompt:** inline CSS only — CDN not blocked but inline CSS is better training data
