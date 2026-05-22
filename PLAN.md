@@ -438,29 +438,36 @@ ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com "df -h /
 # Run from dataset root (cd required — SWIFT uses relative paths for images)
 ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com bash <<'EOF'
 cd /root/autodl-tmp/frontend-design-dataset
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 swift export \
   --model /root/autodl-tmp/Qwen3-VL-8B-Instruct-HF \
   --adapters /root/autodl-tmp/finetune-output/v0-20260522-064424/checkpoint-2319 \
   --output_dir /root/autodl-tmp/finetune-merged \
-  --merge_lora True
+  --merge_lora True \
+  --torch_dtype bfloat16
 EOF
-# Output: full HF-format model at /root/autodl-tmp/finetune-merged/ (~16GB)
+# IMPORTANT: SWIFT 4.2.1 ignores --output_dir for merge_lora.
+# Merged model saves alongside the adapter as: checkpoint-2319-merged/
+# Actual output: /root/autodl-tmp/finetune-output/v0-20260522-064424/checkpoint-2319-merged/ (~17GB)
+# NOTE: --torch_dtype bfloat16 is REQUIRED — default float32 (32GB) exceeds RTX 5090 31.36GB VRAM
 ```
 
 ### Part 2 — Convert LM to GGUF
 
 **`--mmproj` flag is NOT used** → produces LM GGUF only (vision encoder excluded).
 We reuse the existing frozen mmproj instead.
+**Use `python3`** — `python` is not in PATH on this AutoDL instance.
 
 ```bash
 ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com bash <<'EOF'
 cd /root/autodl-tmp/llama-mtp
-python convert_hf_to_gguf.py \
-  /root/autodl-tmp/finetune-merged \
+python3 convert_hf_to_gguf.py \
+  /root/autodl-tmp/finetune-output/v0-20260522-064424/checkpoint-2319-merged \
   --outtype f16 \
   --outfile /root/autodl-tmp/frontend-design-expert-f16.gguf
 EOF
-# Output: /root/autodl-tmp/frontend-design-expert-f16.gguf (~16GB)
+# Output: /root/autodl-tmp/frontend-design-expert-f16.gguf (~16.4GB)
+# Note: use checkpoint-2319-merged path (SWIFT ignores --output_dir)
 ```
 
 ### Part 3 — Quantize
