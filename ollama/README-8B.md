@@ -15,76 +15,89 @@ language:
 pipeline_tag: image-text-to-text
 ---
 
-![Before vs After: Base Model vs Fine-tuned on FitTrack login prompt](hero-comparison.png)
+<p align="center">
+  <img src="hero.png" alt="Frontend Design Expert — Fine-tuned Qwen3-VL that asks before it builds" width="800"/>
+</p>
 
-# Frontend Design Expert — 8B
-
-A fine-tuned vision-language model that generates production-quality HTML/CSS components, critiques UI screenshots, and asks clarifying questions on vague design requests.
-
-Fine-tuned from `Qwen/Qwen3-VL-8B-Instruct` on 3,090 synthetic frontend design training records generated via teacher-student distillation — GPT-5.4 critiquing and improving Qwen-generated components.
-
-**Companion model:** [stefans71/frontend-design-lite-4b](https://huggingface.co/stefans71/frontend-design-lite-4b) — same training, 4B parameters, fits 8GB GPUs.
-
----
-
-## What It Does
-
-### 1. Asks qualifying questions on vague requests
-```
-User: build me a website for my dog daycare called Stay Fit
-
-Model: Happy to build this. Three quick questions:
-1. Is this mainly so people can find and contact you, or do they need to book appointments online?
-2. One scrolling page or separate pages (Services, About, Contact)?
-3. Fun and playful vibe, or clean and professional?
-```
-
-### 2. Generates brand-specific, prompt-faithful components
-Given a brand name and domain, the model generates contextually appropriate copy, CTAs, and color schemes — not generic SaaS defaults.
-
-### 3. Critiques UI screenshots with specific measurements
-```
-User: [uploads screenshot] Critique this UI design.
-
-Model: Several issues to address:
-- Heading hierarchy is flat — h1 and h2 are both 18px, indistinguishable
-- Section gaps at 24px are too tight — minimum 48px between major sections  
-- CTA button contrast ratio 3.2:1 fails WCAG AA (minimum 4.5:1)
-- No hover states on interactive elements...
-```
-
-> **Note:** Use the exact phrase `"Critique this UI design."` for vision critique — the model learned this trigger phrase during training.
+<p align="center">
+  <a href="https://huggingface.co/stefans71/frontend-design-lite-4b"><img src="https://img.shields.io/badge/🤗-4B_Lite_(8GB_GPU)-blue" alt="4B Lite"/></a>
+  <a href="https://github.com/stefans71/frontend-design-dataset"><img src="https://img.shields.io/badge/GitHub-Dataset_Pipeline-green" alt="GitHub"/></a>
+  <img src="https://img.shields.io/badge/Base-Qwen3--VL--8B-4b8bbf" alt="Base model"/>
+  <img src="https://img.shields.io/badge/License-Apache_2.0-gray" alt="License"/>
+</p>
 
 ---
 
-## Before / After Comparison
+## The Problem
+
+Base models are RLHF-tuned to be immediately helpful — they build immediately regardless of how vague the request is. You can't fix this with a system prompt. It has to be trained into the weights.
+
+<p align="center">
+  <img src="terminal.png" alt="Base Model vs Fine-tuned: qualifying question behavior" width="800"/>
+</p>
+
+**1/10 → 10/10** on qualifying questions. All 10 tested vague prompts triggered clarifying questions from the fine-tuned model; only 1/10 from the base model.
+
+---
+
+## Before / After
+
+<p align="center">
+  <img src="hero-comparison.png" alt="Before vs After: Base Model vs Fine-tuned on FitTrack login prompt" width="800"/>
+</p>
+
+*Left: base Qwen3-VL-8B ignores the brand name and defaults to blue. Right: fine-tuned model applies FitTrack branding and green accent across every interactive element.*
 
 Fine-tuned vs. base Qwen3-VL-8B on the same prompts:
 
-| Prompt | Improvement |
-|---|---|
-| Pricing card (3 tiers, dark, purple) | Fine-tuned renders all 3 tiers with "Most Popular" badge, per-plan CTAs; base renders a single Pro card |
-| Navbar (dog daycare, light, warm) | Fine-tuned uses domain-appropriate labels ("Book a Spot"); base produces generic SaaS links with rendering artifacts |
-| Login form (fitness app, dark, green accent) | Fine-tuned applies green consistently across focus rings, CTA, links; base defaults to blue regardless |
-| Stats dashboard (revenue + users + churn) | Fine-tuned produces two linked KPI cards with sparkline; base renders one standalone chart |
-| Mobile bottom nav (5 tabs, orange active) | Fine-tuned delivers all 5 labeled tabs with correct active state; base generates a social feed instead |
-| Testimonial card (minimal, photo + stars + quote) | Fine-tuned outputs focused single card; base adds unrequested carousel with prev/next arrows |
-
-**Key patterns observed:**
-- **Prompt adherence** — doesn't add unrequested UI chrome or omit requested elements
-- **Brand specificity** — contextually appropriate copy and CTAs from brand name alone  
-- **Color fidelity** — named accent colors applied consistently across all interactive elements
-- **Layout complexity** — handles multi-component layouts correctly on first generation
+| Prompt | Base Model | Fine-tuned |
+|---|---|---|
+| Pricing card — dark, purple, 3 tiers | Renders one Pro card | All 3 tiers with "Most Popular" badge |
+| Navbar — dog daycare, warm colors | Generic SaaS links + rendering artifacts | Domain-appropriate labels ("Book a Spot") |
+| Login form — fitness app, green accent | Blue buttons regardless | Green applied consistently across all states |
+| Stats dashboard — revenue + users + churn | One standalone chart | Two linked KPI cards with sparkline |
+| Mobile bottom nav — 5 tabs, orange active | Generates a social feed | All 5 labeled tabs, correct active state |
+| Testimonial card — minimal, photo + stars | Adds unrequested carousel | Focused single card |
 
 ---
 
-## Files
+## Training Pipeline
 
-| File | Size | Use |
+<p align="center">
+  <img src="pipeline.png" alt="Training pipeline: Natural Prompt → Qwen3.6-27B → Playwright → GPT-5.4 → 3,090 Records → Fine-tuned 8B" width="800"/>
+</p>
+
+Teacher-student distillation:
+1. **Qwen3.6-27B** generates HTML components from natural language prompts
+2. **Playwright** renders each component to desktop (1280×900) and mobile (390×844) screenshots
+3. **GPT-5.4** critiques each screenshot and rewrites the HTML with expert design improvements — hover states, WCAG contrast, color consistency, layout hierarchy
+4. Training pairs: `[screenshot + original HTML + critique] → [expert improved HTML]`
+
+The gap between Qwen's output and GPT-5.4's rewrite is the training signal. 3,090 records across 8 types:
+
+| Record type | Count | Description |
 |---|---|---|
-| `frontend-design-expert-Q4_K_M.gguf` | 4.7 GB | Primary — 12GB GPU (RTX 3060, RTX 4070, etc.) |
-| `frontend-design-expert-Q3_K_M.gguf` | 3.9 GB | Tight 12GB — more KV cache headroom |
-| `mmproj-F16.gguf` | 1.1 GB | Vision encoder — required for screenshot input |
+| `screenshot_code_critique_to_improved` | ~472 | PNG + HTML + critique → expert improved HTML — most valuable |
+| `screenshot_to_critique` | ~472 | Desktop screenshot → design critique with measurements |
+| `screenshot_to_code` | ~472 | Desktop screenshot → HTML reconstruction |
+| `mobile_to_code` | ~472 | Mobile screenshot → HTML |
+| `screenshot_html_to_critique` | ~472 | Screenshot + HTML → detailed critique |
+| `prompt_to_html` | ~472 | Natural language prompt → HTML component |
+| `qualifying_conversation` | 150 | Vague request → questions → answers → build |
+| `immediate_conversation` | 104 | Clear request → direct build |
+
+---
+
+## Validation Results
+
+Tested against base Qwen3-VL-8B-Instruct:
+
+| Test | Base Model | Fine-tuned | Target |
+|---|---|---|---|
+| Qualifying questions (10 vague prompts) | 1/10 | **10/10** | 6+/10 |
+| Vision critique quality | Vague, no measurements | px + hex + WCAG AA | 7+/10 |
+| Token accuracy | — | **98.1%** | — |
+| Clean HTML output | Verbose markdown | Zero wrapper text | <20 chars |
 
 ---
 
@@ -94,16 +107,15 @@ Fine-tuned vs. base Qwen3-VL-8B on the same prompts:
 
 ```bash
 ollama pull stefans71/frontend-design-expert-8b
-ollama run stefans71/frontend-design-expert-8b "make me a pricing card for my SaaS called TaskFlow"
+ollama run stefans71/frontend-design-expert-8b \
+  "make me a pricing card for my SaaS called TaskFlow, dark theme, purple accent"
 ```
 
 ### Vision + Text (llama-server)
 
-Ollama does not currently support separate mmproj files for vision. Use llama-server for screenshot critique:
+Ollama does not currently support separate mmproj files for vision. Use llama-server:
 
 ```bash
-# Install llama.cpp (brew install llama.cpp on Mac, or build from source)
-
 llama-server \
   -m frontend-design-expert-Q4_K_M.gguf \
   --mmproj mmproj-F16.gguf \
@@ -112,7 +124,7 @@ llama-server \
   --port 8080
 ```
 
-Then send requests via the OpenAI-compatible API:
+Send requests via the OpenAI-compatible API:
 
 ```python
 import base64, requests
@@ -136,10 +148,20 @@ print(response.json()["choices"][0]["message"]["content"])
 
 ### Inference tips
 
-- **Vision critique trigger:** Use exactly `"Critique this UI design."` — the model learned this phrase during training
+- **Vision critique trigger:** Use exactly `"Critique this UI design."` — other phrasings may trigger thinking-mode EOS
 - **Disable thinking mode:** Add `"chat_template_kwargs": {"enable_thinking": false}` to API requests
-- **Screenshot resolution:** Resize screenshots to max 1024×1024 before uploading to avoid VRAM OOM on 12GB GPUs
-- **Context window:** 8192 tokens recommended; increase to 32768 if generating long page builds
+- **Screenshot resolution:** Max 1024×1024 to avoid VRAM OOM on 12GB GPUs
+- **Context window:** 8192 tokens; increase to 32768 for full-page builds
+
+---
+
+## Files
+
+| File | Size | Use |
+|---|---|---|
+| `frontend-design-expert-Q4_K_M.gguf` | 4.7 GB | Primary — 12GB GPU (RTX 3060, RTX 4070, etc.) |
+| `frontend-design-expert-Q3_K_M.gguf` | 3.9 GB | Tight 12GB — more KV cache headroom |
+| `mmproj-F16.gguf` | 1.1 GB | Vision encoder — required for screenshot input |
 
 ---
 
@@ -149,7 +171,7 @@ print(response.json()["choices"][0]["message"]["content"])
 |---|---|
 | Base model | Qwen/Qwen3-VL-8B-Instruct |
 | Method | QLoRA (NF4 4-bit + BF16 LoRA adapters, rank 32) |
-| Dataset | 3,090 records — see [stefans71/frontend-design-dataset](https://github.com/stefans71/frontend-design-dataset) |
+| Dataset | 3,090 records — [stefans71/frontend-design-dataset](https://github.com/stefans71/frontend-design-dataset) |
 | Hardware | NVIDIA RTX 5090 (32GB, Blackwell) |
 | Training time | 2h 39m |
 | Final loss | 0.246 |
@@ -157,53 +179,14 @@ print(response.json()["choices"][0]["message"]["content"])
 | Framework | SWIFT 4.2.1 (Alibaba) |
 | Vision encoder | Frozen (`--freeze_vit True`) |
 
-### Dataset composition
-
-| Record type | Count | Description |
-|---|---|---|
-| `screenshot_code_critique_to_improved` | ~472 | Most valuable — PNG + HTML + critique → expert improved HTML |
-| `screenshot_to_critique` | ~472 | Desktop screenshot → design critique |
-| `screenshot_to_code` | ~472 | Desktop screenshot → HTML reconstruction |
-| `mobile_to_code` | ~472 | Mobile screenshot → HTML |
-| `screenshot_html_to_critique` | ~472 | Screenshot + HTML → detailed critique |
-| `prompt_to_html` | ~472 | Natural language prompt → HTML component |
-| `qualifying_conversation` | 150 | Vague request → qualifying questions → build |
-| `immediate_conversation` | 104 | Clear request → direct build |
-
-### Training methodology
-
-Teacher-student distillation:
-1. **Qwen3.6-27B** generates HTML components from natural language prompts
-2. **Playwright** renders each component to desktop (1280×900) and mobile (390×844) screenshots
-3. **GPT-5.4 (Codex)** critiques each screenshot and rewrites the HTML with expert-level design improvements
-4. Training pairs: `[bad screenshot + bad code + expert critique] → [expert improved code]`
-
-The gap between Qwen's output and GPT-5.4's improvement is the training signal. After fine-tuning, the 8B model internalizes expert design judgment — hover states, WCAG contrast, color consistency, layout hierarchy — without needing a system prompt.
-
----
-
-## Validated Behaviors
-
-Tested against base Qwen3-VL-8B-Instruct:
-
-| Test | Baseline | Fine-tuned | Target |
-|---|---|---|---|
-| Vision critique specificity | 5/10 (vague) | PASS (px, hex, WCAG) | 7+/10 |
-| Qualifying questions (10 vague prompts) | 1/10 | 10/10 | 6+/10 |
-| Zero system prompt behavior | N/A | 4/5 correct | — |
-| Clean HTML output (no wrapper text) | Verbose | 0 wrapper chars | <20 chars |
-
-The qualifying question behavior (1/10 → 10/10) is the headline result. Base models are RLHF-tuned to be immediately helpful — they build immediately regardless of prompt vagueness. Fine-tuning on 254 qualifying conversation traces baked the "pause and clarify" behavior into the weights.
-
 ---
 
 ## Limitations
 
-- Vision critique requires the exact phrase `"Critique this UI design."` — other phrasings may not reliably activate the critique behavior
+- Vision critique requires the exact phrase `"Critique this UI design."` — other phrasings may not reliably activate the behavior
 - Ollama does not currently support separate mmproj files — use llama-server for vision tasks
 - Generated HTML uses inline CSS only (no Tailwind CDN) — intentional for offline compatibility
 - Complex HTML outputs may be truncated at 4096 tokens — increase `max_tokens` for full-page builds
-- 4B Lite version may truncate complex components more frequently than 8B
 
 ---
 
@@ -214,8 +197,6 @@ The qualifying question behavior (1/10 → 10/10) is the headline result. Base m
 - Base model: **[Qwen/Qwen3-VL-8B-Instruct](https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct)**
 
 ---
-
-## Citation
 
 ```bibtex
 @misc{stefan2026frontenddesign,
