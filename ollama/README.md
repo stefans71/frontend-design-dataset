@@ -22,8 +22,15 @@ ollama run frontend-design-lite
 
 ## Vision Support
 
-Ollama does not yet natively support multimodal Qwen3-VL GGUF.
-For vision tasks (screenshot critique, screenshot-to-code), use llama-server directly:
+**Text-only tasks (qualifying questions, HTML generation): Ollama works perfectly.**
+
+**Vision tasks (screenshot critique, screenshot-to-code): use llama-server instead.**
+
+Ollama's `ADAPTER` command does not support separate mmproj files — attempting it causes 500 errors.
+The official Qwen3-VL GGUFs with embedded vision encoders work in Ollama, but our fine-tuned
+models ship as separate GGUF + mmproj pairs, which require llama-server.
+
+Do not add `ADAPTER mmproj-*.gguf` to the Modelfiles — it is not supported for this architecture.
 
 ```bash
 # 8B with vision
