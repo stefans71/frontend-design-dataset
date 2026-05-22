@@ -5,6 +5,12 @@
 
 Synthetic frontend design training data pipeline for fine-tuning **Qwen3-VL-8B**. A local LLM generates HTML components, Playwright renders them to screenshots, Codex CLI critiques the designs, and the results are packaged as JSONL training records.
 
+## 🎉 RELEASED — 2026-05-22 JST
+
+- 8B: https://huggingface.co/stefans71/frontend-design-expert-8b
+- 4B: https://huggingface.co/stefans71/frontend-design-lite-4b
+- AutoDL V2 shut down — all models on HuggingFace
+
 ## Last Updated
 
 2026-05-22 JST

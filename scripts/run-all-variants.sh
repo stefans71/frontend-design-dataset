@@ -7,7 +7,9 @@
 #   tmux new-session -d -s fullrun -x 220 -y 50
 #   tmux send-keys -t fullrun "cd /root/autodl-tmp/frontend-design-dataset && source autodl-run.sh && bash scripts/run-all-variants.sh 2>&1 | tee /tmp/fullrun.log" Enter
 
-set -euo pipefail
+set -uo pipefail
+
+export TEST_MODE=false
 
 TEMPS=(0.5 0.7 0.85 1.0 1.1)
 NAMES=(run0 run1 run2 run3 run4)

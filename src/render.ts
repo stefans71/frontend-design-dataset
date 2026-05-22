@@ -57,14 +57,22 @@ export async function renderAll(): Promise<void> {
 
   const total = htmlFiles.length;
 
+  let rendered = 0;
+  let failed = 0;
   for (let i = 0; i < total; i++) {
     const htmlPath = htmlFiles[i]!;
     const outputDir = join(htmlPath, "..");
-    await renderComponent(htmlPath, outputDir);
-    console.log(`[render] Component ${i + 1}/${total} rendered`);
+    try {
+      await renderComponent(htmlPath, outputDir);
+      rendered++;
+      console.log(`[render] Component ${i + 1}/${total} rendered`);
+    } catch (err) {
+      failed++;
+      console.warn(`[render] Component ${i + 1}/${total} FAILED — ${err instanceof Error ? err.message.slice(0, 120) : err}`);
+    }
   }
 
-  console.log(`[render] ${total} components rendered`);
+  console.log(`[render] ${rendered} components rendered, ${failed} failed`);
 }
 
 if (import.meta.main) {
