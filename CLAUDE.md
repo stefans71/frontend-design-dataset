@@ -65,9 +65,10 @@ All records validated: 0 CDN links, 0 malformed, 95% scoring 8-9/9 on eval pass.
 | Rsync dataset + PNGs to V2 | ✅ 3,090 records, 983 PNGs |
 | Download HF weights | ✅ /root/autodl-tmp/Qwen3-VL-8B-Instruct-HF (~16.5GB) |
 | Pre-training smoke test | ✅ PASSED — all 10 steps, no OOM (see results below) |
-| Full QLoRA fine-tune | 🔄 RUNNING — screen session on V2, ~2.3 hours, log at /tmp/finetune.log |
-| Export GGUF + quantize (Q4_K_M + Q3_K_M) | ⏳ |
+| Full QLoRA fine-tune | ✅ COMPLETE — 2h 39m, final loss 0.246, token_acc 98.1%, checkpoint-2319 |
+| Export GGUF + quantize (Q4_K_M + Q3_K_M) | 🔄 RUNNING — screen export-8b on V2, log /tmp/export-sequence.log |
 | Post-fine-tune validation (4 tests — see below) | ⏳ |
+| 4B Designer Lite fine-tune (Qwen3-VL-4B) | ⏳ — queued after 8B export, weights downloaded |
 
 ---
 
@@ -529,3 +530,20 @@ https://github.com/stefans71/frontend-design-dataset
 - Estimated completion: ~2.3 hours from launch
 - Monitor: `ssh -i /root/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com "tail -f /tmp/finetune.log"`
 - After completion: export GGUF → quantize Q4_K_M + Q3_K_M → run 4-test validation protocol
+
+### Fine-Tune Complete ✅
+- **Completed at 09:25 JST** — 2h 39m total, 2319/2319 steps, 3 epochs
+- Final train_loss: **0.2460**, token_acc: **98.1%**, VRAM peak: 23.61 GiB
+- Loss trajectory: epoch1 ~0.4–0.6 → epoch2 ~0.15–0.25 → epoch3 ~0.10–0.21 (excellent convergence)
+- Checkpoint: `/root/autodl-tmp/finetune-output/v0-20260522-064424/checkpoint-2319`
+
+### Export OOM — Fixed
+- **Problem:** `swift export --merge_lora` ran immediately after training screen died but before CUDA context fully released → OOM (15 MiB free, needed 20 MiB)
+- **Fix:** Waited for GPU to fully free (0 MiB used confirmed via nvidia-smi), relaunched merge in screen session `export-8b`
+- **Prevention for 4B:** auto-4b.sh waits for EXPORT_COMPLETE before starting — GPU will be free by then
+
+### 4B Designer Lite — Staged
+- Qwen3-VL-4B-Instruct HF weights downloaded: 8.4GB (2 safetensors) ✅
+- 4B mmproj downloaded: mmproj-Qwen3VL-4B-Instruct-F16.gguf (798MB) ✅
+- auto-4b.sh watcher (PID 16478) running, triggered on EXPORT_COMPLETE
+- Will run: smoke test (10 steps) → if loss <2.0 and VRAM <28GB → full 2-epoch fine-tune

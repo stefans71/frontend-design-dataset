@@ -210,8 +210,8 @@ output/
 26. ✅ **Rsync dataset-final.jsonl + PNGs to V2** — 3,089 records, 983 PNGs confirmed
 26a. ✅ **Download Qwen3-VL-8B-Instruct HF weights** — /root/autodl-tmp/Qwen3-VL-8B-Instruct-HF (~16GB)
 27. ✅ **Pre-training smoke test** — step 1 loss 0.5289, VRAM 22.44 GiB, speed 3.6 s/it, full run ~2.3h
-28. ⏳ **Full QLoRA fine-tune** — see Step 21 below
-29. ⏳ **Export GGUF + quantize** — see Step 22 below
+28. ✅ **Full QLoRA fine-tune** — 2h 39m, final loss 0.246, token_acc 98.1%, checkpoint-2319
+29. 🔄 **Export GGUF + quantize** — merge running in screen export-8b, log /tmp/export-sequence.log
 30. ⏳ **Post-fine-tune validation** — 4-test protocol (see CLAUDE.md)
 31. ⏳ **Test on Ollama** (RTX 3060 12GB target hardware)
 32. ⏳ **Release (8B)**
