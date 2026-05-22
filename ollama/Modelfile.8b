@@ -1,0 +1,41 @@
+# Ollama Modelfile — frontend-design-expert (8B)
+# Based on Qwen3-VL-8B-Instruct fine-tuned on frontend design dataset
+#
+# Usage:
+#   ollama create frontend-design-expert -f ollama/Modelfile.8b
+#   ollama run frontend-design-expert
+#
+# Note: Ollama does not yet support multimodal GGUF natively for Qwen3-VL.
+# Use llama-server directly for vision tasks (see llama-server command below).
+#
+# llama-server command (with vision support):
+#   /path/to/llama-server \
+#     -m frontend-design-expert-Q4_K_M.gguf \
+#     --mmproj mmproj-F16.gguf \
+#     --port 11434 -c 8192 -ngl 99 --cache-reuse 0
+#
+# Validated behaviors:
+#   - Vision critique: use prompt "Critique this UI design." exactly
+#   - Qualifying questions: 10/10 vague prompts trigger clarifying questions
+#   - Clean output: 0 wrapper chars — pure HTML, no preamble
+
+FROM frontend-design-expert-Q4_K_M.gguf
+
+PARAMETER num_ctx 8192
+PARAMETER num_gpu 99
+PARAMETER temperature 0.7
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"
+
+SYSTEM ""
+
+TEMPLATE """{{- if .System }}<|im_start|>system
+{{ .System }}<|im_end|>
+{{ end }}
+{{- range .Messages }}
+{{- if eq .Role "user" }}<|im_start|>user
+{{ .Content }}<|im_end|>
+<|im_start|>assistant
+{{ else if eq .Role "assistant" }}{{ .Content }}<|im_end|>
+{{ end }}
+{{- end }}"""

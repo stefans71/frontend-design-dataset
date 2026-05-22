@@ -93,6 +93,41 @@ Both models loaded via llama-server Q4_K_M on RTX 5090, tested with prompts matc
 
 ---
 
+## Inference Notes — Validated Behaviors
+
+### Vision Critique Trigger
+The fine-tuned model learned a specific prompt trigger from training data.
+Use exactly: `"Critique this UI design."`
+Other phrasings may not reliably activate the critique behavior.
+Note: thinking-mode suppression in llama-server interferes with
+differently-phrased critique prompts — always use `--no-think` or
+`chat_template_kwargs: {enable_thinking: false}`.
+
+### Qualifying Questions
+Model asks 2–3 qualifying questions on vague page/site/app requests.
+Does NOT ask on component requests ("make me a button").
+8B: 10/10 on vague prompts | 4B: 8/10 on vague prompts
+
+### Clean Output
+8B produces zero wrapper text — pure HTML.
+4B produces ~36 wrapper chars — minimal, acceptable.
+
+### GGUF File Locations (V2 instance)
+
+**8B Expert:**
+- `/root/autodl-tmp/frontend-design-expert-Q4_K_M.gguf` (4.7 GB)
+- `/root/autodl-tmp/frontend-design-expert-Q3_K_M.gguf` (3.9 GB)
+- `/root/autodl-tmp/frontend-design-expert-f16.gguf` (16 GB)
+- mmproj: `/root/autodl-tmp/qwen-eval/qwen3-vl-8b-gguf/mmproj-F16.gguf`
+
+**4B Lite:**
+- `/root/autodl-tmp/frontend-design-lite-Q4_K_M.gguf` (2.4 GB)
+- `/root/autodl-tmp/frontend-design-lite-Q3_K_M.gguf` (2.0 GB)
+- `/root/autodl-tmp/frontend-design-lite-f16.gguf` (7.5 GB)
+- mmproj: `/root/autodl-tmp/qwen3-vl-4b-gguf/mmproj-Qwen3VL-4B-Instruct-F16.gguf`
+
+---
+
 ## Baseline Test Results — Qwen3-VL-8B-Instruct (confirmed)
 
 Tested on AutoDL westd. Fine-tune decision: CONFIRMED REQUIRED.
