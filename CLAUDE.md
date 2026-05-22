@@ -18,7 +18,7 @@ Read in this order before doing anything:
 2. **PLAN.md** — full pipeline implementation checklist (do not overwrite)
 3. **FRONTEND-DESIGN-MODEL-CARD.md** — Sections 14+15 for fine-tune params and validation protocol
 
-**Current situation:** ALL COMPLETE ✅ — 8B + 4B fine-tuned, GGUF-exported, and validated (2026-05-22 JST). Both models pass all 4 validation tests. Next: Ollama deployment + release. Active instance is frontend-dataset-clone-V2 (port 25615). Do not touch the dataset instance (port 25180 — switched off, data preserved).
+**Current situation:** RELEASED ✅ — 8B + 4B fine-tuned, validated, and live on HuggingFace (2026-05-22 JST). Both models public at huggingface.co/stefans71/frontend-design-expert-8b and huggingface.co/stefans71/frontend-design-lite-4b. Active instance is frontend-dataset-clone-V2 (port 25615). Do not touch the dataset instance (port 25180 — switched off, data preserved).
 
 **First task in any new session:** Check V2 instance is healthy before doing anything:
 ```bash
@@ -71,6 +71,7 @@ All records validated: 0 CDN links, 0 malformed, 95% scoring 8-9/9 on eval pass.
 | 4B Designer Lite full fine-tune (v2, batch_size 1) | ✅ COMPLETE — 53m 2s, final loss 0.325, token_acc 92.5%, checkpoint-1546 |
 | 4B Export GGUF + quantize | ✅ COMPLETE — f16 7.5GB, Q4_K_M 2.4GB, Q3_K_M 2.0GB (11:18 JST) |
 | Post-fine-tune validation — 8B + 4B (4 tests each) | ✅ PASSED — both models validated (see results below) |
+| Upload to HuggingFace Hub (8B + 4B) | ✅ COMPLETE — Q4_K_M + Q3_K_M + mmproj + README for both models (2026-05-22 JST) |
 
 ---
 
