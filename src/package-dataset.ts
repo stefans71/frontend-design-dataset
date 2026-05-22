@@ -2,8 +2,8 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 
-const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./output";
-const DATASET_PATH = process.env.DATASET_PATH ?? "./output/dataset.jsonl";
+const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./output/assets/components";
+const DATASET_PATH = process.env.DATASET_PATH ?? "./output/exports/dataset.jsonl";
 const OUTPUT_SUFFIX = process.env.OUTPUT_SUFFIX ?? "";
 
 function componentDirPattern(): RegExp {

@@ -6,7 +6,7 @@ import { COMPONENT_PROMPTS, COMPONENT_PROMPTS_V2 } from "../prompts/components.t
 
 const LLAMA_SERVER_URL = process.env.LLAMA_SERVER_URL ?? "http://localhost:11434";
 const LLAMA_MODEL = process.env.LLAMA_MODEL ?? "qwen3.6-27b-mtp";
-const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./output";
+const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./output/assets/components";
 const OUTPUT_SUFFIX = process.env.OUTPUT_SUFFIX ?? "";
 const TEMPERATURE = parseFloat(process.env.TEMPERATURE ?? "0.7");
 

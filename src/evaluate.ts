@@ -4,12 +4,12 @@
 // Stage C: filter dataset.jsonl → dataset-clean.jsonl
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "fs";
 
-const OUTPUT_DIR = "./output";
-const PRE_SCORES_PATH = `${OUTPUT_DIR}/pre-scores.jsonl`;
-const SCORES_PATH = `${OUTPUT_DIR}/scores.jsonl`;
-const SUMMARY_PATH = `${OUTPUT_DIR}/eval-summary.json`;
-const DATASET_PATH = `${OUTPUT_DIR}/dataset.jsonl`;
-const CLEAN_DATASET_PATH = `${OUTPUT_DIR}/dataset-clean.jsonl`;
+const OUTPUT_DIR = "./output/assets/components";
+const PRE_SCORES_PATH = "./output/eval/pre-scores.jsonl";
+const SCORES_PATH = "./output/eval/scores.jsonl";
+const SUMMARY_PATH = "./output/eval/eval-summary.json";
+const DATASET_PATH = "./output/exports/dataset.jsonl";
+const CLEAN_DATASET_PATH = "./output/exports/dataset-clean.jsonl";
 
 const EXCLUDE_THRESHOLD = 6;
 const STAGE_B_BATCH_SIZE = 5;

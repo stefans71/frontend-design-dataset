@@ -151,31 +151,37 @@ All runs scored median 6-7/10 — all 5 kept in training set.
 
 ---
 
-## Output Directory Structure (final)
+## Output Directory Structure (final — restructured 2026-05-22)
 
 ```
 output/
-├── component-000-run0/        ← run0, temp=0.5
-│   ├── component.html
-│   ├── metadata.json          ← includes prompt, temperature, outputSuffix
-│   ├── screenshot-desktop.png
-│   ├── screenshot-mobile.png
-│   ├── critique.md
-│   └── improved.html
-├── ...
-├── component-099-run4/        ← run4, temp=1.1
-├── dataset-run0.jsonl         ← per-run JSONL (573 records)
-├── dataset-run1.jsonl         ← 558 records
-├── dataset-run2.jsonl         ← 573 records
-├── dataset-run3.jsonl         ← 534 records
-├── dataset-run4.jsonl         ← 598 records
-├── dataset.jsonl              ← concatenated ~2,836 records
-├── pre-scores.jsonl           ← Stage A eval results
-├── scores.jsonl               ← final per-component scores
-├── eval-summary.json          ← aggregate eval stats
-├── dataset-clean.jsonl        ← post-eval (2,835 records, 0 excluded)
-├── qualifying-conversations.jsonl  ← 254 conversation traces
-└── dataset-final.jsonl        ← ← ← FINE-TUNE INPUT (3,089 records)
+├── assets/components/         ← 500 production component dirs (component-NNN-runX/)
+│   ├── component-000-run0/    ← run0, temp=0.5
+│   │   ├── component.html
+│   │   ├── metadata.json      ← includes prompt, temperature, outputSuffix
+│   │   ├── screenshot-desktop.png
+│   │   ├── screenshot-mobile.png
+│   │   ├── critique.md
+│   │   └── improved.html
+│   └── component-099-run4/   ← run4, temp=1.1
+├── archive/test-runs/         ← 35 dirs: smoke tests, v2, tailwind-test, bare component-NNN
+├── exports/                   ← JSONL datasets
+│   ├── dataset-final.jsonl    ← ← ← FINE-TUNE INPUT (3,090 records)
+│   ├── dataset-clean.jsonl    ← post-eval (2,835 records)
+│   ├── dataset.jsonl          ← concatenated run0-run4 (~2,836 records)
+│   ├── dataset-run0.jsonl     ← per-run JSONL (573 records)
+│   ├── dataset-run1.jsonl     ← 558 records
+│   ├── dataset-run2.jsonl     ← 573 records
+│   ├── dataset-run3.jsonl     ← 534 records
+│   ├── dataset-run4.jsonl     ← 598 records
+│   └── qualifying-conversations.jsonl  ← 254 conversation traces
+├── eval/                      ← evaluation outputs
+│   ├── pre-scores.jsonl       ← Stage A eval results
+│   ├── scores.jsonl           ← final per-component scores
+│   └── eval-summary.json      ← aggregate eval stats
+├── db/                        ← SQLite database (build with: bun run build-db)
+│   └── dataset.sqlite         ← 500 components, 254 conversations, eval scores indexed
+└── marketing/                 ← comparison screenshots for HuggingFace/GitHub
 ```
 
 ---

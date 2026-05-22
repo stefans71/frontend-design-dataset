@@ -6,7 +6,7 @@ import "dotenv/config";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 
-const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./output";
+const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./output/assets/components";
 const OUTPUT_SUFFIX = process.env.OUTPUT_SUFFIX ?? "";
 
 function componentDirPattern(): RegExp {
