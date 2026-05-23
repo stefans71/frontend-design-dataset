@@ -227,8 +227,8 @@ output/
 36. ✅ **Validate 4B** — 4/4 tests passed: A(vision critique), B(8/10 qualifying), C(3/5 no-sys), D(36 wrapper chars)
 37. ⏳ **Release (4B Lite)**
 38. ✅ **Head-to-head validation generated** — 10 prompts × 2 models on RTX 3080 Ti
-39. ⏳ **Codex scoring on VPS** (`bun run score-validation`)
-40. ⏳ **Update HF READMEs with real scores**
+39. ✅ **Codex scoring on VPS** — fine-tuned +1.00 avg over base (5.50 vs 4.50, 6/10 wins)
+40. ⏳ **Update HF READMEs with validated scores**
 41. ⏳ **Reddit r/LocalLLaMA post**
 
 ---
@@ -562,17 +562,26 @@ Fine-tuned generates 1.9× more detailed HTML consistently across all component 
 
 ---
 
-## Step 25 — Codex Scoring ⏳
+## Step 25 — Codex Scoring ✅ COMPLETE
 
-Run on VPS after AutoDL shutdown. Uses same critique prompt as training.
+Fine-tuned +1.00 avg over base (apples-to-apples). Same model, hardware, judge, and critique prompt as training.
 
-```bash
-bun run score-validation
-```
+- Fine-tuned avg: 5.50/10 | Base avg: 4.50/10 | Delta: +1.00
+- Fine-tuned wins: 6/10, ties: 3/10, loses: 1/10 (dark navbar only)
+- Biggest improvement: mobile dark +5 (base 1 → fine-tuned 6)
+- Results: `output/validation/fine-tuned-scores.jsonl`
 
-Reads `output/validation/test-prompts.json` + HTML files from both model sets.
-Scores each with GPT-5.4, compares against existing 27B baseline scores (avg 8.60/9).
-Writes results to `output/validation/fine-tuned-scores.jsonl`.
+---
+
+## Step 26 — Update HuggingFace READMEs ⏳
+
+Update both 8B and 4B HF READMEs with validated comparison scores.
+
+---
+
+## Step 27 — Reddit r/LocalLLaMA Post ⏳
+
+Post validated comparison results to r/LocalLLaMA.
 
 ---
 

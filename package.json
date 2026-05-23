@@ -14,7 +14,8 @@
     "test:v2": "TEST_MODE=true TEST_COUNT=5 OUTPUT_SUFFIX=v2 bun run src/pipeline.ts",
     "evaluate": "bun run src/evaluate.ts",
     "conversations": "bun run src/generate-conversations.ts",
-    "build-db": "bun run src/build-db.ts"
+    "build-db": "bun run src/build-db.ts",
+    "score-validation": "bun run src/score-validation.ts"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",

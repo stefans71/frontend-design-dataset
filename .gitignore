@@ -3,9 +3,11 @@ output/*
 !output/validation
 output/validation/*
 !output/validation/*.json
+!output/validation/README.md
 .env
 *.png
 *.jsonl
+!output/validation/fine-tuned-scores.jsonl
 
 CLAUDE.md
 TEST-QWEN35-9B.md
