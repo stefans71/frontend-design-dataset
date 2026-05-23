@@ -1,11 +1,13 @@
 node_modules/
 output/*
 !output/validation
+!output/marketing
 output/validation/*
 !output/validation/*.json
 !output/validation/README.md
 .env
 *.png
+!output/marketing/hero-comparison.png
 *.jsonl
 !output/validation/fine-tuned-scores.jsonl
 
