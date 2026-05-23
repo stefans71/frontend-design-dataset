@@ -605,7 +605,7 @@ No system prompt — pure behavior from trained weights.
 
 **Fine-tuned blocked:** llama-cpp-python 0.3.23 does not support `chat_template_kwargs: {enable_thinking: false}`. The fine-tuned Qwen3-VL triggers thinking-mode EOS on vision input without this flag. llama-server binaries compiled for sm_86 (RTX 3080 Ti) in the available builds pre-date `qwen3vl` architecture support. This is an inference infrastructure limitation, not a model quality issue.
 
-**Workaround for future runs:** Ollama 0.22.1+ with native Qwen3-VL support handles thinking suppression transparently. Alternatively, build llama.cpp from the latest source for sm_86.
+**Root cause (confirmed 2026-05-23):** Ollama new engine only supports qwen3vl loaded from safetensors format. Split GGUF + mmproj panics at `reserveWorstCaseGraph` (github.com/ollama/ollama/issues/13101). This affects all Ollama versions including 0.24.0. Upgrading Ollama does not fix it.
 
 ### Output structure:
 ```
@@ -630,6 +630,99 @@ output/validation/
 - [ ] Repeat for 4B fine-tuned — deferred
 - [ ] Update HuggingFace READMEs with self-improvement results
 - [x] Reddit r/LocalLLaMA post drafted (output/marketing/reddit-post.md)
+
+---
+
+## Step 28b — Fine-Tuned Self-Improvement Test ⏳ BLOCKED
+
+Root cause: Ollama new engine only supports qwen3vl from safetensors format.
+Split GGUF + mmproj panics at reserveWorstCaseGraph (issue #13101).
+
+### Fix requires V2 instance (frontend-dataset-clone-V2):
+The merged safetensors AND LoRA adapters are on V2 at:
+- Merged: /root/autodl-tmp/finetune-output/v0-20260522-064424/checkpoint-2319-merged/
+- LoRA adapters: /root/autodl-tmp/finetune-output/v0-20260522-064424/checkpoint-2319/
+
+### When V2 GPU becomes available — do these steps in order:
+
+**Step A — Upload LoRA adapters to HuggingFace (permanent, ~500MB):**
+```bash
+ssh -i ~/.ssh/id_ed25519 -p 25615 root@connect.westd.seetacloud.com
+source /etc/network_turbo
+pip install huggingface_hub -q
+python3 -c "
+from huggingface_hub import HfApi
+import os
+api = HfApi(token='$(grep HF_TOKEN .env | tail -1 | cut -d= -f2)')
+# Upload LoRA adapter files
+adapter_path = '/root/autodl-tmp/finetune-output/v0-20260522-064424/checkpoint-2319'
+for f in os.listdir(adapter_path):
+    if any(f.endswith(ext) for ext in ['.bin', '.safetensors', '.json', '.yaml']):
+        print(f'Uploading {f}...')
+        api.upload_file(
+            path_or_fileobj=f'{adapter_path}/{f}',
+            path_in_repo=f'adapter/{f}',
+            repo_id='stefans71/frontend-design-expert-8b'
+        )
+print('Done')
+"
+```
+
+**Step B — Upload merged safetensors to HuggingFace (~16GB):**
+```bash
+# Run in screen — takes 30-60 min
+screen -dmS upload-merged bash -c '
+source /etc/network_turbo
+python3 -c "
+from huggingface_hub import HfApi
+import os
+api = HfApi(token=\"$(grep HF_TOKEN /root/tinkering/Local-LLMs/Local-LLM-Agent/frontend-design-dataset/.env | tail -1 | cut -d= -f2)\")
+merged_path = \"/root/autodl-tmp/finetune-output/v0-20260522-064424/checkpoint-2319-merged\"
+for f in os.listdir(merged_path):
+    print(f\"Uploading {f}...\")
+    api.upload_file(
+        path_or_fileobj=f\"{merged_path}/{f}\",
+        path_in_repo=f\"merged/{f}\",
+        repo_id=\"stefans71/frontend-design-expert-8b\"
+    )
+print(\"Done\")
+" 2>&1 | tee /tmp/upload-merged.log'
+```
+
+**Step C — Install Ollama on V2 and import from merged safetensors:**
+```bash
+source /etc/network_turbo
+curl -fsSL https://ollama.com/install.sh | sh
+ollama --version  # confirm 0.22.1+
+
+# Import from merged safetensors (this is what fixes the Conv3D bug)
+cat > /tmp/Modelfile-merged << 'EOF'
+FROM /root/autodl-tmp/finetune-output/v0-20260522-064424/checkpoint-2319-merged
+PARAMETER num_ctx 8192
+PARAMETER temperature 0.7
+PARAMETER stop ""
+EOF
+
+OLLAMA_MODELS=/root/autodl-tmp/ollama-models \
+ollama create frontend-expert-merged -f /tmp/Modelfile-merged
+
+# Test vision works
+ollama run frontend-expert-merged "Critique this UI design." \
+  --image /root/autodl-tmp/validation/fine-tuned/component-012-run0-desktop.png
+```
+
+**Step D — Run self-improvement loop via Ollama API:**
+Same script as base model but using Ollama endpoint instead of llama-cpp-python.
+Save results to output/validation/fine-tuned-improved/
+Score with bun run score-validation on VPS.
+
+**Expected comparison after Step D:**
+| Condition | Score |
+|---|---|
+| Base first-pass | 4.50 |
+| Base self-improved | 4.00 (-0.50 — gets worse) |
+| Fine-tuned first-pass | 5.50 |
+| Fine-tuned self-improved | ??? (hypothesis: 6.5-7.0) |
 
 ---
 
