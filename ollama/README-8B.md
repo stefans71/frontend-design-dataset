@@ -103,6 +103,31 @@ Tested against base Qwen3-VL-8B-Instruct:
 | Token accuracy | — | **98.1%** | — |
 | Clean HTML output | Verbose markdown | Zero wrapper text | <20 chars |
 
+### Head-to-Head Design Quality
+
+Head-to-head test: base Qwen3-VL-8B vs fine-tuned, same 10 prompts, same hardware (RTX 3080 Ti 12GB), GPT-5.4 judge using the same critique rubric as training.
+
+| Component | Category | Base | Fine-tuned | Delta |
+|---|---|---|---|---|
+| Login form (dark) | Form | 5 | 6.5 | +1.5 |
+| Checkout form (light) | Form | 5 | 5 | 0 |
+| Pricing card (dark) | Card | 5 | 6 | +1 |
+| Product card (light) | Card | 5 | 5 | 0 |
+| Top navbar (light) | Navbar | 4 | 4 | 0 |
+| Sidebar nav (dark) | Navbar | 4 | 3 | -1 |
+| Mobile bottom sheet (dark) | Mobile | 1 | 6 | +5 |
+| Transaction list (light) | Mobile | 5 | 6.5 | +1.5 |
+| CTA section (dark) | Marketing | 6 | 6.5 | +0.5 |
+| Invoice table (light) | Data | 5 | 6.5 | +1.5 |
+| **Average** | | **4.50** | **5.50** | **+1.00** |
+
+- Fine-tuned wins: 6/10 components
+- Tied: 3/10
+- Base wins: 1/10 (dark navbar only)
+- Biggest improvement: mobile dark bottom sheet +5 (base scored 1, fine-tuned scored 6)
+
+> **Note:** Scores reflect first-pass generation without the improvement step. The model was trained on critique+improvement pairs — ask it to critique and improve its own output for higher quality results.
+
 ---
 
 > [!TIP]

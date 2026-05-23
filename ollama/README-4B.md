@@ -94,6 +94,31 @@ BF16 (not 4-bit) was used for 4B training because fewer parameters means the mod
 | Token accuracy | — | **92.5%** | 98.1% |
 | Clean HTML output | Verbose markdown | ~36 wrapper chars | Zero wrapper text |
 
+### Head-to-Head Design Quality (8B reference)
+
+Head-to-head test run on the 8B Expert model: base Qwen3-VL-8B vs fine-tuned, same 10 prompts, same hardware (RTX 3080 Ti 12GB), GPT-5.4 judge using the same critique rubric as training. Both models share the same training dataset and approach.
+
+| Component | Category | Base | Fine-tuned 8B | Delta |
+|---|---|---|---|---|
+| Login form (dark) | Form | 5 | 6.5 | +1.5 |
+| Checkout form (light) | Form | 5 | 5 | 0 |
+| Pricing card (dark) | Card | 5 | 6 | +1 |
+| Product card (light) | Card | 5 | 5 | 0 |
+| Top navbar (light) | Navbar | 4 | 4 | 0 |
+| Sidebar nav (dark) | Navbar | 4 | 3 | -1 |
+| Mobile bottom sheet (dark) | Mobile | 1 | 6 | +5 |
+| Transaction list (light) | Mobile | 5 | 6.5 | +1.5 |
+| CTA section (dark) | Marketing | 6 | 6.5 | +0.5 |
+| Invoice table (light) | Data | 5 | 6.5 | +1.5 |
+| **Average** | | **4.50** | **5.50** | **+1.00** |
+
+- Fine-tuned wins: 6/10 components
+- Tied: 3/10
+- Base wins: 1/10 (dark navbar only)
+- Biggest improvement: mobile dark bottom sheet +5 (base scored 1, fine-tuned scored 6)
+
+> **Note:** Scores reflect first-pass generation without the improvement step. The model was trained on critique+improvement pairs — ask it to critique and improve its own output for higher quality results.
+
 ---
 
 > [!TIP]

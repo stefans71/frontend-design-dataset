@@ -228,7 +228,7 @@ output/
 37. ⏳ **Release (4B Lite)**
 38. ✅ **Head-to-head validation generated** — 10 prompts × 2 models on RTX 3080 Ti
 39. ✅ **Codex scoring on VPS** — fine-tuned +1.00 avg over base (5.50 vs 4.50, 6/10 wins)
-40. ⏳ **Update HF READMEs with validated scores**
+40. ✅ **Update HF READMEs with validated scores** — head-to-head table added to both 8B and 4B
 41. ⏳ **Reddit r/LocalLLaMA post**
 
 ---
@@ -573,7 +573,7 @@ Fine-tuned +1.00 avg over base (apples-to-apples). Same model, hardware, judge, 
 
 ---
 
-## Step 26 — Update HuggingFace READMEs ⏳
+## Step 26 — Update HuggingFace READMEs ✅ COMPLETE
 
 Update both 8B and 4B HF READMEs with validated comparison scores.
 
