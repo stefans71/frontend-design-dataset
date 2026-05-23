@@ -1,0 +1,72 @@
+[
+  {
+    "id": "component-012-run0",
+    "prompt": "Design a login form for a developer tool called Raycast. Dark background with a blue accent. A centered card with: the product logo at the top, \"Welcome back\" as the heading, an email input field, a password field with a show/hide eye icon toggle, a \"Forgot password?\" link, and a blue \"Sign in\" button. Below a divider, a \"Don't have an account? Sign up\" link. Use only inline CSS \u2014 no external libraries. Self-contained HTML document.",
+    "baseline_score": 9,
+    "category": "form",
+    "theme": "dark"
+  },
+  {
+    "id": "component-014-run0",
+    "prompt": "Build a credit card payment form for an e-commerce checkout for a floral brand called Petal Shop. Light background. On the left: form fields for full name, card number (with a card icon area on the right of the input), expiry date and CVV side by side, and billing address (street, city, zip, country). On the right: an order summary with item names and a bold total \"$84.99\" and a green \"Pay Now\" button. Use only inline CSS \u2014 no external libraries. Self-contained HTML document.",
+    "baseline_score": 9,
+    "category": "form",
+    "theme": "light"
+  },
+  {
+    "id": "component-002-run0",
+    "prompt": "Design a pricing card for the Pro plan of a startup app called Shipfast. Dark background with a subtle purple glow around the card. Show the price as $49/month. List 5 features with checkmarks: unlimited projects, priority support, custom domain, advanced analytics, team collaboration. Add a \"Most Popular\" badge at the top and a big purple \"Get Pro Access\" button at the bottom. Use only inline CSS \u2014 no external libraries. Self-contained HTML document.",
+    "baseline_score": 9,
+    "category": "card",
+    "theme": "dark"
+  },
+  {
+    "id": "component-028-run0",
+    "prompt": "Design an e-commerce product card for wireless headphones called \"Sony WH-1000XM5\". Light background. Show a square image placeholder area, the product name, a 4.6-star rating with \"2,148 reviews\", the price \"$329\" with a \"15% off\" sale badge and the original price struck through. Below: an \"Add to Cart\" button and a heart wishlist icon. Clean and minimal with good spacing. Use only inline CSS \u2014 no external libraries. Self-contained HTML document.",
+    "baseline_score": 9,
+    "category": "card",
+    "theme": "light"
+  },
+  {
+    "id": "component-003-run0",
+    "prompt": "Make a top navigation bar for a SaaS product called Flowdesk. Logo on the left (small icon + brand name), nav links in the middle (Features, Pricing, Docs, Blog), and a \"Sign in\" text link plus a blue \"Get Started\" button on the right. On mobile it should collapse and show a hamburger menu icon instead of the links. Below the nav add a simple white page area with a bold headline as placeholder content. Use only inline CSS \u2014 no external libraries. Self-contained HTML document.",
+    "baseline_score": 9,
+    "category": "navbar",
+    "theme": "light"
+  },
+  {
+    "id": "component-021-run0",
+    "prompt": "Build a sidebar navigation for a project management app called Linear. Dark background. The sidebar shows: a workspace logo circle and name \"Acme Corp\" at the top, then nav items with icons and labels \u2014 Inbox (with a \"3\" badge), My Issues, Views, Projects (highlighted as the active item), Teams. At the bottom: Settings and a user avatar with name. Make it look compact and sleek. Use only inline CSS \u2014 no external libraries. Self-contained HTML document.",
+    "baseline_score": 9,
+    "category": "navbar",
+    "theme": "dark"
+  },
+  {
+    "id": "component-078-run0",
+    "prompt": "Design a mobile bottom sheet action menu for a files app. Dark phone screen background. The bottom sheet slides up from the bottom, covering about half the screen, with a drag handle pill at the top. It's titled with the filename \"project-exports.zip\". Below: a list of actions \u2014 Share (share icon), Copy link, Move to folder, Rename, Download, and Delete (in red with a trash icon). Use only inline CSS \u2014 no external libraries. Self-contained HTML document.",
+    "baseline_score": 9,
+    "category": "mobile",
+    "theme": "dark"
+  },
+  {
+    "id": "component-084-run0",
+    "prompt": "Create a mobile transaction list as seen in a banking or budget app. Light phone screen background. Show 3 transaction rows: Blue Bottle Coffee (coffee cup icon, amber/brown circle, \"$6.50\", today), Amazon (shopping bag icon, dark circle, \"$34.99\", yesterday), Whole Foods (leaf icon, green circle, \"$87.43\", yesterday). Each row has the category icon on the left, merchant name and date in the middle, and the amount on the right (shown in red for purchases). Use only inline CSS \u2014 no external libraries. Self-contained HTML document.",
+    "baseline_score": 9,
+    "category": "mobile",
+    "theme": "light"
+  },
+  {
+    "id": "component-072-run0",
+    "prompt": "Design a call-to-action section for a developer tool's marketing page. Dark background, centered layout. A small \"Start for free\" eyebrow label, a large bold headline \"Ship your next project 10x faster\", a subtitle \"Join 50,000+ developers who use BuildKit to go from idea to production.\", an email input and \"Get Started\" button side by side, and trust badges below (SOC 2 certified, GDPR compliant, 99.9% uptime). Blue accent color. Use only inline CSS \u2014 no external libraries. Self-contained HTML document.",
+    "baseline_score": 9,
+    "category": "marketing",
+    "theme": "dark"
+  },
+  {
+    "id": "component-065-run0",
+    "prompt": "Build an invoice for a SaaS billing statement. Light background. Header: \"Invoice #INV-2024-0847\", the date, and billed to \"Acme Corp / billing@acme.com\". A line item table with columns: Description, Qty, Unit Price, Amount. Four items: Pro Plan (monthly) \u00d71 $49, Additional seats \u00d73 $45, Storage add-on \u00d71 $9, Support plan \u00d71 $29. Then a subtotal row, tax row (8.5% = $11.23), and a bold \"Total Due: $143.17\" row. A \"Download PDF\" button. Use only inline CSS \u2014 no external libraries. Self-contained HTML document.",
+    "baseline_score": 8,
+    "category": "data_display",
+    "theme": "light"
+  }
+]

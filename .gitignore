@@ -1,5 +1,8 @@
 node_modules/
-output/
+output/*
+!output/validation
+output/validation/*
+!output/validation/*.json
 .env
 *.png
 *.jsonl
