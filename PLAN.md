@@ -226,6 +226,10 @@ output/
 35. ✅ **Export 4B GGUF + quantize** — f16 7.5GB, Q4_K_M 2.4GB, Q3_K_M 2.0GB (11:18 JST 2026-05-22)
 36. ✅ **Validate 4B** — 4/4 tests passed: A(vision critique), B(8/10 qualifying), C(3/5 no-sys), D(36 wrapper chars)
 37. ⏳ **Release (4B Lite)**
+38. ✅ **Head-to-head validation generated** — 10 prompts × 2 models on RTX 3080 Ti
+39. ⏳ **Codex scoring on VPS** (`bun run score-validation`)
+40. ⏳ **Update HF READMEs with real scores**
+41. ⏳ **Reddit r/LocalLLaMA post**
 
 ---
 
@@ -520,6 +524,55 @@ Run 4-test protocol from CLAUDE.md before releasing. Targets:
 - Test D (markdown chatter): <20 wrapper tokens per response
 
 See CLAUDE.md `## Post-Fine-Tune Validation Protocol` for full test prompts and pass criteria.
+
+---
+
+## Step 24 — Head-to-Head Validation (Apples-to-Apples) ✅ COMPLETE
+
+True comparison: base Qwen3-VL-8B vs fine-tuned Qwen3-VL-8B on same 10 prompts.
+
+### Instance used
+RTX 3080 Ti 12GB (dbfb41b9f9-ce413e40) — clone of frontend-dataset-clone V1
+SSH: `ssh -i ~/.ssh/id_ed25519 -p 24817 root@connect.westb.seetacloud.com`
+Note: llama-server binary was Blackwell-only (sm_120) — had to install llama-cpp-python compiled for sm_86
+
+### Test prompts
+10 components from training data — `output/validation/test-prompts.json`
+5 dark / 5 light, 6 categories (form, card, navbar, mobile, marketing, data)
+All scored 8-9/9 in original eval pass (high quality baseline)
+
+### Output size results
+| Model | Avg chars | Min | Max |
+|---|---|---|---|
+| Fine-tuned 8B | 9,143 | 5,509 | 14,118 |
+| Base 8B | 4,907 | 1,985 | 8,167 |
+| Ratio | 1.9× | — | — |
+
+Fine-tuned generates 1.9× more detailed HTML consistently across all component types.
+
+### Files
+- `output/validation/fine-tuned/` — 10 HTML + desktop PNGs
+- `output/validation/base/` — 10 HTML + desktop PNGs
+- `output/validation/test-prompts.json` — 10 test prompts with baseline scores
+
+### Pending
+- [ ] Codex GPT-5.4 scoring — `bun run score-validation` on VPS
+- [ ] Update HuggingFace READMEs with real comparison scores
+- [ ] Reddit r/LocalLLaMA post with validated results
+
+---
+
+## Step 25 — Codex Scoring ⏳
+
+Run on VPS after AutoDL shutdown. Uses same critique prompt as training.
+
+```bash
+bun run score-validation
+```
+
+Reads `output/validation/test-prompts.json` + HTML files from both model sets.
+Scores each with GPT-5.4, compares against existing 27B baseline scores (avg 8.60/9).
+Writes results to `output/validation/fine-tuned-scores.jsonl`.
 
 ---
 
