@@ -28,6 +28,10 @@ pipeline_tag: image-text-to-text
 
 ---
 
+> [!IMPORTANT]
+> **Vision critique trigger:** Use exactly `"Critique this UI design."` when sending a screenshot.
+> The model learned this specific phrase during training — other phrasings may not reliably activate the critique behavior.
+
 ## The Problem
 
 Base models are RLHF-tuned to be immediately helpful — they build immediately regardless of how vague the request is. You can't fix this with a system prompt. It has to be trained into the weights.
@@ -100,6 +104,11 @@ Tested against base Qwen3-VL-8B-Instruct:
 | Clean HTML output | Verbose markdown | Zero wrapper text | <20 chars |
 
 ---
+
+> [!TIP]
+> **Thinking mode:** Always disable thinking mode in your inference server.
+> Add `"chat_template_kwargs": {"enable_thinking": false}` to API requests,
+> or use `--no-think` flag with llama-server.
 
 ## Quick Start
 
