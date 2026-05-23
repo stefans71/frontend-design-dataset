@@ -230,6 +230,8 @@ output/
 39. ✅ **Codex scoring on VPS** — fine-tuned +1.00 avg over base (5.50 vs 4.50, 6/10 wins)
 40. ✅ **Update HF READMEs with validated scores** — head-to-head table added to both 8B and 4B
 41. ⏳ **Reddit r/LocalLLaMA post**
+42. ✅ **Self-improvement loop — base model** — 4.00/10 avg (regressed -0.50 from 4.50 first-pass)
+43. ⏳ **Self-improvement loop — fine-tuned** — BLOCKED (inference infra; needs Ollama 0.22.1+ with Qwen3-VL)
 
 ---
 
@@ -585,58 +587,49 @@ Post validated comparison results to r/LocalLLaMA.
 
 ---
 
-## Step 28 — Self-Improvement Loop Test ⏳
+## Step 28 — Self-Improvement Loop Test ✅ COMPLETE (partial)
 
 Tests whether models can critique and improve their own output.
 No system prompt — pure behavior from trained weights.
 
-### Three-turn conversation per component:
-- Turn 1: Generate HTML from prompt
-- Turn 2: "Critique this UI design." [attach Turn 1 screenshot]
-- Turn 3: "Now rewrite the HTML to fix all the issues you identified."
+### Results
 
-### Models tested:
-- Base Qwen3-VL-8B (no fine-tuning)
-- Fine-tuned Qwen3-VL-8B (our model)
-- Fine-tuned Qwen3-VL-4B (bonus — 8GB GPU story)
+| | Avg Score | Δ |
+|---|---|---|
+| Base first-pass | 4.50 | — |
+| Base self-improved | **4.00** | **-0.50 (regressed)** |
+| Fine-tuned first-pass | 5.50 | +1.00 vs base |
+| Fine-tuned self-improved | **N/A** | Blocked — see note |
 
-### Hardware: AutoDL 3080 Ti (port 24817, dbfb41b9f9-ce413e40)
-### Components: same 10 from output/validation/test-prompts.json
+**Base finding:** The base model cannot reliably self-improve. 7/10 flat or regressed; component-003 (navbar) crashed 4→1. Critique-and-rewrite with a weak model makes designs worse.
+
+**Fine-tuned blocked:** llama-cpp-python 0.3.23 does not support `chat_template_kwargs: {enable_thinking: false}`. The fine-tuned Qwen3-VL triggers thinking-mode EOS on vision input without this flag. llama-server binaries compiled for sm_86 (RTX 3080 Ti) in the available builds pre-date `qwen3vl` architecture support. This is an inference infrastructure limitation, not a model quality issue.
+
+**Workaround for future runs:** Ollama 0.22.1+ with native Qwen3-VL support handles thinking suppression transparently. Alternatively, build llama.cpp from the latest source for sm_86.
 
 ### Output structure:
 ```
 output/validation/
-├── fine-tuned/           ← first-pass HTML + PNGs ✅
-├── base/                 ← first-pass HTML + PNGs ✅
-├── fine-tuned-improved/  ← Turn 3 HTML + PNGs ⏳
-├── base-improved/        ← Turn 3 HTML + PNGs ⏳
-└── self-improve-scores.jsonl ← final comparison scores ⏳
+├── fine-tuned/              ← first-pass HTML + PNGs ✅
+├── base/                    ← first-pass HTML + PNGs ✅
+├── base-improved/           ← Turn 3 HTML + PNGs ✅ (10/10)
+├── fine-tuned-improved/     ← 0/10 (blocked by inference infra)
+└── self-improve-scores.jsonl ← base-improved scores ✅
 ```
 
-### Expected results:
-- Base first-pass: 4.50/10 (done)
-- Fine-tuned first-pass: 5.50/10 (done)
-- Base self-improved: ???
-- Fine-tuned self-improved: ???
-
-### The hypothesis:
-Fine-tuned model trained on [bad output + critique → improved output] pairs
-should self-improve significantly better than base model which never saw
-this workflow. If fine-tuned self-improved >> base self-improved, the
-training data taught genuine design reasoning, not just pattern matching.
-
 ### Checklist:
-- [ ] Verify instance health (port 24817)
-- [ ] Write src/self-improve-validation.ts
-- [ ] Generate Turn 1 + 2 + 3 for base model (10 components)
-- [ ] Generate Turn 1 + 2 + 3 for fine-tuned model (10 components)
-- [ ] Render all Turn 3 outputs to PNG
-- [ ] Rsync to VPS
-- [ ] Score with GPT-5.4 — src/score-validation.ts
-- [ ] Compare: first-pass vs self-improved for both models
-- [ ] Repeat for 4B fine-tuned (bonus)
-- [ ] Update HuggingFace READMEs with final results
-- [ ] Reddit r/LocalLLaMA post with complete story
+- [x] Verify instance health (port 24817)
+- [x] Write src/self-improve-validation.ts
+- [x] Generate Turn 2 + 3 for base model (10 components) ✅
+- [ ] Generate Turn 2 + 3 for fine-tuned model — BLOCKED (inference infra)
+- [x] Render base-improved outputs to PNG ✅
+- [x] Rsync to VPS ✅
+- [x] Score with GPT-5.4 — bun run self-improve ✅
+- [x] Compare: first-pass vs self-improved for base ✅
+- [ ] Repeat for fine-tuned — BLOCKED
+- [ ] Repeat for 4B fine-tuned — deferred
+- [ ] Update HuggingFace READMEs with self-improvement results
+- [x] Reddit r/LocalLLaMA post drafted (output/marketing/reddit-post.md)
 
 ---
 

@@ -10,6 +10,7 @@ output/validation/*
 !output/marketing/hero-comparison.png
 *.jsonl
 !output/validation/fine-tuned-scores.jsonl
+!output/validation/self-improve-scores.jsonl
 
 CLAUDE.md
 TEST-QWEN35-9B.md
