@@ -8,6 +8,7 @@ output/validation/*
 .env
 *.png
 !output/marketing/hero-comparison.png
+!webapp/public/hero-comparison.png
 *.jsonl
 !output/validation/fine-tuned-scores.jsonl
 !output/validation/self-improve-scores.jsonl
