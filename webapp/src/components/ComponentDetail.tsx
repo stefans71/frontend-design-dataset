@@ -2,6 +2,7 @@ import type { ComponentWithScore } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import Card from '@/components/ui/Card'
 import CritiquePanel from '@/components/CritiquePanel'
+import GradientDivider from '@/components/ui/GradientDivider'
 
 function scoreVariant(score: number) {
   if (score >= 7) return 'score-high' as const
@@ -11,6 +12,15 @@ function scoreVariant(score: number) {
 
 interface ComponentDetailProps {
   component: ComponentWithScore & { critique?: string }
+}
+
+function MetadataRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex justify-between items-center py-2 border-b border-border-subtle last:border-b-0">
+      <span className="label-caps text-text-muted">{label}</span>
+      <span>{children}</span>
+    </div>
+  )
 }
 
 export default function ComponentDetail({ component: c }: ComponentDetailProps) {
@@ -24,84 +34,65 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-4">
-        <div
-          className="rounded-[var(--radius-lg)] overflow-hidden"
-          style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
-        >
+        <div className="rounded-[var(--radius-lg)] overflow-hidden bg-bg-secondary border border-border relative">
+          <div className="h-0.5 bg-accent/30" />
           <img src={desktopSrc} alt={c.prompt} className="w-full" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
         </div>
 
         <div className="flex gap-4">
-          <div
-            className="w-48 rounded-[var(--radius)] overflow-hidden shrink-0"
-            style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
-          >
+          <div className="w-48 rounded-[var(--radius)] overflow-hidden shrink-0 bg-bg-secondary border border-border">
             <img src={mobileSrc} alt="Mobile view" className="w-full" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
           </div>
           <Card className="flex-1">
-            <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Prompt</h3>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{c.prompt}</p>
+            <h3 className="label-caps text-text-muted mb-2">Prompt</h3>
+            <p className="text-sm leading-relaxed text-text-secondary">{c.prompt}</p>
           </Card>
         </div>
       </div>
 
       <div className="space-y-4">
         <Card>
-          <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Score Breakdown</h3>
-          <div className="space-y-2">
+          <h3 className="font-display text-base text-text-display mb-3">Score Breakdown</h3>
+          <GradientDivider className="mb-3" />
+          <div className="space-y-0">
             {score !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Total</span>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm font-medium text-text-primary">Total</span>
                 <Badge variant={scoreVariant(score)}>{score}/9</Badge>
               </div>
             )}
             {visual !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Visual</span>
-                <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{visual}/3</span>
-              </div>
+              <MetadataRow label="Visual">{visual}/3</MetadataRow>
             )}
             {alignment !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Alignment</span>
-                <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{alignment}/3</span>
-              </div>
+              <MetadataRow label="Alignment">{alignment}/3</MetadataRow>
             )}
             {interactivity !== undefined && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Interactivity</span>
-                <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{interactivity}/3</span>
-              </div>
+              <MetadataRow label="Interactivity">{interactivity}/3</MetadataRow>
             )}
           </div>
         </Card>
 
         <Card>
-          <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Metadata</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span style={{ color: 'var(--text-muted)' }}>Category</span>
-              <Badge>{c.category}</Badge>
-            </div>
-            <div className="flex justify-between">
-              <span style={{ color: 'var(--text-muted)' }}>Theme</span>
-              <Badge>{c.theme}</Badge>
-            </div>
-            <div className="flex justify-between">
-              <span style={{ color: 'var(--text-muted)' }}>Temperature</span>
-              <span style={{ color: 'var(--text-primary)' }}>{c.temperature}</span>
-            </div>
-            <div className="flex justify-between">
-              <span style={{ color: 'var(--text-muted)' }}>Run</span>
-              <span style={{ color: 'var(--text-primary)' }}>{c.run}</span>
-            </div>
+          <h3 className="font-display text-base text-text-display mb-3">Metadata</h3>
+          <GradientDivider className="mb-3" />
+          <div>
+            <MetadataRow label="Category"><Badge>{c.category}</Badge></MetadataRow>
+            <MetadataRow label="Theme"><Badge>{c.theme}</Badge></MetadataRow>
+            <MetadataRow label="Temperature">
+              <span className="text-sm font-mono text-text-primary">{c.temperature}</span>
+            </MetadataRow>
+            <MetadataRow label="Run">
+              <span className="text-sm font-mono text-text-primary">{c.run}</span>
+            </MetadataRow>
           </div>
         </Card>
 
         {c.critique && (
           <Card>
-            <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Design Critique</h3>
-            <div className="max-h-96 overflow-y-auto">
+            <h3 className="font-display text-base text-text-display mb-3">Design Critique</h3>
+            <GradientDivider className="mb-3" />
+            <div className="max-h-96 overflow-y-auto pr-1">
               <CritiquePanel critique={c.critique} />
             </div>
           </Card>

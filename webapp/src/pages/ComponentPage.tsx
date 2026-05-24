@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom'
 import { getComponent } from '@/lib/api'
 import type { ComponentWithScore } from '@/lib/types'
 import ComponentDetail from '@/components/ComponentDetail'
+import PageWrapper from '@/components/ui/PageWrapper'
+import Shimmer from '@/components/ui/Shimmer'
 
 export default function ComponentPage() {
   const { id } = useParams<{ id: string }>()
@@ -21,42 +23,40 @@ export default function ComponentPage() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="h-8 w-48 rounded animate-pulse" style={{ backgroundColor: 'var(--bg-secondary)' }} />
-        <div className="h-96 rounded-[var(--radius-lg)] animate-pulse" style={{ backgroundColor: 'var(--bg-secondary)' }} />
-      </div>
+      <PageWrapper>
+        <div className="space-y-4">
+          <Shimmer className="h-8 w-48" />
+          <Shimmer className="h-96" />
+        </div>
+      </PageWrapper>
     )
   }
 
   if (error || !component) {
     return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <p className="text-lg font-medium" style={{ color: 'var(--text-muted)' }}>Component not found</p>
-        <Link
-          to="/components"
-          className="mt-3 text-sm no-underline"
-          style={{ color: 'var(--accent)' }}
-        >
-          Back to Gallery
-        </Link>
-      </div>
+      <PageWrapper>
+        <div className="flex flex-col items-center justify-center py-20">
+          <p className="text-lg font-medium text-text-muted">Component not found</p>
+          <Link to="/components" className="mt-3 text-sm text-accent no-underline hover:text-accent-hover transition-colors">
+            Back to Gallery
+          </Link>
+        </div>
+      </PageWrapper>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Link
-          to="/components"
-          className="text-sm no-underline"
-          style={{ color: 'var(--text-muted)' }}
-        >
-          Gallery
-        </Link>
-        <span style={{ color: 'var(--text-muted)' }}>/</span>
-        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{id}</span>
+    <PageWrapper>
+      <div className="space-y-5">
+        <div className="flex items-center gap-3">
+          <Link to="/components" className="text-sm text-text-muted no-underline hover:text-accent transition-colors">
+            Gallery
+          </Link>
+          <span className="text-text-muted">/</span>
+          <span className="text-sm font-mono font-medium text-text-primary">{id}</span>
+        </div>
+        <ComponentDetail component={component} />
       </div>
-      <ComponentDetail component={component} />
-    </div>
+    </PageWrapper>
   )
 }

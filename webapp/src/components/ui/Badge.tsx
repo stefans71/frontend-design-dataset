@@ -1,22 +1,20 @@
 interface BadgeProps {
   children: React.ReactNode
-  variant?: 'default' | 'score-high' | 'score-mid' | 'score-low' | 'accent'
+  variant?: 'default' | 'score-high' | 'score-mid' | 'score-low' | 'accent' | 'outline'
 }
 
-const variantStyles: Record<string, React.CSSProperties> = {
-  default: { backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' },
-  'score-high': { backgroundColor: 'var(--score-high)', color: '#000' },
-  'score-mid': { backgroundColor: 'var(--score-mid)', color: '#000' },
-  'score-low': { backgroundColor: 'var(--score-low)', color: '#fff' },
-  accent: { backgroundColor: 'var(--accent)', color: '#fff' },
+const variantClasses: Record<string, string> = {
+  default: 'bg-bg-secondary text-text-secondary',
+  'score-high': 'bg-score-high text-black',
+  'score-mid': 'bg-score-mid text-black',
+  'score-low': 'bg-score-low text-white',
+  accent: 'bg-accent text-white',
+  outline: 'bg-transparent border border-border-accent text-accent',
 }
 
 export default function Badge({ children, variant = 'default' }: BadgeProps) {
   return (
-    <span
-      className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full"
-      style={variantStyles[variant]}
-    >
+    <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${variantClasses[variant]}`}>
       {children}
     </span>
   )

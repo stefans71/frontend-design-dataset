@@ -3,6 +3,9 @@ import { getConversations } from '@/lib/api'
 import type { Conversation } from '@/lib/types'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
+import PageWrapper from '@/components/ui/PageWrapper'
+import SectionHeading from '@/components/ui/SectionHeading'
+import Shimmer from '@/components/ui/Shimmer'
 
 export default function Conversations() {
   const [convs, setConvs] = useState<Conversation[]>([])
@@ -28,24 +31,24 @@ export default function Conversations() {
   ]
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Conversation Traces</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-          {total} conversations — qualifying (ask questions) vs immediate (build directly)
-        </p>
-      </div>
+    <PageWrapper>
+      <SectionHeading
+        title="Conversation Traces"
+        subtitle={`${total} conversations — qualifying (ask questions) vs immediate (build directly)`}
+        divider
+        className="mb-8"
+      />
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 mb-6">
         {typeFilters.map(f => (
           <button
             key={f.value}
             onClick={() => { setType(f.value); setPage(0) }}
-            className="px-3 py-1.5 text-sm font-medium rounded-full transition-colors cursor-pointer"
-            style={{
-              backgroundColor: type === f.value ? 'var(--accent)' : 'var(--bg-secondary)',
-              color: type === f.value ? '#fff' : 'var(--text-secondary)',
-            }}
+            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-[var(--duration-fast)] cursor-pointer ${
+              type === f.value
+                ? 'bg-accent text-white'
+                : 'bg-bg-secondary text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
+            }`}
           >
             {f.label}
           </button>
@@ -55,7 +58,7 @@ export default function Conversations() {
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-20 rounded-[var(--radius-lg)] animate-pulse" style={{ backgroundColor: 'var(--bg-secondary)' }} />
+            <Shimmer key={i} className="h-20" />
           ))}
         </div>
       ) : (
@@ -64,8 +67,7 @@ export default function Conversations() {
             <Card key={conv.id} padding={false}>
               <button
                 onClick={() => setExpanded(expanded === conv.id ? null : conv.id)}
-                className="w-full text-left p-4 cursor-pointer"
-                style={{ background: 'none', border: 'none', color: 'inherit' }}
+                className="w-full text-left p-4 cursor-pointer bg-transparent border-none text-inherit"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -73,100 +75,94 @@ export default function Conversations() {
                       {conv.type === 'qualifying_conversation' ? 'qualifying' : 'immediate'}
                     </Badge>
                     {conv.domain && (
-                      <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{conv.domain}</span>
+                      <span className="text-sm text-text-secondary">{conv.domain}</span>
                     )}
                     {conv.persona && (
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{conv.persona}</span>
+                      <span className="text-xs text-text-muted">{conv.persona}</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{conv.turn_count} turns</span>
+                    <span className="text-xs font-mono text-text-muted">{conv.turn_count} turns</span>
                     <svg
                       width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                      style={{
-                        color: 'var(--text-muted)',
-                        transform: expanded === conv.id ? 'rotate(180deg)' : 'rotate(0)',
-                        transition: 'transform 0.2s',
-                      }}
+                      className="text-text-muted transition-transform duration-[var(--duration-base)]"
+                      style={{ transform: expanded === conv.id ? 'rotate(180deg)' : 'rotate(0)' }}
                     >
                       <polyline points="6 9 12 15 18 9" />
                     </svg>
                   </div>
                 </div>
                 {conv.messages?.[0] && (
-                  <p className="text-sm mt-2 line-clamp-1" style={{ color: 'var(--text-muted)' }}>
+                  <p className="text-sm mt-2 line-clamp-1 text-text-muted italic">
                     {conv.messages[0].content}
                   </p>
                 )}
               </button>
 
-              {expanded === conv.id && (
-                <div className="px-4 pb-4 space-y-3" style={{ borderTop: '1px solid var(--border-subtle)' }}>
-                  <div className="pt-3" />
-                  {conv.messages?.map((msg, i) => (
-                    <div
-                      key={i}
-                      className="rounded-[var(--radius)] p-3"
-                      style={{
-                        backgroundColor: msg.role === 'user' ? 'var(--bg-secondary)' : 'var(--bg-primary)',
-                        border: msg.role === 'assistant' ? '1px solid var(--border-subtle)' : 'none',
-                      }}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold uppercase" style={{ color: msg.role === 'user' ? 'var(--accent)' : 'var(--text-muted)' }}>
-                          {msg.role}
-                        </span>
+              <div className={`expand-content ${expanded === conv.id ? 'open' : ''}`}>
+                <div>
+                  <div className="px-4 pb-4 space-y-3 border-t border-border-subtle">
+                    <div className="pt-3" />
+                    {conv.messages?.map((msg, i) => (
+                      <div
+                        key={i}
+                        className={`rounded-[var(--radius)] p-3 ${
+                          msg.role === 'user'
+                            ? 'bg-accent-subtle border-l-2 border-accent ml-8'
+                            : 'bg-bg-secondary border-l-2 border-border-accent mr-8'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className={`label-caps ${msg.role === 'user' ? 'text-accent' : 'text-text-muted'}`}>
+                            {msg.role}
+                          </span>
+                        </div>
+                        {msg.content.includes('<!DOCTYPE') || msg.content.includes('<html') ? (
+                          <details>
+                            <summary className="text-xs cursor-pointer text-text-muted hover:text-text-secondary transition-colors">
+                              HTML output ({msg.content.length.toLocaleString()} chars)
+                            </summary>
+                            <pre className="mt-2 p-3 rounded text-xs overflow-x-auto font-mono max-h-60 overflow-y-auto bg-bg-primary text-text-secondary border border-border-subtle">
+                              {msg.content.slice(0, 2000)}
+                              {msg.content.length > 2000 && '\n... truncated'}
+                            </pre>
+                          </details>
+                        ) : (
+                          <p className="text-sm whitespace-pre-wrap text-text-primary leading-relaxed">
+                            {msg.content}
+                          </p>
+                        )}
                       </div>
-                      {msg.content.includes('<!DOCTYPE') || msg.content.includes('<html') ? (
-                        <details>
-                          <summary className="text-xs cursor-pointer" style={{ color: 'var(--text-muted)' }}>
-                            HTML output ({msg.content.length.toLocaleString()} chars)
-                          </summary>
-                          <pre
-                            className="mt-2 p-3 rounded text-xs overflow-x-auto font-mono max-h-60 overflow-y-auto"
-                            style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
-                          >
-                            {msg.content.slice(0, 2000)}
-                            {msg.content.length > 2000 && '\n... truncated'}
-                          </pre>
-                        </details>
-                      ) : (
-                        <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--text-primary)' }}>
-                          {msg.content}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              )}
+              </div>
             </Card>
           ))}
         </div>
       )}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-1 mt-8">
           <button
             onClick={() => setPage(p => Math.max(0, p - 1))}
             disabled={page === 0}
-            className="px-3 py-1.5 text-sm rounded-[var(--radius)] transition-colors disabled:opacity-40 cursor-pointer disabled:cursor-default"
-            style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
+            className="px-3 py-1.5 text-sm rounded-[var(--radius)] bg-bg-secondary text-text-secondary hover:bg-bg-elevated transition-colors disabled:opacity-30 cursor-pointer disabled:cursor-default"
           >
             Prev
           </button>
-          <span className="text-sm px-2" style={{ color: 'var(--text-muted)' }}>
+          <span className="text-sm px-3 font-mono text-text-muted">
             {page + 1} / {totalPages}
           </span>
           <button
             onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1}
-            className="px-3 py-1.5 text-sm rounded-[var(--radius)] transition-colors disabled:opacity-40 cursor-pointer disabled:cursor-default"
-            style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
+            className="px-3 py-1.5 text-sm rounded-[var(--radius)] bg-bg-secondary text-text-secondary hover:bg-bg-elevated transition-colors disabled:opacity-30 cursor-pointer disabled:cursor-default"
           >
             Next
           </button>
         </div>
       )}
-    </div>
+    </PageWrapper>
   )
 }

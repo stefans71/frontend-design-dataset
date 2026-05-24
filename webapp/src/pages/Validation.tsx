@@ -3,6 +3,9 @@ import { getValidationResults } from '@/lib/api'
 import type { ValidationResult } from '@/lib/types'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
+import PageWrapper from '@/components/ui/PageWrapper'
+import SectionHeading from '@/components/ui/SectionHeading'
+import Shimmer from '@/components/ui/Shimmer'
 
 function scoreVariant(score: number) {
   if (score >= 7) return 'score-high' as const
@@ -29,40 +32,42 @@ export default function Validation() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="h-8 w-64 rounded animate-pulse" style={{ backgroundColor: 'var(--bg-secondary)' }} />
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-20 rounded-[var(--radius-lg)] animate-pulse" style={{ backgroundColor: 'var(--bg-secondary)' }} />
-        ))}
-      </div>
+      <PageWrapper>
+        <div className="space-y-4">
+          <Shimmer className="h-8 w-64" />
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Shimmer key={i} className="h-20" />
+          ))}
+        </div>
+      </PageWrapper>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Validation Results</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-          Head-to-head comparison: base Qwen3-VL-8B vs fine-tuned model critiques
-        </p>
-      </div>
+    <PageWrapper>
+      <SectionHeading
+        title="Validation Results"
+        subtitle="Head-to-head comparison: base Qwen3-VL-8B vs fine-tuned model critiques"
+        divider
+        className="mb-8"
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
         <Card>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Base Model Avg</p>
-          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>
-            {avgBase.toFixed(1)}<span className="text-sm font-normal" style={{ color: 'var(--text-muted)' }}>/10</span>
+          <span className="label-caps text-text-muted">Base Model Avg</span>
+          <p className="font-mono text-2xl font-bold text-text-primary mt-2">
+            {avgBase.toFixed(1)}<span className="text-sm font-normal text-text-muted">/10</span>
           </p>
         </Card>
         <Card>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Fine-tuned Avg</p>
-          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>
-            {avgFT.toFixed(1)}<span className="text-sm font-normal" style={{ color: 'var(--text-muted)' }}>/10</span>
+          <span className="label-caps text-text-muted">Fine-tuned Avg</span>
+          <p className="font-mono text-2xl font-bold text-text-primary mt-2">
+            {avgFT.toFixed(1)}<span className="text-sm font-normal text-text-muted">/10</span>
           </p>
         </Card>
-        <Card>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Avg Delta</p>
-          <p className="text-2xl font-bold mt-1" style={{ color: avgDelta >= 0 ? 'var(--score-high)' : 'var(--score-low)' }}>
+        <Card variant="spotlight">
+          <span className="label-caps text-text-muted">Avg Delta</span>
+          <p className={`font-mono text-2xl font-bold mt-2 ${avgDelta >= 0 ? 'text-score-high' : 'text-score-low'}`}>
             {avgDelta >= 0 ? '+' : ''}{avgDelta.toFixed(1)}
           </p>
         </Card>
@@ -72,31 +77,33 @@ export default function Validation() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                <th className="text-left p-3 font-medium" style={{ color: 'var(--text-muted)' }}>Component</th>
-                <th className="text-left p-3 font-medium" style={{ color: 'var(--text-muted)' }}>Category</th>
-                <th className="text-center p-3 font-medium" style={{ color: 'var(--text-muted)' }}>Base</th>
-                <th className="text-center p-3 font-medium" style={{ color: 'var(--text-muted)' }}>Fine-tuned</th>
-                <th className="text-center p-3 font-medium" style={{ color: 'var(--text-muted)' }}>Delta</th>
+              <tr className="border-b-2 border-border">
+                <th className="text-left p-3.5 label-caps text-text-muted">Component</th>
+                <th className="text-left p-3.5 label-caps text-text-muted">Category</th>
+                <th className="text-center p-3.5 label-caps text-text-muted">Base</th>
+                <th className="text-center p-3.5 label-caps text-text-muted">Fine-tuned</th>
+                <th className="text-center p-3.5 label-caps text-text-muted">Delta</th>
               </tr>
             </thead>
             <tbody>
               {results.map(r => (
-                <tr key={r.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  <td className="p-3">
-                    <span className="font-mono text-xs" style={{ color: 'var(--text-primary)' }}>{r.id}</span>
+                <tr key={r.id} className="border-b border-border-subtle hover:bg-bg-elevated/50 transition-colors">
+                  <td className="p-3.5">
+                    <span className="font-mono text-xs text-text-primary">{r.id}</span>
                   </td>
-                  <td className="p-3">
+                  <td className="p-3.5">
                     <Badge>{r.category}</Badge>
                   </td>
-                  <td className="p-3 text-center">
+                  <td className="p-3.5 text-center">
                     <Badge variant={scoreVariant(r.base_score)}>{r.base_score}</Badge>
                   </td>
-                  <td className="p-3 text-center">
+                  <td className="p-3.5 text-center">
                     <Badge variant={scoreVariant(r.fine_tuned_score)}>{r.fine_tuned_score}</Badge>
                   </td>
-                  <td className="p-3 text-center font-medium" style={{ color: r.delta >= 0 ? 'var(--score-high)' : 'var(--score-low)' }}>
-                    {r.delta >= 0 ? '+' : ''}{r.delta.toFixed(1)}
+                  <td className="p-3.5 text-center">
+                    <span className={`font-mono font-medium ${r.delta >= 0 ? 'text-score-high' : 'text-score-low'}`}>
+                      {r.delta >= 0 ? '+' : ''}{r.delta.toFixed(1)}
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -104,6 +111,6 @@ export default function Validation() {
           </table>
         </div>
       </Card>
-    </div>
+    </PageWrapper>
   )
 }

@@ -12,10 +12,10 @@ export default function App() {
   const { theme } = useTheme()
 
   return (
-    <div data-theme={theme} style={{ minHeight: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+    <div data-theme={theme} className="min-h-screen bg-bg-primary text-text-primary">
       <BrowserRouter>
         <Navbar />
-        <main className="max-w-7xl mx-auto px-6 py-6">
+        <main>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/components" element={<Gallery />} />

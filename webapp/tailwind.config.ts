@@ -5,13 +5,10 @@ export default {
   darkMode: ['attribute', '[data-theme="dark"]'],
   theme: {
     extend: {
-      colors: {
-        accent: '#f97316',
-        'accent-hover': '#ea6c00',
-      },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        display: ['Instrument Serif', 'Georgia', 'serif'],
+        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        mono: ['DM Mono', 'JetBrains Mono', 'monospace'],
       },
     },
   },

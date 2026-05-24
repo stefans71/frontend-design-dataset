@@ -8,7 +8,7 @@ function scoreVariant(score: number) {
   return 'score-low' as const
 }
 
-export default function ComponentCard({ component }: { component: ComponentWithScore }) {
+export default function ComponentCard({ component, index = 0 }: { component: ComponentWithScore; index?: number }) {
   const c = component
   const screenshotSrc = `/screenshots/${c.id}-desktop.webp`
   const score = c.score?.total ?? c.total
@@ -16,35 +16,31 @@ export default function ComponentCard({ component }: { component: ComponentWithS
   return (
     <Link
       to={`/components/${c.id}`}
-      className="group block rounded-[var(--radius-lg)] overflow-hidden transition-all no-underline"
-      style={{
-        backgroundColor: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-sm)',
-      }}
+      className="group block rounded-[var(--radius-xl)] overflow-hidden bg-bg-card border border-border no-underline card-enter transition-all duration-200 hover:-translate-y-1 hover:border-border-accent hover:shadow-[var(--shadow-md),var(--shadow-glow)]"
+      style={{ animationDelay: `${index * 50}ms`, boxShadow: 'var(--shadow-sm)' }}
     >
-      <div className="relative overflow-hidden aspect-[4/3]" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+      <div className="relative overflow-hidden aspect-[4/3] bg-bg-secondary">
         <img
           src={screenshotSrc}
           alt={c.prompt}
           loading="lazy"
-          className="w-full h-full object-cover object-top transition-transform group-hover:scale-105"
+          className="w-full h-full object-cover object-top transition-all duration-500 brightness-[0.95] contrast-[1.02] group-hover:brightness-100 group-hover:contrast-100 group-hover:scale-[1.03]"
           onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
         />
         {score !== undefined && (
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-2.5 right-2.5">
             <Badge variant={scoreVariant(score)}>{score}/9</Badge>
           </div>
         )}
       </div>
-      <div className="p-3">
-        <p className="text-sm font-medium line-clamp-2 leading-snug" style={{ color: 'var(--text-primary)' }}>
+      <div className="p-3.5">
+        <p className="text-sm font-medium line-clamp-2 leading-snug text-text-primary">
           {c.prompt}
         </p>
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-2.5">
           <Badge>{c.category}</Badge>
           <Badge>{c.theme}</Badge>
-          <span className="text-xs ml-auto" style={{ color: 'var(--text-muted)' }}>
+          <span className="text-xs ml-auto font-mono text-text-muted">
             T={c.temperature}
           </span>
         </div>

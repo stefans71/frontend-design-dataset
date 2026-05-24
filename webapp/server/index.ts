@@ -21,7 +21,7 @@ function inferTheme(prompt: string): 'dark' | 'light' {
 }
 
 const server = Bun.serve({
-  port: 3001,
+  port: Number(process.env.PORT || 3001),
   fetch(req) {
     const url = new URL(req.url)
     const headers = {
