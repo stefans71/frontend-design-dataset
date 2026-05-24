@@ -14,16 +14,12 @@ export default function Navbar() {
   const { pathname } = useLocation()
 
   return (
-    <nav className="sticky top-0 z-50 glass border-b border-border">
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-14">
+    <nav className="sticky top-0 z-50 bg-bg-primary border-b border-border" style={{ height: 56 }}>
+      <div className="page-container flex items-center justify-between h-full">
         <div className="flex items-center gap-8">
-          <Link to="/" className="flex items-center gap-3 no-underline group">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 group-hover:bg-accent/20 transition-colors">
-              <span className="font-display text-sm font-800 text-accent">F</span>
-            </div>
-            <span className="font-display text-sm font-700 text-text-primary tracking-tight hidden sm:block">
-              FDE
-            </span>
+          <Link to="/" className="flex items-center gap-2.5 no-underline">
+            <span className="font-semibold text-text-primary" style={{ fontSize: 15 }}>FDE</span>
+            <span className="text-text-muted hidden sm:inline" style={{ fontSize: 13 }}>Frontend Design Expert</span>
           </Link>
           <div className="flex items-center gap-1">
             {links.map(l => {
@@ -32,10 +28,10 @@ export default function Navbar() {
                 <Link
                   key={l.to}
                   to={l.to}
-                  className={`relative px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 no-underline ${
+                  className={`px-3 py-1.5 rounded-md text-sm no-underline transition-colors duration-150 ${
                     active
                       ? 'text-text-primary font-semibold'
-                      : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated'
+                      : 'text-text-secondary hover:text-text-primary'
                   }`}
                 >
                   {l.label}

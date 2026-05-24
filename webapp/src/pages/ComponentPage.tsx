@@ -22,19 +22,19 @@ export default function ComponentPage() {
 
   if (loading) {
     return (
-      <div className="page-enter page-container py-8 space-y-4">
+      <div className="page-container" style={{ paddingTop: 32, paddingBottom: 48 }}>
         <Shimmer className="h-8 w-48" />
-        <Shimmer className="h-96" />
+        <Shimmer className="h-96 mt-4" />
       </div>
     )
   }
 
   if (error || !component) {
     return (
-      <div className="page-enter page-container py-8">
-        <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border rounded-[var(--radius-xl)]">
-          <p className="font-display text-xl text-text-muted">Component not found</p>
-          <Link to="/components" className="mt-4 text-sm text-accent no-underline hover:text-accent-hover transition-colors">
+      <div className="page-container" style={{ paddingTop: 32, paddingBottom: 48 }}>
+        <div className="flex flex-col items-center justify-center py-20 border border-dashed border-border rounded-lg">
+          <p className="text-text-muted" style={{ fontSize: 16 }}>Component not found</p>
+          <Link to="/components" className="mt-3 text-sm text-text-secondary no-underline hover:text-text-primary transition-colors duration-150">
             ← Back to Gallery
           </Link>
         </div>
@@ -43,13 +43,13 @@ export default function ComponentPage() {
   }
 
   return (
-    <div className="page-enter page-container py-8">
-      <div className="flex items-center gap-2 mb-6">
-        <Link to="/components" className="label-caps text-text-muted no-underline hover:text-accent transition-colors">
-          Gallery
+    <div className="page-container" style={{ paddingTop: 32, paddingBottom: 48 }}>
+      <div className="flex items-center gap-2 mb-6 text-sm">
+        <Link to="/components" className="text-text-muted no-underline hover:text-text-primary transition-colors duration-150">
+          Components
         </Link>
-        <span className="text-text-muted/40">/</span>
-        <span className="label-caps text-accent">{id}</span>
+        <span className="text-text-muted">/</span>
+        <span className="text-text-primary font-medium">{id}</span>
       </div>
       <ComponentDetail component={component} />
     </div>

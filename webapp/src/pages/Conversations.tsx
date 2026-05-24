@@ -28,22 +28,22 @@ export default function Conversations() {
   ]
 
   return (
-    <div className="page-enter page-container py-8">
-      <div className="mb-8">
-        <span className="label-caps text-accent block mb-2">Traces</span>
-        <h1 className="font-display text-3xl font-700 text-text-display">Conversations</h1>
-        <p className="text-sm text-text-muted mt-1 font-mono">{total} total</p>
+    <div className="page-container" style={{ paddingTop: 32, paddingBottom: 48 }}>
+      <div className="mb-6">
+        <span className="section-label">Traces</span>
+        <h1 className="font-semibold text-text-primary mt-2" style={{ fontSize: 20 }}>Conversations</h1>
+        <p className="text-sm text-text-muted mt-0.5">{total} total</p>
       </div>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-5">
         {typeFilters.map(f => (
           <button
             key={f.value}
             onClick={() => { setType(f.value); setPage(0) }}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 cursor-pointer ${
+            className={`px-3 py-1.5 text-sm rounded-md cursor-pointer transition-colors duration-150 ${
               type === f.value
-                ? 'bg-accent text-[#06080d] font-semibold'
-                : 'bg-bg-card text-text-secondary border border-border hover:border-border-accent hover:text-text-primary'
+                ? 'bg-bg-elevated text-text-primary font-medium border border-border'
+                : 'text-text-secondary hover:text-text-primary border border-transparent'
             }`}
           >
             {f.label}
@@ -52,22 +52,18 @@ export default function Conversations() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Shimmer key={i} className="h-20 rounded-[var(--radius-lg)]" />
+            <Shimmer key={i} className="h-16" />
           ))}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="rounded-lg border border-border overflow-hidden">
           {convs.map((conv, ci) => (
-            <div
-              key={conv.id}
-              className="card-enter rounded-[var(--radius-lg)] border border-border bg-bg-card overflow-hidden shadow-[var(--shadow-sm)] hover:border-border-accent transition-colors"
-              style={{ animationDelay: `${ci * 40}ms` }}
-            >
+            <div key={conv.id} className={ci > 0 ? 'border-t border-border-subtle' : ''}>
               <button
                 onClick={() => setExpanded(expanded === conv.id ? null : conv.id)}
-                className="w-full text-left p-4 cursor-pointer bg-transparent border-none text-inherit"
+                className="w-full text-left p-4 cursor-pointer bg-transparent border-none text-inherit hover:bg-bg-secondary/50 transition-colors duration-100"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -75,17 +71,17 @@ export default function Conversations() {
                       {conv.type === 'qualifying_conversation' ? 'qualifying' : 'immediate'}
                     </Badge>
                     {conv.domain && (
-                      <span className="text-sm font-medium text-text-primary">{conv.domain}</span>
+                      <span className="text-sm text-text-primary">{conv.domain}</span>
                     )}
                     {conv.persona && (
-                      <span className="text-xs text-text-muted">· {conv.persona}</span>
+                      <span className="text-sm text-text-muted">· {conv.persona}</span>
                     )}
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs text-text-muted">{conv.turn_count}T</span>
+                    <span className="font-mono text-xs text-text-muted">{conv.turn_count} turns</span>
                     <svg
                       width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                      className="text-text-muted transition-transform duration-300"
+                      className="text-text-muted transition-transform duration-200"
                       style={{ transform: expanded === conv.id ? 'rotate(180deg)' : 'rotate(0)' }}
                     >
                       <polyline points="6 9 12 15 18 9" />
@@ -93,7 +89,7 @@ export default function Conversations() {
                   </div>
                 </div>
                 {conv.messages?.[0] && (
-                  <p className="text-sm mt-2 line-clamp-1 text-text-muted italic">
+                  <p className="text-sm mt-1.5 line-clamp-1 text-text-muted">
                     "{conv.messages[0].content}"
                   </p>
                 )}
@@ -101,27 +97,25 @@ export default function Conversations() {
 
               <div className={`expand-content ${expanded === conv.id ? 'open' : ''}`}>
                 <div>
-                  <div className="px-4 pb-4 space-y-2 border-t border-border-subtle pt-4">
+                  <div className="px-4 pb-4 space-y-2 border-t border-border-subtle pt-3">
                     {conv.messages?.map((msg, i) => (
                       <div
                         key={i}
-                        className={`rounded-lg p-3.5 ${
+                        className={`rounded-md p-3 ${
                           msg.role === 'user'
-                            ? 'bg-accent-subtle border border-accent/15 ml-12'
-                            : 'bg-bg-elevated border border-border-subtle mr-12'
+                            ? 'bg-bg-elevated ml-8'
+                            : 'bg-bg-secondary mr-8'
                         }`}
                       >
-                        <span className={`label-caps block mb-1.5 ${
-                          msg.role === 'user' ? 'text-accent' : 'text-text-muted'
-                        }`}>
+                        <span className="text-xs font-medium text-text-muted block mb-1">
                           {msg.role}
                         </span>
                         {msg.content.includes('<!DOCTYPE') || msg.content.includes('<html') ? (
                           <details>
-                            <summary className="text-xs cursor-pointer text-text-muted hover:text-accent transition-colors">
+                            <summary className="text-xs cursor-pointer text-text-muted hover:text-text-secondary transition-colors duration-150">
                               HTML output · {msg.content.length.toLocaleString()} chars
                             </summary>
-                            <pre className="mt-2 p-3 rounded-lg text-xs overflow-x-auto font-mono max-h-60 overflow-y-auto bg-bg-primary text-text-secondary border border-border-subtle">
+                            <pre className="mt-2 p-3 rounded-md text-xs overflow-x-auto font-mono max-h-60 overflow-y-auto bg-bg-primary text-text-secondary border border-border-subtle">
                               {msg.content.slice(0, 2000)}
                               {msg.content.length > 2000 && '\n... truncated'}
                             </pre>
@@ -142,11 +136,11 @@ export default function Conversations() {
       )}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-1.5 mt-10">
+        <div className="flex items-center justify-center gap-1 mt-8">
           <button
             onClick={() => setPage(p => Math.max(0, p - 1))}
             disabled={page === 0}
-            className="px-3 py-2 text-sm rounded-lg border border-border text-text-secondary hover:bg-bg-elevated transition-all disabled:opacity-20 cursor-pointer disabled:cursor-default"
+            className="px-2.5 py-1.5 text-sm rounded-md border border-border text-text-secondary hover:bg-bg-elevated transition-colors duration-150 disabled:opacity-25 cursor-pointer disabled:cursor-default"
           >
             ←
           </button>
@@ -156,7 +150,7 @@ export default function Conversations() {
           <button
             onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1}
-            className="px-3 py-2 text-sm rounded-lg border border-border text-text-secondary hover:bg-bg-elevated transition-all disabled:opacity-20 cursor-pointer disabled:cursor-default"
+            className="px-2.5 py-1.5 text-sm rounded-md border border-border text-text-secondary hover:bg-bg-elevated transition-colors duration-150 disabled:opacity-25 cursor-pointer disabled:cursor-default"
           >
             →
           </button>

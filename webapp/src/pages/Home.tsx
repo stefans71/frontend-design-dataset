@@ -2,80 +2,18 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getStats, getComponents } from '@/lib/api'
 import type { ComponentWithScore } from '@/lib/types'
-import { useInView } from '@/hooks/useInView'
+import Badge from '@/components/ui/Badge'
 
 interface Stats {
   total_components: number
   total_conversations: number
   avg_score: number
-  categories?: Record<string, number>
 }
 
-function StatBlock({ label, value, suffix, delay = 0 }: { label: string; value: string; suffix?: string; delay?: number }) {
-  const { ref, visible } = useInView()
-  return (
-    <div
-      ref={ref}
-      className={`reveal ${visible ? 'visible' : ''}`}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      <span className="label-caps text-text-muted block mb-2">{label}</span>
-      <span className="font-mono text-4xl font-bold text-text-primary tabular-nums tracking-tight">
-        {value}
-      </span>
-      {suffix && <span className="font-mono text-lg text-text-muted ml-1">{suffix}</span>}
-    </div>
-  )
-}
-
-function FeaturedCard({ component, size = 'normal', index = 0 }: {
-  component: ComponentWithScore
-  size?: 'large' | 'normal'
-  index?: number
-}) {
-  const score = component.score?.total ?? component.total
-  const src = `/screenshots/${component.id}-desktop.webp`
-  const isLarge = size === 'large'
-
-  return (
-    <Link
-      to={`/components/${component.id}`}
-      className={`card-enter group relative block overflow-hidden rounded-[var(--radius-lg)] border border-border bg-bg-card no-underline ${
-        isLarge ? 'row-span-2' : ''
-      }`}
-      style={{ animationDelay: `${index * 80}ms` }}
-    >
-      <div className="relative overflow-hidden aspect-[4/3]">
-        <img
-          src={src}
-          alt={component.prompt}
-          loading="lazy"
-          className="w-full h-full object-cover object-top transition-all duration-700 ease-out group-hover:scale-[1.05]"
-          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-          <p className="text-white text-sm font-medium line-clamp-2">{component.prompt}</p>
-        </div>
-      </div>
-      {score !== undefined && (
-        <div className="absolute top-3 right-3">
-          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-mono font-bold rounded-full backdrop-blur-md ${
-            score >= 7 ? 'bg-score-high/20 text-score-high border border-score-high/30'
-            : score >= 5 ? 'bg-score-mid/20 text-score-mid border border-score-mid/30'
-            : 'bg-score-low/20 text-score-low border border-score-low/30'
-          }`}>
-            {score}/9
-          </span>
-        </div>
-      )}
-      <div className="absolute top-3 left-3">
-        <span className="label-caps px-2 py-1 rounded-md bg-black/40 text-white/70 backdrop-blur-md">
-          {component.category}
-        </span>
-      </div>
-    </Link>
-  )
+function scoreVariant(score: number) {
+  if (score >= 7) return 'score-high' as const
+  if (score >= 5) return 'score-mid' as const
+  return 'score-low' as const
 }
 
 export default function Home() {
@@ -88,86 +26,106 @@ export default function Home() {
   }, [])
 
   return (
-    <div className="page-enter">
-      {/* Hero Section */}
-      <section className="relative pt-12 pb-8">
-        <div className="hero-gradient" />
-        <div className="page-container relative">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-bg-elevated mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-text-muted" />
-            <span style={{ fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: "'Space Mono', monospace" }} className="text-text-muted">Dataset Explorer</span>
-          </div>
-          <h1 className="font-display font-800 text-text-display leading-[0.95] max-w-3xl" style={{ fontSize: 'clamp(28px, 4vw, 48px)' }}>
-            Frontend Design{' '}
-            <span className="text-gradient">Expert</span>
-          </h1>
-          <p className="text-xl text-text-secondary mt-6 max-w-xl font-light leading-relaxed">
-            Browse 500 synthetic UI components generated via teacher-student distillation,
-            scored and critiqued by GPT-5.4.
-          </p>
-          <div className="flex items-center gap-6 mt-8">
-            <Link
-              to="/components"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-[var(--radius)] bg-accent text-[#06080d] font-semibold text-sm no-underline hover:bg-accent-hover transition-colors"
-            >
-              Browse Gallery
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </Link>
-            <Link
-              to="/validation"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-[var(--radius)] border border-border text-text-secondary font-medium text-sm no-underline hover:border-border-accent hover:text-text-primary transition-all"
-            >
-              View Results
-            </Link>
-          </div>
+    <div>
+      {/* Hero */}
+      <section className="page-container" style={{ paddingTop: 48, paddingBottom: 32 }}>
+        <span className="section-label">Dataset Explorer</span>
+        <h1 className="font-semibold text-text-primary mt-3" style={{ fontSize: 'clamp(28px, 4vw, 42px)', lineHeight: 1.15, letterSpacing: '-0.02em' }}>
+          500 UI Components<br />
+          <span className="text-text-secondary font-normal">Scored, Critiqued & Improved by GPT-5.4</span>
+        </h1>
+        <p className="text-text-secondary mt-4" style={{ maxWidth: 640, lineHeight: 1.6 }}>
+          Browse synthetic training data from a teacher-student distillation pipeline.
+          Each component was generated by Qwen3.6-27B, critiqued by GPT-5.4,
+          and improved — producing 3,090 fine-tuning records for Qwen3-VL-8B.
+        </p>
+        <div className="flex items-center gap-4 mt-6">
+          <Link
+            to="/components"
+            className="inline-flex items-center px-4 py-2 rounded-md bg-accent text-white text-sm font-medium no-underline hover:bg-accent-hover transition-colors duration-150"
+          >
+            Browse Gallery
+          </Link>
+          <Link
+            to="/validation"
+            className="text-sm text-text-secondary no-underline hover:text-text-primary transition-colors duration-150"
+          >
+            View Validation Results →
+          </Link>
         </div>
       </section>
 
-
-      {/* Stats Strip */}
+      {/* Stats row */}
       {stats && (
-        <section className="border-y border-border bg-bg-secondary/50 py-6">
-          <div className="page-container grid grid-cols-3 gap-8 items-start">
-            <StatBlock label="Components" value={String(stats.total_components)} delay={0} />
-            <StatBlock label="Conversations" value={String(stats.total_conversations)} delay={100} />
-            <StatBlock label="Avg Score" value={stats.avg_score?.toFixed(1) ?? '—'} suffix="/ 9" delay={200} />
+        <section className="border-y border-border">
+          <div className="page-container flex items-center gap-0" style={{ height: 56 }}>
+            {[
+              { label: `${stats.total_components} Components` },
+              { label: `${stats.total_conversations} Conversations` },
+              { label: `${stats.avg_score?.toFixed(1) ?? '—'}/9 Avg Score` },
+              { label: 'Apache 2.0' },
+            ].map((item, i) => (
+              <span key={i} className="flex items-center text-sm text-text-muted">
+                {i > 0 && <span className="mx-4 text-border">·</span>}
+                {item.label}
+              </span>
+            ))}
           </div>
         </section>
       )}
 
-      {/* Featured Components — Bento Grid */}
+      {/* Featured Components */}
       {featured.length > 0 && (
-        <section className="py-16">
-          <div className="page-container">
-            <div className="flex items-end justify-between mb-8">
-              <div>
-                <span className="label-caps text-accent block mb-2">Featured</span>
-                <h2 className="font-display text-3xl font-700 text-text-display">Top Scoring Components</h2>
-              </div>
-              <Link to="/components" className="label-caps text-text-muted hover:text-accent transition-colors no-underline">
-                View all →
-              </Link>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              {featured.map((c, i) => (
-                <FeaturedCard key={c.id} component={c} size={i === 0 ? 'large' : 'normal'} index={i} />
-              ))}
-            </div>
+        <section className="page-container" style={{ paddingTop: 48, paddingBottom: 48 }}>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-semibold text-text-primary" style={{ fontSize: 20 }}>Top Scoring Components</h2>
+            <Link to="/components" className="text-sm text-text-secondary no-underline hover:text-text-primary transition-colors duration-150">
+              View all →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: 16 }}>
+            {featured.map(c => {
+              const score = c.score?.total ?? c.total
+              return (
+                <Link
+                  key={c.id}
+                  to={`/components/${c.id}`}
+                  className="block rounded-lg border border-border bg-bg-card overflow-hidden no-underline hover:border-text-muted transition-colors duration-150"
+                >
+                  <div className="aspect-[4/3] bg-bg-secondary overflow-hidden">
+                    <img
+                      src={`/screenshots/${c.id}-desktop.webp`}
+                      alt={c.prompt}
+                      loading="lazy"
+                      className="w-full h-full object-cover object-top"
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                  </div>
+                  <div className="p-3.5">
+                    <p className="text-sm text-text-primary line-clamp-2 leading-snug">{c.prompt}</p>
+                    <div className="flex items-center justify-between mt-2.5">
+                      <Badge>{c.category}</Badge>
+                      {score !== undefined && <Badge variant={scoreVariant(score)}>{score}/9</Badge>}
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
           </div>
         </section>
       )}
 
-      {/* Info Section */}
+      {/* Pipeline + Validation */}
       <section className="border-t border-border">
-        <div className="page-container py-16 grid grid-cols-1 md:grid-cols-2 gap-12" style={{ columnGap: '48px' }}>
+        <div className="page-container grid grid-cols-1 md:grid-cols-2" style={{ paddingTop: 48, paddingBottom: 48, gap: 48 }}>
           <div>
-            <span className="label-caps text-accent block mb-3">Pipeline</span>
-            <h2 className="font-display text-2xl font-700 text-text-display mb-4">6-Stage Process</h2>
-            <p className="text-text-secondary leading-relaxed mb-6">
+            <span className="section-label">Pipeline</span>
+            <h2 className="font-semibold text-text-primary mt-2 mb-5" style={{ fontSize: 20 }}>6-Stage Process</h2>
+            <p className="text-text-secondary mb-5" style={{ lineHeight: 1.6 }}>
               Each component passes through generate, render, critique, improve, package, and evaluate —
               producing 3,090 training records for fine-tuning Qwen3-VL.
             </p>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {[
                 ['01', 'Generate', 'Qwen3.6-27B creates HTML/CSS from prompts'],
                 ['02', 'Render', 'Playwright captures desktop + mobile screenshots'],
@@ -176,27 +134,27 @@ export default function Home() {
                 ['05', 'Package', '6 record types per component'],
                 ['06', 'Evaluate', '3-axis scoring (visual, alignment, interactivity)'],
               ].map(([num, title, desc]) => (
-                <div key={num} className="flex items-start gap-4 group">
-                  <span className="font-mono text-xs text-accent/60 mt-0.5 shrink-0">{num}</span>
-                  <div>
-                    <span className="text-sm font-semibold text-text-primary">{title}</span>
-                    <span className="text-sm text-text-muted ml-2">{desc}</span>
-                  </div>
+                <div key={num} className="flex items-baseline gap-3">
+                  <span className="font-mono text-xs text-text-muted shrink-0">{num}</span>
+                  <span className="text-sm">
+                    <span className="font-semibold text-text-primary">{title}</span>
+                    <span className="text-text-secondary ml-2">{desc}</span>
+                  </span>
                 </div>
               ))}
             </div>
           </div>
 
           <div>
-            <span className="label-caps text-accent-warm block mb-3">Results</span>
-            <h2 className="font-display text-2xl font-700 text-text-display mb-4">Validated Behaviors</h2>
-            <div className="rounded-[var(--radius-lg)] border border-border overflow-hidden">
+            <span className="section-label">Results</span>
+            <h2 className="font-semibold text-text-primary mt-2 mb-5" style={{ fontSize: 20 }}>Validated Behaviors</h2>
+            <div className="rounded-lg border border-border overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-bg-elevated/50">
-                    <th className="text-left p-3 label-caps text-text-muted">Test</th>
-                    <th className="text-right p-3 label-caps text-text-muted">Base</th>
-                    <th className="text-right p-3 label-caps text-text-muted">FT 8B</th>
+                  <tr className="bg-bg-secondary">
+                    <th className="text-left p-3 text-text-muted font-medium" style={{ fontSize: 12 }}>Test</th>
+                    <th className="text-right p-3 text-text-muted font-medium" style={{ fontSize: 12 }}>Base</th>
+                    <th className="text-right p-3 text-text-muted font-medium" style={{ fontSize: 12 }}>FT 8B</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -207,34 +165,33 @@ export default function Home() {
                     ['Clean Output', 'Verbose', '0 chars'],
                   ].map(([test, base, ft], i) => (
                     <tr key={i} className="border-t border-border-subtle">
-                      <td className="p-3 text-text-primary font-medium">{test}</td>
+                      <td className="p-3 text-text-primary">{test}</td>
                       <td className="p-3 text-right text-text-muted">{base}</td>
-                      <td className="p-3 text-right font-mono font-bold text-score-high">{ft}</td>
+                      <td className="p-3 text-right font-mono font-medium text-score-high">{ft}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div className="mt-6 flex gap-3">
-              {[
-                ['8B Expert', '0.246 loss', 'bg-accent/10 text-accent border-accent/20'],
-                ['4B Lite', '0.325 loss', 'bg-accent-warm/10 text-accent-warm border-accent-warm/20'],
-              ].map(([name, detail, cls]) => (
-                <div key={name} className={`flex-1 p-4 rounded-[var(--radius)] border ${cls}`}>
-                  <span className="text-sm font-semibold block">{name}</span>
-                  <span className="font-mono text-xs opacity-70">{detail}</span>
-                </div>
-              ))}
+            <div className="flex gap-3 mt-5">
+              <div className="flex-1 p-3.5 rounded-lg border border-border">
+                <span className="text-sm font-medium text-text-primary block">8B Expert</span>
+                <span className="font-mono text-xs text-text-muted">0.246 loss</span>
+              </div>
+              <div className="flex-1 p-3.5 rounded-lg border border-border">
+                <span className="text-sm font-medium text-text-primary block">4B Lite</span>
+                <span className="font-mono text-xs text-text-muted">0.325 loss</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Record Types Strip */}
-      <section className="border-t border-border bg-bg-secondary/30">
-        <div className="page-container py-12">
-          <span className="label-caps text-text-muted block mb-6">Record Types</span>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4" style={{ gap: '16px' }}>
+      {/* Record Types */}
+      <section className="border-t border-border">
+        <div className="page-container" style={{ paddingTop: 48, paddingBottom: 48 }}>
+          <span className="section-label">Record Types</span>
+          <div className="grid grid-cols-2 md:grid-cols-3 mt-4" style={{ gap: 16 }}>
             {[
               ['prompt_to_html', 'Text → HTML', 'Prompt generates self-contained component'],
               ['screenshot_to_critique', 'Image → Critique', 'Visual analysis with px-level specifics'],
@@ -243,10 +200,10 @@ export default function Home() {
               ['screenshot_html_to_critique', 'Image+Code → Critique', 'Combined visual and code analysis'],
               ['qualifying_conversation', 'Vague → Questions → Build', 'Multi-turn qualifying behavior'],
             ].map(([type, title, desc]) => (
-              <div key={type} className="p-4 rounded-[var(--radius)] border border-border-subtle hover:border-border-accent transition-colors group flex flex-col min-h-[100px]">
-                <code className="font-mono text-xs text-accent">{type}</code>
-                <p className="text-sm font-semibold text-text-primary mt-1">{title}</p>
-                <p className="text-xs text-text-muted mt-1">{desc}</p>
+              <div key={type} className="p-4 rounded-lg border border-border hover:border-text-muted transition-colors duration-150">
+                <code className="font-mono text-xs text-text-muted">{type}</code>
+                <p className="text-sm font-medium text-text-primary mt-1.5">{title}</p>
+                <p className="text-sm text-text-secondary mt-1">{desc}</p>
               </div>
             ))}
           </div>
