@@ -4,6 +4,8 @@ import { join } from 'path'
 
 const DB_PATH = join(import.meta.dir, '../data/dataset.sqlite')
 const db = new Database(DB_PATH)
+const COMPONENTS_BASE = process.env.COMPONENTS_PATH ||
+  join(import.meta.dir, '../../output/assets/components')
 
 function inferCategory(prompt: string): string {
   const p = prompt.toLowerCase()
@@ -87,20 +89,19 @@ const server = Bun.serve({
 
       if (!component) return new Response('Not found', { status: 404 })
 
-      const critiquePath = join(
-        import.meta.dir,
-        `../../output/assets/components/${id}/critique.md`
-      )
+      const critiquePath = join(COMPONENTS_BASE, id, 'critique.md')
       if (existsSync(critiquePath)) {
         component.critique = readFileSync(critiquePath, 'utf-8')
       }
 
-      const improvedPath = join(
-        import.meta.dir,
-        `../../output/assets/components/${id}/improved.html`
-      )
+      const improvedPath = join(COMPONENTS_BASE, id, 'improved.html')
       if (existsSync(improvedPath)) {
         component.improved_html = readFileSync(improvedPath, 'utf-8')
+      }
+
+      const componentPath = join(COMPONENTS_BASE, id, 'component.html')
+      if (existsSync(componentPath)) {
+        component.component_html = readFileSync(componentPath, 'utf-8')
       }
 
       component.category = inferCategory(component.prompt as string)

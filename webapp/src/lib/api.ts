@@ -20,6 +20,8 @@ export async function getComponents(params: {
 
 export async function getComponent(id: string): Promise<ComponentWithScore & {
   critique?: string
+  improved_html?: string
+  component_html?: string
 }> {
   const res = await fetch(`${BASE}/components/${id}`)
   return res.json()
