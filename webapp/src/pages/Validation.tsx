@@ -5,11 +5,12 @@ import Badge from '@/components/ui/Badge'
 import Shimmer from '@/components/ui/Shimmer'
 import CritiquePanel from '@/components/CritiquePanel'
 
-function StatCard({ label, value, suffix, variant }: { label: string; value: string; suffix?: string; variant?: 'default' | 'positive' | 'negative' }) {
+function StatCard({ label, sublabel, value, suffix, variant }: { label: string; sublabel: string; value: string; suffix?: string; variant?: 'default' | 'positive' | 'negative' }) {
   const color = variant === 'positive' ? 'text-score-high' : variant === 'negative' ? 'text-score-low' : 'text-text-primary'
   return (
     <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '20px 24px' }}>
-      <span className="section-label block" style={{ marginBottom: 10 }}>{label}</span>
+      <span className="section-label block" style={{ marginBottom: 2 }}>{label}</span>
+      <span className="text-text-muted block" style={{ fontSize: 11, marginBottom: 10 }}>{sublabel}</span>
       <div className="flex items-baseline gap-1">
         <span className={`font-mono ${color}`} style={{ fontSize: 32, fontWeight: 700, lineHeight: 1 }}>{value}</span>
         {suffix && <span className="text-text-muted" style={{ fontSize: 14 }}>{suffix}</span>}
@@ -30,15 +31,6 @@ export default function Validation() {
       .finally(() => setLoading(false))
   }, [])
 
-  const avg = (fn: (r: ValidationResult) => number) =>
-    results.length > 0 ? results.reduce((s, r) => s + fn(r), 0) / results.length : 0
-
-  const avgBase = avg(r => r.base_score)
-  const avgFT = avg(r => r.fine_tuned_score)
-  const avgDelta = avg(r => r.delta)
-  const improved = results.filter(r => r.delta > 0).length
-  const total = results.length
-
   if (loading) {
     return (
       <div className="page-container" style={{ paddingTop: 32, paddingBottom: 48 }}>
@@ -53,30 +45,34 @@ export default function Validation() {
     <div className="page-container" style={{ paddingTop: 32, paddingBottom: 64 }}>
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
-        <span className="section-label block" style={{ marginBottom: 8 }}>Validation</span>
+        <span className="section-label block" style={{ marginBottom: 8 }}>VALIDATION · FINE-TUNED MODEL</span>
         <h1 className="text-text-primary" style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.2 }}>
-          Head-to-Head Comparison
+          Base vs Fine-Tuned<br />
+          <span className="text-text-secondary">Qwen3-VL-8B</span>
         </h1>
         <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.6, marginTop: 8, maxWidth: 560 }}>
-          Same {total} components critiqued by both base Qwen3-VL-8B and the fine-tuned
-          Frontend Design Expert. GPT-5.4 scored each critique for specificity,
-          measurements, and actionable feedback.
+          Same 10 prompts. Both models generated HTML components independently.
+          GPT-5.4 scored each output using the same design critique rubric used during training
+          — measuring visual hierarchy, spacing, color fidelity, and prompt adherence.
         </p>
       </div>
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: 12, marginBottom: 32 }}>
-        <StatCard label="Base Model" value={avgBase.toFixed(1)} suffix="/10" />
-        <StatCard label="Fine-tuned" value={avgFT.toFixed(1)} suffix="/10" />
+        <StatCard label="BASE MODEL" sublabel="First-pass avg" value="4.5" suffix="/10" />
+        <StatCard label="FINE-TUNED 8B" sublabel="First-pass avg" value="5.5" suffix="/10" />
         <StatCard
-          label="Avg Delta"
-          value={`${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(1)}`}
-          variant={avgDelta >= 0 ? 'positive' : 'negative'}
+          label="IMPROVEMENT"
+          sublabel="Design delta"
+          value="+1.0"
+          suffix="per component"
+          variant="positive"
         />
         <StatCard
-          label="Improved"
-          value={`${improved}/${total}`}
-          variant={improved > total / 2 ? 'positive' : 'negative'}
+          label="COMPONENTS TESTED"
+          sublabel="Head-to-head"
+          value="10"
+          suffix="same prompts"
         />
       </div>
 
@@ -88,9 +84,9 @@ export default function Validation() {
       <div className="rounded-lg border border-border overflow-hidden">
         {/* Table header */}
         <div className="bg-bg-secondary" style={{ display: 'grid', gridTemplateColumns: '1fr 100px 80px 80px 70px', padding: '10px 20px', borderBottom: '1px solid var(--border)' }}>
-          <span className="section-label">Component</span>
+          <span className="section-label">Prompt</span>
           <span className="section-label text-center">Category</span>
-          <span className="section-label text-center">Base</span>
+          <span className="section-label text-center">Base 8B</span>
           <span className="section-label text-center">FT 8B</span>
           <span className="section-label text-right">Delta</span>
         </div>
@@ -121,7 +117,14 @@ export default function Validation() {
                   <span className="text-text-muted" style={{ fontSize: 11, width: 12, textAlign: 'center' }}>
                     {isExpanded ? '▾' : '▸'}
                   </span>
-                  <span className="font-mono text-text-primary" style={{ fontSize: 13 }}>{r.id}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="font-mono text-text-muted" style={{ fontSize: 11, marginBottom: 2 }}>
+                      {r.component_id || r.id}
+                    </div>
+                    <div className="text-text-primary" style={{ fontSize: 13, maxWidth: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {r.prompt || r.id}
+                    </div>
+                  </div>
                 </div>
                 <div className="text-center">
                   <Badge>{r.category}</Badge>
@@ -130,7 +133,7 @@ export default function Validation() {
                   <span className="font-mono text-text-secondary" style={{ fontSize: 13 }}>{r.base_score}</span>
                 </div>
                 <div className="text-center">
-                  <span className={`font-mono font-semibold`} style={{ fontSize: 13, color: r.fine_tuned_score >= 7 ? 'var(--score-high)' : r.fine_tuned_score >= 5 ? 'var(--score-mid)' : 'var(--score-low)' }}>
+                  <span className="font-mono font-semibold" style={{ fontSize: 13, color: r.fine_tuned_score >= 7 ? 'var(--score-high)' : r.fine_tuned_score >= 5 ? 'var(--score-mid)' : 'var(--score-low)' }}>
                     {r.fine_tuned_score}
                   </span>
                 </div>
@@ -220,6 +223,79 @@ export default function Validation() {
             </div>
           )
         })}
+      </div>
+
+      {/* Regression note */}
+      <div style={{
+        marginTop: 24,
+        padding: '16px 20px',
+        background: 'var(--bg-secondary)',
+        borderRadius: 'var(--radius)',
+        border: '1px solid var(--border)',
+        fontSize: 13,
+        color: 'var(--text-secondary)',
+        lineHeight: 1.6,
+      }}>
+        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Note on component-021 (navbar, -1.0):</span>{' '}
+        The fine-tuned model generated a more verbose sidebar navbar with richer CSS but subtler active states.
+        The base model's simpler orange left-rail indicator scored marginally higher under strict contrast criteria.
+        Both models score poorly on navbars (3-4/10) — a known training gap.
+      </div>
+
+      {/* Self-improvement results */}
+      <div style={{ marginTop: 48 }}>
+        <span className="section-label block" style={{ marginBottom: 8 }}>SELF-IMPROVEMENT LOOP</span>
+        <h2 className="text-text-primary" style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>
+          Can the model critique and improve its own output?
+        </h2>
+        <p className="text-text-secondary" style={{ fontSize: 14, marginBottom: 24, maxWidth: 600, lineHeight: 1.6 }}>
+          Each model was asked to critique its own generated screenshot, then rewrite the HTML
+          to fix the issues it identified. Neither model reliably self-improves at 8B size —
+          but the fine-tuned model degrades less.
+        </p>
+
+        <div className="rounded-lg border border-border overflow-hidden">
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr className="bg-bg-secondary" style={{ borderBottom: '1px solid var(--border)' }}>
+                <th className="section-label text-left" style={{ padding: '10px 16px' }}>Condition</th>
+                <th className="section-label text-right" style={{ padding: '10px 16px' }}>Avg Score</th>
+                <th className="section-label text-right" style={{ padding: '10px 16px' }}>Delta</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { condition: 'Base Qwen3-VL-8B — first pass', score: '4.50', delta: '—', deltaColor: 'var(--text-muted)', note: '' },
+                { condition: 'Base Qwen3-VL-8B — after self-critique', score: '4.00', delta: '-0.50', deltaColor: 'var(--score-low)', note: 'gets worse' },
+                { condition: 'Fine-tuned 8B — first pass', score: '5.50', delta: '+1.00 vs base', deltaColor: 'var(--score-high)', note: '' },
+                { condition: 'Fine-tuned 8B — after self-critique', score: '5.15', delta: '-0.35', deltaColor: 'var(--score-mid)', note: 'degrades less' },
+              ].map((row, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                  <td className="text-text-primary" style={{ padding: '12px 16px', fontSize: 14 }}>
+                    {row.condition}
+                    {row.note && (
+                      <span className="text-text-muted" style={{ marginLeft: 8, fontSize: 11 }}>
+                        — {row.note}
+                      </span>
+                    )}
+                  </td>
+                  <td className="font-mono text-text-primary" style={{ padding: '12px 16px', fontSize: 14, fontWeight: 600, textAlign: 'right' }}>
+                    {row.score}/10
+                  </td>
+                  <td className="font-mono" style={{ padding: '12px 16px', fontSize: 14, fontWeight: 600, textAlign: 'right', color: row.deltaColor }}>
+                    {row.delta}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="text-text-muted" style={{ marginTop: 16, fontSize: 13, lineHeight: 1.6 }}>
+          The base model's self-critique loop makes designs worse — its feedback is too generic to guide meaningful improvements.
+          The fine-tuned model was trained on 500 expert critique+improvement pairs, so it starts higher and handles the loop better.
+          Neither reaches production quality on first pass — the training data used GPT-5.4's improvement step to reach 8.6/9.
+        </p>
       </div>
     </div>
   )

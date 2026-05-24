@@ -141,7 +141,23 @@ const server = Bun.serve({
 
       const lines = readFileSync(scoresPath, 'utf-8').trim().split('\n')
       const results = lines.map(l => JSON.parse(l))
-      return Response.json(results, { headers })
+
+      const enriched = results.map((r: any) => {
+        try {
+          const component = db.query(
+            'SELECT prompt FROM components WHERE id = ?'
+          ).get(r.component || r.id) as any
+          return {
+            ...r,
+            prompt: component?.prompt || r.component || r.id,
+            component_id: r.component || r.id
+          }
+        } catch {
+          return { ...r, component_id: r.component || r.id }
+        }
+      })
+
+      return Response.json(enriched, { headers })
     }
 
     // Static screenshots from mounted volume (/app/public/screenshots)

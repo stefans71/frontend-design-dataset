@@ -49,6 +49,8 @@ export interface Message {
 export interface ValidationResult {
   id: string
   component: string
+  component_id: string
+  prompt: string
   category: string
   theme: string
   base_score: number
