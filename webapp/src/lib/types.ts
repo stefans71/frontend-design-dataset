@@ -23,7 +23,11 @@ export interface EvalScore {
 }
 
 export interface ComponentWithScore extends Component {
-  score: EvalScore
+  score?: EvalScore
+  total?: number
+  visual_score?: number
+  alignment_score?: number
+  interactivity_score?: number
   category: string
   theme: 'dark' | 'light'
 }
@@ -43,10 +47,13 @@ export interface Message {
 }
 
 export interface ValidationResult {
+  id: string
   component: string
   category: string
+  theme: string
   base_score: number
-  finetuned_score: number
+  fine_tuned_score: number
+  baseline_score: number
   delta: number
 }
 
