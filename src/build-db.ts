@@ -27,7 +27,10 @@ db.exec(`
     has_improved INTEGER DEFAULT 0,
     has_desktop_png INTEGER DEFAULT 0,
     has_mobile_png INTEGER DEFAULT 0,
-    has_critique INTEGER DEFAULT 0
+    has_critique INTEGER DEFAULT 0,
+    component_html TEXT,
+    critique_text TEXT,
+    improved_html TEXT
   );
 
   CREATE TABLE IF NOT EXISTS eval_scores (
@@ -84,7 +87,11 @@ for (const dir of dirs) {
     const match = dir.match(/component-(\d+)-(run\d+)/);
     const run = match?.[2] ?? "unknown";
 
-    db.run(`INSERT OR REPLACE INTO components VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, [
+    const htmlPath = join(dirPath, "component.html");
+    const critPath = join(dirPath, "critique.md");
+    const impPath = join(dirPath, "improved.html");
+
+    db.run(`INSERT OR REPLACE INTO components VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, [
       dir,
       meta.prompt ?? "",
       meta.temperature ?? 0.7,
@@ -92,11 +99,14 @@ for (const dir of dirs) {
       meta.outputSuffix ?? run,
       meta.model ?? "qwen3.6-27b-mtp",
       meta.timestamp ?? "",
-      existsSync(join(dirPath, "component.html")) ? 1 : 0,
-      existsSync(join(dirPath, "improved.html")) ? 1 : 0,
+      existsSync(htmlPath) ? 1 : 0,
+      existsSync(impPath) ? 1 : 0,
       existsSync(join(dirPath, "screenshot-desktop.png")) ? 1 : 0,
       existsSync(join(dirPath, "screenshot-mobile.png")) ? 1 : 0,
-      existsSync(join(dirPath, "critique.md")) ? 1 : 0,
+      existsSync(critPath) ? 1 : 0,
+      existsSync(htmlPath) ? readFileSync(htmlPath, "utf-8") : null,
+      existsSync(critPath) ? readFileSync(critPath, "utf-8") : null,
+      existsSync(impPath) ? readFileSync(impPath, "utf-8") : null,
     ]);
 
     const score = scoresMap.get(dir);
