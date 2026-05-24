@@ -150,9 +150,10 @@ async function main() {
     const p = prompts[i]!;
     const fp = firstPass.get(p.id);
 
-    if (existing.has(p.id)) {
+    const ex = existing.get(p.id);
+    if (ex && ex.base_improved !== null && ex.fine_tuned_improved !== null) {
       console.log(`[${i + 1}/${total}] ${p.id} — already scored, skipping`);
-      results.push(existing.get(p.id)!);
+      results.push(ex);
       continue;
     }
 
@@ -161,13 +162,27 @@ async function main() {
     const basePng = `${BASE_IMPROVED_DIR}/${p.id}-desktop.png`;
     const ftPng = `${FINE_TUNED_IMPROVED_DIR}/${p.id}-desktop.png`;
 
-    console.log(`  Scoring base-improved...`);
-    const base = existsSync(basePng) ? await scoreWithCodex(basePng) : { text: "", score: null };
-    console.log(`  Base improved score: ${base.score ?? "null"}`);
+    // Reuse existing base scores if available
+    let base: { text: string; score: number | null };
+    if (ex?.base_improved !== null && ex?.base_improved !== undefined) {
+      base = { text: ex.base_improved_critique, score: ex.base_improved };
+      console.log(`  Base improved score: ${base.score} (cached)`);
+    } else {
+      console.log(`  Scoring base-improved...`);
+      base = existsSync(basePng) ? await scoreWithCodex(basePng) : { text: "", score: null };
+      console.log(`  Base improved score: ${base.score ?? "null"}`);
+    }
 
-    console.log(`  Scoring fine-tuned-improved...`);
-    const ft = existsSync(ftPng) ? await scoreWithCodex(ftPng) : { text: "", score: null };
-    console.log(`  Fine-tuned improved score: ${ft.score ?? "null"}`);
+    // Reuse existing FT scores if available
+    let ft: { text: string; score: number | null };
+    if (ex?.fine_tuned_improved !== null && ex?.fine_tuned_improved !== undefined) {
+      ft = { text: ex.fine_tuned_improved_critique, score: ex.fine_tuned_improved };
+      console.log(`  Fine-tuned improved score: ${ft.score} (cached)`);
+    } else {
+      console.log(`  Scoring fine-tuned-improved...`);
+      ft = existsSync(ftPng) ? await scoreWithCodex(ftPng) : { text: "", score: null };
+      console.log(`  Fine-tuned improved score: ${ft.score ?? "null"}`);
+    }
 
     const baseFirst = fp?.base_score ?? null;
     const ftFirst = fp?.fine_tuned_score ?? null;

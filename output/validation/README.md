@@ -48,7 +48,7 @@ Each model critiques its own first-pass screenshot, then rewrites the HTML. Outp
 | Base first-pass | 4.50 | — |
 | Base self-improved | 4.00 | **-0.50** (regressed) |
 | Fine-tuned first-pass | 5.50 | +1.00 vs base |
-| Fine-tuned self-improved | N/A | Blocked — see note |
+| Fine-tuned self-improved | 5.15 | **-0.35** (slight regression) |
 
 ### Base Self-Improvement Per-Component
 
@@ -68,17 +68,46 @@ Each model critiques its own first-pass screenshot, then rewrites the HTML. Outp
 
 **Finding:** The base Qwen3-VL-8B model cannot reliably improve its own designs. 7/10 components held flat or regressed; only 3 showed any improvement. Component-003 (navbar) dropped from 4→1 — the rewrite broke the design. The self-critique is too generic at this quality level to guide meaningful improvement.
 
-### Fine-Tuned Self-Improvement — Blocked
+### Fine-Tuned Self-Improvement Per-Component
 
-The fine-tuned model's self-improvement test could not run. Root cause: the fine-tuned Qwen3-VL model's thinking mode interferes with vision inference in llama-cpp-python 0.3.23. The `chat_template_kwargs: {enable_thinking: false}` parameter is not supported in this library version. llama-server (which supports this flag natively) was not available with a binary compiled for sm_86 (RTX 3080 Ti) that also supports the `qwen3vl` model architecture.
+| Component | Category | Theme | FT 1st | FT Imp | Delta |
+|---|---|---|---|---|---|
+| component-012-run0 | form | dark | 6.5 | 6 | -0.5 |
+| component-014-run0 | form | light | 5 | 5 | 0 |
+| component-002-run0 | card | dark | 6 | 5 | -1 |
+| component-028-run0 | card | light | 5 | 6 | **+1** |
+| component-003-run0 | navbar | light | 4 | 6 | **+2** |
+| component-021-run0 | navbar | dark | 3 | 4 | **+1** |
+| component-078-run0 | mobile | dark | 6 | 4 | -2 |
+| component-084-run0 | mobile | light | 6.5 | 6 | -0.5 |
+| component-072-run0 | marketing | dark | 6.5 | 4 | **-2.5** |
+| component-065-run0 | data_display | light | 6.5 | 5.5 | -1 |
+| **AVERAGE** | | | **5.50** | **5.15** | **-0.35** |
 
-**Workaround for future runs:** Use Ollama 0.22.1+ with native Qwen3-VL support and the `num_ctx` parameter — Ollama handles thinking-mode suppression transparently.
+**Finding:** The fine-tuned model's self-improvement loop shows mixed results. 3/10 components improved (navbars +1/+2, card +1), 2 held flat, and 5 regressed. The overall delta is -0.35 — a slight regression. The base model regressed more severely (-0.50) with the same methodology. Both models struggle with the critique→improve loop, but the fine-tuned model starts from a higher baseline (5.50 vs 4.50) and degrades less.
+
+### Known Model Limitation — Critique Trigger
+
+The fine-tuned model returns empty response for "Critique this UI design."
+on certain component types (navbars, product cards, invoice/data tables).
+The model CAN see these images (responds normally to other prompts like
+"What do you see in this image?") but produces an immediate stop token
+for the critique trigger on these visual patterns. This is non-deterministic —
+succeeds ~1 in 3 attempts at temperature 0.7, more reliably at temperature 0.3.
+
+This is a training gap — the critique trigger phrase was learned from training
+data that may not have had sufficient examples for these component types.
+
+**Workaround:** Use an alternative prompt with retry:
+`"Review this UI component and list specific design issues with measurements."`
+with temperature 0.3 and up to 5 retry attempts. Used for components 003, 028, 065.
 
 ### Hardware / Inference
 
-- **Hardware:** AutoDL RTX 3080 Ti (sm_86, 12GB VRAM)
+- **Hardware (base):** AutoDL RTX 3080 Ti (sm_86, 12GB VRAM)
+- **Hardware (fine-tuned):** AutoDL RTX 5090 (sm_120, 32GB VRAM)
 - **Base model inference:** llama-cpp-python 0.3.23, Qwen25VLChatHandler, n_ctx=4096
-- **Fine-tuned model inference:** Blocked (see above)
+- **Fine-tuned model inference:** llama-server (llama.cpp), Q4_K_M GGUF + mmproj-F16, c=8192
 - **Judge:** GPT-5.4 via Codex CLI (`bun run self-improve`)
 
 ---
@@ -90,4 +119,5 @@ The fine-tuned model's self-improvement test could not run. Root cause: the fine
 - `base/` — HTML + PNG for base model outputs
 - `fine-tuned-scores.jsonl` — Full GPT-5.4 critiques and scores per component
 - `base-improved/` — Self-improved base model HTML + PNGs (10/10)
-- `self-improve-scores.jsonl` — GPT-5.4 scores for self-improved outputs
+- `fine-tuned-improved/` — Self-improved fine-tuned model HTML + PNGs + critiques (10/10)
+- `self-improve-scores.jsonl` — GPT-5.4 scores for all self-improved outputs
