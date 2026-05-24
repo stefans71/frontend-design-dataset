@@ -224,7 +224,7 @@ output/
 33. ✅ **Download Qwen3-VL-4B-Instruct HF weights** — /root/autodl-tmp/Qwen3-VL-4B-Instruct-HF (8.4GB)
 34. ✅ **Fine-tune Qwen3-VL-4B (Designer Lite)** — v2 run: 53m, loss 0.325, token_acc 92.5%, checkpoint-1546
 35. ✅ **Export 4B GGUF + quantize** — f16 7.5GB, Q4_K_M 2.4GB, Q3_K_M 2.0GB (11:18 JST 2026-05-22)
-36. ✅ **Validate 4B** — 4/4 tests passed: A(vision critique), B(8/10 qualifying), C(3/5 no-sys), D(36 wrapper chars)
+36. ✅ **Validate 4B** — 4/4 tests passed: A(vision critique), B(9/10 qualifying), C(4/5 no-sys), D(0 wrapper chars)
 37. ⏳ **Release (4B Lite)**
 38. ✅ **Head-to-head validation generated** — 10 prompts × 2 models on RTX 3080 Ti
 39. ✅ **Codex scoring on VPS** — fine-tuned +1.00 avg over base (5.50 vs 4.50, 6/10 wins)

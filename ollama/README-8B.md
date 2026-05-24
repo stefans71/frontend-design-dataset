@@ -92,16 +92,15 @@ The gap between Qwen's output and GPT-5.4's rewrite is the training signal. 3,09
 
 ---
 
-## Validation Results
+## Validated Behaviors
 
-Tested against base Qwen3-VL-8B-Instruct:
-
-| Test | Base Model | Fine-tuned | Target |
+| Test | Base 8B | Fine-tuned 8B | Fine-tuned 4B |
 |---|---|---|---|
-| Qualifying questions (10 vague prompts) | 1/10 | **10/10** | 6+/10 |
-| Vision critique quality | Vague, no measurements | px + hex + WCAG AA | 7+/10 |
-| Token accuracy | — | **98.1%** | — |
-| Clean HTML output | Verbose markdown | Zero wrapper text | <20 chars |
+| Qualifying questions (10 vague) | 1/10 | **10/10** | 9/10 |
+| Vision critique specificity | Vague | px + hex + WCAG | px + contrast |
+| Token accuracy (training) | — | **98.1%** | 92.5% |
+| Clean HTML output | Verbose | **0 wrapper chars** | 0 wrapper chars |
+| Self-improvement loop | -0.50 (regresses) | -0.35 (slight regression) | not tested |
 
 ### Head-to-Head Design Quality
 

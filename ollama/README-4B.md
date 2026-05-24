@@ -40,7 +40,7 @@ Base models are RLHF-tuned to be immediately helpful — they build immediately 
   <img src="terminal.png" alt="Base Model vs Fine-tuned: qualifying question behavior" width="800"/>
 </p>
 
-**1/10 → 8/10** on qualifying questions. 8 of 10 tested vague prompts triggered clarifying questions from the fine-tuned 4B model; only 1/10 from the base model.
+**1/10 → 9/10** on qualifying questions. 9 of 10 tested vague prompts triggered clarifying questions from the fine-tuned 4B model; only 1/10 from the base model.
 
 ---
 
@@ -60,7 +60,7 @@ Base models are RLHF-tuned to be immediately helpful — they build immediately 
 |---|---|---|
 | GPU requirement | **8GB** | 12GB |
 | Q4_K_M size | **2.4 GB** | 4.7 GB |
-| Qualifying questions | 8/10 | 10/10 |
+| Qualifying questions | 9/10 | 10/10 |
 | Token accuracy | 92.5% | 98.1% |
 | Complex layouts | May truncate | Handles cleanly |
 | Speed | Faster | Slightly slower |
@@ -85,14 +85,15 @@ BF16 (not 4-bit) was used for 4B training because fewer parameters means the mod
 
 ---
 
-## Validation Results
+## Validated Behaviors
 
-| Test | Base Model | Fine-tuned 4B | Fine-tuned 8B |
+| Test | Base 8B | Fine-tuned 4B | Fine-tuned 8B |
 |---|---|---|---|
-| Qualifying questions (10 vague prompts) | 1/10 | **8/10** | 10/10 |
-| Vision critique quality | Vague, no measurements | px + hex + WCAG AA | px + hex + WCAG AA |
-| Token accuracy | — | **92.5%** | 98.1% |
-| Clean HTML output | Verbose markdown | ~36 wrapper chars | Zero wrapper text |
+| Qualifying questions (10 vague) | 1/10 | **9/10** | 10/10 |
+| Vision critique | Vague | px + contrast | px + hex + WCAG |
+| Clean HTML output | Verbose | **0 wrapper chars** | 0 wrapper chars |
+| GPU requirement | 12GB | **8GB** | 12GB |
+| Model size (Q4) | 4.7GB | **2.4GB** | 4.7GB |
 
 ### Head-to-Head Design Quality (8B reference)
 
