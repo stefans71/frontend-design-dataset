@@ -28,23 +28,35 @@ export default function Conversations() {
   ]
 
   return (
-    <div className="page-container" style={{ paddingTop: 32, paddingBottom: 48 }}>
-      <div className="mb-6">
-        <span className="section-label">Traces</span>
-        <h1 className="font-semibold text-text-primary mt-2" style={{ fontSize: 20 }}>Conversations</h1>
-        <p className="text-sm text-text-muted mt-0.5">{total} total</p>
+    <div className="page-container" style={{ paddingTop: 32, paddingBottom: 64 }}>
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <span className="section-label block" style={{ marginBottom: 8 }}>Traces</span>
+        <h1 className="text-text-primary" style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.2 }}>
+          Conversation Traces
+        </h1>
+        <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.6, marginTop: 8, maxWidth: 560 }}>
+          {total} multi-turn conversations used for fine-tuning. Qualifying traces
+          show the model asking clarifying questions before building.
+        </p>
       </div>
 
-      <div className="flex gap-2 mb-5">
+      {/* Type filters */}
+      <div className="flex gap-2" style={{ marginBottom: 20 }}>
         {typeFilters.map(f => (
           <button
             key={f.value}
             onClick={() => { setType(f.value); setPage(0) }}
-            className={`px-3 py-1.5 text-sm rounded-md cursor-pointer transition-colors duration-150 ${
-              type === f.value
-                ? 'bg-bg-elevated text-text-primary font-medium border border-border'
-                : 'text-text-secondary hover:text-text-primary border border-transparent'
-            }`}
+            className="cursor-pointer transition-colors duration-150"
+            style={{
+              padding: '6px 14px',
+              fontSize: 13,
+              fontWeight: type === f.value ? 600 : 400,
+              borderRadius: 6,
+              border: type === f.value ? '1px solid var(--border)' : '1px solid transparent',
+              background: type === f.value ? 'var(--bg-elevated)' : 'transparent',
+              color: type === f.value ? 'var(--text-primary)' : 'var(--text-secondary)',
+            }}
           >
             {f.label}
           </button>
@@ -58,99 +70,136 @@ export default function Conversations() {
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border border-border overflow-hidden">
-          {convs.map((conv, ci) => (
-            <div key={conv.id} className={ci > 0 ? 'border-t border-border-subtle' : ''}>
-              <button
-                onClick={() => setExpanded(expanded === conv.id ? null : conv.id)}
-                className="w-full text-left p-4 cursor-pointer bg-transparent border-none text-inherit hover:bg-bg-secondary/50 transition-colors duration-100"
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {convs.map(conv => {
+            const isExpanded = expanded === conv.id
+            return (
+              <div
+                key={conv.id}
+                className="rounded-lg overflow-hidden transition-all duration-150"
+                style={{
+                  border: isExpanded ? '1px solid var(--accent)' : '1px solid var(--border)',
+                  background: isExpanded ? 'var(--bg-card)' : 'transparent',
+                }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Badge variant={conv.type === 'qualifying_conversation' ? 'accent' : 'outline'}>
-                      {conv.type === 'qualifying_conversation' ? 'qualifying' : 'immediate'}
-                    </Badge>
-                    {conv.domain && (
-                      <span className="text-sm text-text-primary">{conv.domain}</span>
-                    )}
-                    {conv.persona && (
-                      <span className="text-sm text-text-muted">· {conv.persona}</span>
-                    )}
+                {/* Row header */}
+                <div
+                  onClick={() => setExpanded(isExpanded ? null : conv.id)}
+                  className="cursor-pointer transition-colors duration-100"
+                  style={{ padding: '14px 20px' }}
+                  onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.background = 'var(--bg-secondary)' }}
+                  onMouseLeave={e => { if (!isExpanded) e.currentTarget.style.background = 'transparent' }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-text-muted" style={{ fontSize: 11, width: 12, textAlign: 'center' }}>
+                        {isExpanded ? '▾' : '▸'}
+                      </span>
+                      <Badge variant={conv.type === 'qualifying_conversation' ? 'accent' : 'outline'}>
+                        {conv.type === 'qualifying_conversation' ? 'qualifying' : 'immediate'}
+                      </Badge>
+                      {conv.domain && (
+                        <span className="text-text-primary" style={{ fontSize: 14, fontWeight: 500 }}>{conv.domain}</span>
+                      )}
+                      {conv.persona && (
+                        <span className="text-text-muted" style={{ fontSize: 13 }}>· {conv.persona}</span>
+                      )}
+                    </div>
+                    <span className="font-mono text-text-muted" style={{ fontSize: 11 }}>{conv.turn_count} turns</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs text-text-muted">{conv.turn_count} turns</span>
-                    <svg
-                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                      className="text-text-muted transition-transform duration-200"
-                      style={{ transform: expanded === conv.id ? 'rotate(180deg)' : 'rotate(0)' }}
-                    >
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </div>
+                  {conv.messages?.[0] && (
+                    <p className="line-clamp-1" style={{ fontSize: 13, marginTop: 6, marginLeft: 27, color: '#22c55e' }}>
+                      "{conv.messages[0].content}"
+                    </p>
+                  )}
                 </div>
-                {conv.messages?.[0] && (
-                  <p className="text-sm mt-1.5 line-clamp-1 text-text-muted">
-                    "{conv.messages[0].content}"
-                  </p>
-                )}
-              </button>
 
-              <div className={`expand-content ${expanded === conv.id ? 'open' : ''}`}>
-                <div>
-                  <div className="px-4 pb-4 space-y-2 border-t border-border-subtle pt-3">
-                    {conv.messages?.map((msg, i) => (
-                      <div
-                        key={i}
-                        className={`rounded-md p-3 ${
-                          msg.role === 'user'
-                            ? 'bg-bg-elevated ml-8'
-                            : 'bg-bg-secondary mr-8'
-                        }`}
-                      >
-                        <span className="text-xs font-medium text-text-muted block mb-1">
-                          {msg.role}
-                        </span>
-                        {msg.content.includes('<!DOCTYPE') || msg.content.includes('<html') ? (
-                          <details>
-                            <summary className="text-xs cursor-pointer text-text-muted hover:text-text-secondary transition-colors duration-150">
-                              HTML output · {msg.content.length.toLocaleString()} chars
-                            </summary>
-                            <pre className="mt-2 p-3 rounded-md text-xs overflow-x-auto font-mono max-h-60 overflow-y-auto bg-bg-primary text-text-secondary border border-border-subtle">
-                              {msg.content.slice(0, 2000)}
-                              {msg.content.length > 2000 && '\n... truncated'}
-                            </pre>
-                          </details>
-                        ) : (
-                          <p className="text-sm whitespace-pre-wrap text-text-primary leading-relaxed">
-                            {msg.content}
-                          </p>
-                        )}
+                {/* Expanded messages */}
+                <div className={`expand-content ${isExpanded ? 'open' : ''}`}>
+                  <div>
+                    <div style={{ padding: '0 20px 20px', borderTop: '1px solid var(--border-subtle)' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 16 }}>
+                        {conv.messages?.map((msg, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              padding: '12px 16px',
+                              borderRadius: 8,
+                              background: msg.role === 'user' ? 'var(--bg-elevated)' : 'var(--bg-secondary)',
+                              marginLeft: msg.role === 'user' ? 48 : 0,
+                              marginRight: msg.role === 'user' ? 0 : 48,
+                              border: '1px solid var(--border-subtle)',
+                            }}
+                          >
+                            <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
+                              <span style={{
+                                fontSize: 10,
+                                fontWeight: 600,
+                                letterSpacing: '0.08em',
+                                textTransform: 'uppercase' as const,
+                                color: msg.role === 'user' ? 'var(--accent)' : 'var(--score-high)',
+                              }}>
+                                {msg.role}
+                              </span>
+                            </div>
+                            {msg.content.includes('<!DOCTYPE') || msg.content.includes('<html') ? (
+                              <div>
+                                <div className="rounded-lg overflow-hidden border border-border" style={{ marginTop: 4 }}>
+                                  <div className="flex items-center justify-between bg-bg-secondary" style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)' }}>
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex gap-1.5">
+                                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--border)' }} />
+                                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--border)' }} />
+                                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--border)' }} />
+                                      </div>
+                                      <span className="font-mono text-text-muted" style={{ fontSize: 10 }}>output.html</span>
+                                    </div>
+                                    <span style={{ fontSize: 10, color: '#22c55e' }}>{msg.content.length.toLocaleString()} chars</span>
+                                  </div>
+                                  <iframe
+                                    srcDoc={msg.content}
+                                    title="HTML output"
+                                    className="w-full border-0"
+                                    style={{ height: 400, background: '#fff' }}
+                                    sandbox="allow-scripts"
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-text-primary" style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
+                                {msg.content}
+                              </p>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-1 mt-8">
+        <div className="flex items-center justify-center gap-1" style={{ marginTop: 32 }}>
           <button
             onClick={() => setPage(p => Math.max(0, p - 1))}
             disabled={page === 0}
-            className="px-2.5 py-1.5 text-sm rounded-md border border-border text-text-secondary hover:bg-bg-elevated transition-colors duration-150 disabled:opacity-25 cursor-pointer disabled:cursor-default"
+            className="cursor-pointer disabled:cursor-default disabled:opacity-25 transition-colors duration-150"
+            style={{ padding: '6px 12px', fontSize: 13, borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)' }}
           >
             ←
           </button>
-          <span className="font-mono text-sm px-3 text-text-muted">
+          <span className="font-mono text-text-muted" style={{ fontSize: 12, padding: '0 12px' }}>
             {page + 1} / {totalPages}
           </span>
           <button
             onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1}
-            className="px-2.5 py-1.5 text-sm rounded-md border border-border text-text-secondary hover:bg-bg-elevated transition-colors duration-150 disabled:opacity-25 cursor-pointer disabled:cursor-default"
+            className="cursor-pointer disabled:cursor-default disabled:opacity-25 transition-colors duration-150"
+            style={{ padding: '6px 12px', fontSize: 13, borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)' }}
           >
             →
           </button>
