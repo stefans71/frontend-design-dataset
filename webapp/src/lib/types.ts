@@ -55,6 +55,8 @@ export interface ValidationResult {
   fine_tuned_score: number
   baseline_score: number
   delta: number
+  fine_tuned_critique?: string
+  base_critique?: string
 }
 
 export type GridCols = 2 | 3 | 4
