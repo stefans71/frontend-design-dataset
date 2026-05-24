@@ -144,6 +144,25 @@ const server = Bun.serve({
       return Response.json(results, { headers })
     }
 
+    // Static screenshots from mounted volume (/app/public/screenshots)
+    if (url.pathname.startsWith('/screenshots/')) {
+      const shotPath = join(import.meta.dir, '../public', url.pathname)
+      if (existsSync(shotPath)) return new Response(Bun.file(shotPath))
+    }
+
+    // Static frontend (Vite build output) + SPA fallback
+    const distPath = join(import.meta.dir, '../dist')
+    const requestedPath = url.pathname === '/' ? '/index.html' : url.pathname
+    const filePath = join(distPath, requestedPath)
+    if (existsSync(filePath)) {
+      return new Response(Bun.file(filePath))
+    }
+    const indexPath = join(distPath, 'index.html')
+    if (existsSync(indexPath)) {
+      return new Response(Bun.file(indexPath), {
+        headers: { 'Content-Type': 'text/html' },
+      })
+    }
     return new Response('Not found', { status: 404 })
   }
 })
