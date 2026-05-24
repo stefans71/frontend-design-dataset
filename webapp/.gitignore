@@ -1,0 +1,10 @@
+node_modules/
+dist/
+data/
+public/screenshots/
+.env
+*.local
+*.tsbuildinfo
+.cache
+.eslintcache
+.DS_Store

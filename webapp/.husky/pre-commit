@@ -1,0 +1,1 @@
+cd webapp && bun run typecheck && bun run lint

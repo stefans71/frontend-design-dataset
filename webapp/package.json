@@ -1,0 +1,41 @@
+{
+  "name": "webapp",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "server": "bun run server/index.ts",
+    "dev:full": "concurrently \"bun run dev\" \"bun run server\"",
+    "lint": "eslint src --ext ts,tsx",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky",
+    "copy-data": "bash scripts/copy-data.sh",
+    "optimize-images": "bash scripts/optimize-images.sh"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/bun": "latest",
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.59.4",
+    "@typescript-eslint/parser": "^8.59.4",
+    "@vitejs/plugin-react": "^6.0.2",
+    "autoprefixer": "^10.5.0",
+    "eslint": "^10.4.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.14"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^7.15.1"
+  }
+}
