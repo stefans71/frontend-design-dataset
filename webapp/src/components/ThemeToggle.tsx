@@ -2,12 +2,12 @@ export default function ThemeToggle({ theme, onToggle }: { theme: string; onTogg
   return (
     <button
       onClick={onToggle}
-      className="flex items-center justify-center w-9 h-9 rounded-[var(--radius)] bg-bg-secondary text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-all duration-[var(--duration-base)] cursor-pointer"
+      className="flex items-center justify-center w-9 h-9 rounded-lg bg-bg-elevated text-text-muted hover:text-accent hover:bg-accent-subtle border border-border-subtle hover:border-accent/30 transition-all duration-200 cursor-pointer"
       aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
       <svg
-        width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        className="transition-transform duration-[var(--duration-slow)]"
+        width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+        className="transition-transform duration-500"
         style={{ transform: theme === 'dark' ? 'rotate(180deg)' : 'rotate(0deg)' }}
       >
         {theme === 'light' ? (

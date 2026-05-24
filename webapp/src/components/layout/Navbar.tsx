@@ -14,34 +14,38 @@ export default function Navbar() {
   const { pathname } = useLocation()
 
   return (
-    <nav className="sticky top-0 z-50 flex items-center justify-between px-6 h-14 border-b border-border backdrop-blur-md bg-bg-primary/80">
-      <div className="flex items-center gap-6">
-        <Link to="/" className="flex items-center gap-2.5 no-underline">
-          <span className="font-display text-xl text-accent italic">FDE</span>
-          <span className="w-px h-4 bg-border-accent" />
-          <span className="text-xs font-medium text-text-muted hidden sm:inline tracking-wide">Dataset Explorer</span>
-        </Link>
-        <div className="flex items-center gap-0.5">
-          {links.map(l => {
-            const active = l.to === '/' ? pathname === '/' : pathname.startsWith(l.to)
-            return (
-              <Link
-                key={l.to}
-                to={l.to}
-                className={`relative px-3 py-1.5 text-sm font-medium rounded-[var(--radius)] transition-colors duration-[var(--duration-base)] no-underline ${
-                  active ? 'text-text-primary' : 'text-text-muted hover:text-text-secondary'
-                }`}
-              >
-                {l.label}
-                {active && (
-                  <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-accent rounded-full" />
-                )}
-              </Link>
-            )
-          })}
+    <nav className="sticky top-0 z-50 glass border-b border-border">
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-14">
+        <div className="flex items-center gap-8">
+          <Link to="/" className="flex items-center gap-3 no-underline group">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 group-hover:bg-accent/20 transition-colors">
+              <span className="font-display text-sm font-800 text-accent">F</span>
+            </div>
+            <span className="font-display text-sm font-700 text-text-primary tracking-tight hidden sm:block">
+              FDE
+            </span>
+          </Link>
+          <div className="flex items-center gap-1">
+            {links.map(l => {
+              const active = l.to === '/' ? pathname === '/' : pathname.startsWith(l.to)
+              return (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  className={`relative px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 no-underline ${
+                    active
+                      ? 'text-accent bg-accent-subtle'
+                      : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated'
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              )
+            })}
+          </div>
         </div>
+        <ThemeToggle theme={theme} onToggle={toggle} />
       </div>
-      <ThemeToggle theme={theme} onToggle={toggle} />
     </nav>
   )
 }

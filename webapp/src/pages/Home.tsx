@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getStats } from '@/lib/api'
-import Card from '@/components/ui/Card'
-import PageWrapper from '@/components/ui/PageWrapper'
-import GradientDivider from '@/components/ui/GradientDivider'
+import { getStats, getComponents } from '@/lib/api'
+import type { ComponentWithScore } from '@/lib/types'
 import { useInView } from '@/hooks/useInView'
 
 interface Stats {
@@ -13,28 +11,68 @@ interface Stats {
   categories?: Record<string, number>
 }
 
-function AnimatedNumber({ value, suffix }: { value: string; suffix?: string }) {
+function StatBlock({ label, value, suffix, delay = 0 }: { label: string; value: string; suffix?: string; delay?: number }) {
+  const { ref, visible } = useInView()
   return (
-    <span className="font-mono text-3xl font-bold text-text-primary tabular-nums">
-      {value}
-      {suffix && <span className="text-sm font-normal text-text-muted ml-0.5">{suffix}</span>}
-    </span>
+    <div
+      ref={ref}
+      className={`reveal ${visible ? 'visible' : ''}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      <span className="label-caps text-text-muted block mb-2">{label}</span>
+      <span className="font-mono text-4xl font-bold text-text-primary tabular-nums tracking-tight">
+        {value}
+      </span>
+      {suffix && <span className="font-mono text-lg text-text-muted ml-1">{suffix}</span>}
+    </div>
   )
 }
 
-function StatCard({ label, value, suffix, href }: { label: string; value: number | string; suffix?: string; href: string }) {
-  const { ref, visible } = useInView()
+function FeaturedCard({ component, size = 'normal', index = 0 }: {
+  component: ComponentWithScore
+  size?: 'large' | 'normal'
+  index?: number
+}) {
+  const score = component.score?.total ?? component.total
+  const src = `/screenshots/${component.id}-desktop.webp`
+  const isLarge = size === 'large'
+
   return (
-    <Link to={href} className="no-underline">
-      <div
-        ref={ref}
-        className={`reveal ${visible ? 'visible' : ''} group p-5 rounded-[var(--radius-lg)] bg-bg-card border border-border hover:border-border-accent hover:-translate-y-1 transition-all duration-200 cursor-pointer`}
-      >
-        <span className="label-caps text-text-muted">{label}</span>
-        <div className="mt-2">
-          <AnimatedNumber value={String(value)} suffix={suffix} />
+    <Link
+      to={`/components/${component.id}`}
+      className={`card-enter group relative block overflow-hidden rounded-[var(--radius-lg)] border border-border bg-bg-card no-underline ${
+        isLarge ? 'row-span-2' : ''
+      }`}
+      style={{ animationDelay: `${index * 80}ms` }}
+    >
+      <div className="relative overflow-hidden aspect-[4/3]">
+        <img
+          src={src}
+          alt={component.prompt}
+          loading="lazy"
+          className="w-full h-full object-cover object-top transition-all duration-700 ease-out group-hover:scale-[1.05]"
+          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+          <p className="text-white text-sm font-medium line-clamp-2">{component.prompt}</p>
         </div>
-        <div className="h-0.5 bg-accent/20 mt-3 rounded-full group-hover:bg-accent/40 transition-colors" />
+      </div>
+      {score !== undefined && (
+        <div className="absolute top-3 right-3">
+          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-mono font-bold rounded-full backdrop-blur-md ${
+            score >= 7 ? 'bg-score-high/20 text-score-high border border-score-high/30'
+            : score >= 5 ? 'bg-score-mid/20 text-score-mid border border-score-mid/30'
+            : 'bg-score-low/20 text-score-low border border-score-low/30'
+          }`}>
+            {score}/9
+          </span>
+        </div>
+      )}
+      <div className="absolute top-3 left-3">
+        <span className="label-caps px-2 py-1 rounded-md bg-black/40 text-white/70 backdrop-blur-md">
+          {component.category}
+        </span>
       </div>
     </Link>
   )
@@ -42,105 +80,175 @@ function StatCard({ label, value, suffix, href }: { label: string; value: number
 
 export default function Home() {
   const [stats, setStats] = useState<Stats | null>(null)
+  const [featured, setFeatured] = useState<ComponentWithScore[]>([])
 
   useEffect(() => {
     getStats().then(setStats)
+    getComponents({ sort: 'score_desc', limit: 6 }).then(r => setFeatured(r.items))
   }, [])
 
   return (
-    <PageWrapper>
-      {/* Hero */}
-      <div className="relative py-12 mb-10">
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'radial-gradient(ellipse at 50% 0%, var(--accent-glow) 0%, transparent 70%)',
-        }} />
-        <h1 className="font-display text-5xl text-text-display tracking-tight relative">
-          Frontend Design Expert
-        </h1>
-        <p className="text-lg text-text-secondary mt-3 max-w-xl relative">
-          Training dataset explorer for the Qwen3-VL fine-tuned design models
-        </p>
-      </div>
-
-      {stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-12">
-          <StatCard label="Components" value={stats.total_components} href="/components" />
-          <StatCard label="Conversations" value={stats.total_conversations} href="/conversations" />
-          <StatCard label="Avg Score" value={stats.avg_score?.toFixed(1) ?? '—'} suffix="/9" href="/validation" />
+    <div className="page-enter">
+      {/* Hero Section */}
+      <section className="relative px-6 pt-20 pb-16 max-w-7xl mx-auto">
+        <div className="hero-gradient" />
+        <div className="relative">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-accent bg-accent-subtle mb-6">
+            <span className="glow-dot" />
+            <span className="label-caps text-accent">Dataset Explorer</span>
+          </div>
+          <h1 className="font-display text-6xl md:text-7xl font-800 text-text-display leading-[0.95] max-w-3xl">
+            Frontend Design{' '}
+            <span className="text-gradient">Expert</span>
+          </h1>
+          <p className="text-xl text-text-secondary mt-6 max-w-xl font-light leading-relaxed">
+            Browse 500 synthetic UI components generated via teacher-student distillation,
+            scored and critiqued by GPT-5.4.
+          </p>
+          <div className="flex items-center gap-6 mt-8">
+            <Link
+              to="/components"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-[var(--radius)] bg-accent text-[#06080d] font-semibold text-sm no-underline hover:bg-accent-hover transition-colors"
+            >
+              Browse Gallery
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </Link>
+            <Link
+              to="/validation"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-[var(--radius)] border border-border text-text-secondary font-medium text-sm no-underline hover:border-border-accent hover:text-text-primary transition-all"
+            >
+              View Results
+            </Link>
+          </div>
         </div>
+      </section>
+
+      {/* Stats Strip */}
+      {stats && (
+        <section className="border-y border-border bg-bg-secondary/50">
+          <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-3 gap-8">
+            <StatBlock label="Components" value={String(stats.total_components)} delay={0} />
+            <StatBlock label="Conversations" value={String(stats.total_conversations)} delay={100} />
+            <StatBlock label="Avg Score" value={stats.avg_score?.toFixed(1) ?? '—'} suffix="/ 9" delay={200} />
+          </div>
+        </section>
       )}
 
-      <GradientDivider className="mb-10" />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mb-10">
-        <Card>
-          <h2 className="font-display text-lg text-text-display mb-3">About the Dataset</h2>
-          <div className="space-y-2 text-sm text-text-secondary">
-            <p>
-              3,090 training records generated from 500 UI components across 5 temperature variants.
-              Each component goes through a 6-stage pipeline: generate, render, critique, improve, package, evaluate.
-            </p>
-            <p>Fine-tuned models available on HuggingFace:</p>
-            <ul className="list-disc list-inside space-y-1 text-text-muted">
-              <li>8B Expert — 98.1% token accuracy, 0.246 final loss</li>
-              <li>4B Lite — 92.5% token accuracy, 0.325 final loss</li>
-            </ul>
+      {/* Featured Components — Bento Grid */}
+      {featured.length > 0 && (
+        <section className="max-w-7xl mx-auto px-6 py-16">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <span className="label-caps text-accent block mb-2">Featured</span>
+              <h2 className="font-display text-3xl font-700 text-text-display">Top Scoring Components</h2>
+            </div>
+            <Link to="/components" className="label-caps text-text-muted hover:text-accent transition-colors no-underline">
+              View all →
+            </Link>
           </div>
-        </Card>
+          <div className="grid grid-cols-3 gap-4">
+            {featured.map((c, i) => (
+              <FeaturedCard key={c.id} component={c} size={i === 0 ? 'large' : 'normal'} index={i} />
+            ))}
+          </div>
+        </section>
+      )}
 
-        <Card>
-          <h2 className="font-display text-lg text-text-display mb-3">Record Types</h2>
-          <div className="space-y-1.5 text-sm">
+      {/* Info Section */}
+      <section className="border-t border-border">
+        <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div>
+            <span className="label-caps text-accent block mb-3">Pipeline</span>
+            <h2 className="font-display text-2xl font-700 text-text-display mb-4">6-Stage Process</h2>
+            <p className="text-text-secondary leading-relaxed mb-6">
+              Each component passes through generate, render, critique, improve, package, and evaluate —
+              producing 3,090 training records for fine-tuning Qwen3-VL.
+            </p>
+            <div className="space-y-3">
+              {[
+                ['01', 'Generate', 'Qwen3.6-27B creates HTML/CSS from prompts'],
+                ['02', 'Render', 'Playwright captures desktop + mobile screenshots'],
+                ['03', 'Critique', 'GPT-5.4 scores design quality with specifics'],
+                ['04', 'Improve', 'GPT-5.4 rewrites with critique context'],
+                ['05', 'Package', '6 record types per component'],
+                ['06', 'Evaluate', '3-axis scoring (visual, alignment, interactivity)'],
+              ].map(([num, title, desc]) => (
+                <div key={num} className="flex items-start gap-4 group">
+                  <span className="font-mono text-xs text-accent/60 mt-0.5 shrink-0">{num}</span>
+                  <div>
+                    <span className="text-sm font-semibold text-text-primary">{title}</span>
+                    <span className="text-sm text-text-muted ml-2">{desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <span className="label-caps text-accent-warm block mb-3">Results</span>
+            <h2 className="font-display text-2xl font-700 text-text-display mb-4">Validated Behaviors</h2>
+            <div className="rounded-[var(--radius-lg)] border border-border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-bg-elevated/50">
+                    <th className="text-left p-3 label-caps text-text-muted">Test</th>
+                    <th className="text-right p-3 label-caps text-text-muted">Base</th>
+                    <th className="text-right p-3 label-caps text-text-muted">FT 8B</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Qualifying Questions', '1/10', '10/10'],
+                    ['Vision Critique', 'Vague', 'px + hex'],
+                    ['Token Accuracy', '—', '98.1%'],
+                    ['Clean Output', 'Verbose', '0 chars'],
+                  ].map(([test, base, ft], i) => (
+                    <tr key={i} className="border-t border-border-subtle">
+                      <td className="p-3 text-text-primary font-medium">{test}</td>
+                      <td className="p-3 text-right text-text-muted">{base}</td>
+                      <td className="p-3 text-right font-mono font-bold text-score-high">{ft}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-6 flex gap-3">
+              {[
+                ['8B Expert', '0.246 loss', 'bg-accent/10 text-accent border-accent/20'],
+                ['4B Lite', '0.325 loss', 'bg-accent-warm/10 text-accent-warm border-accent-warm/20'],
+              ].map(([name, detail, cls]) => (
+                <div key={name} className={`flex-1 p-4 rounded-[var(--radius)] border ${cls}`}>
+                  <span className="text-sm font-semibold block">{name}</span>
+                  <span className="font-mono text-xs opacity-70">{detail}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Record Types Strip */}
+      <section className="border-t border-border bg-bg-secondary/30">
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <span className="label-caps text-text-muted block mb-6">Record Types</span>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
-              ['prompt_to_html', 'Text prompt → HTML component'],
-              ['screenshot_to_critique', 'Screenshot → design critique'],
-              ['screenshot_to_code', 'Screenshot → HTML code'],
-              ['mobile_to_code', 'Mobile screenshot → HTML'],
-              ['screenshot_html_to_critique', 'Screenshot + HTML → critique'],
-              ['qualifying_conversation', 'Vague request → questions → build'],
-            ].map(([type, desc]) => (
-              <div key={type} className="flex items-start gap-2">
-                <code className="text-xs px-1.5 py-0.5 rounded shrink-0 font-mono bg-bg-secondary text-accent">
-                  {type}
-                </code>
-                <span className="text-text-secondary">{desc}</span>
+              ['prompt_to_html', 'Text → HTML', 'Prompt generates self-contained component'],
+              ['screenshot_to_critique', 'Image → Critique', 'Visual analysis with px-level specifics'],
+              ['screenshot_to_code', 'Image → Code', 'Screenshot reverse-engineered to HTML'],
+              ['mobile_to_code', 'Mobile → Code', 'Mobile viewport screenshot to HTML'],
+              ['screenshot_html_to_critique', 'Image+Code → Critique', 'Combined visual and code analysis'],
+              ['qualifying_conversation', 'Vague → Questions → Build', 'Multi-turn qualifying behavior'],
+            ].map(([type, title, desc]) => (
+              <div key={type} className="p-4 rounded-[var(--radius)] border border-border-subtle hover:border-border-accent transition-colors group">
+                <code className="font-mono text-xs text-accent">{type}</code>
+                <p className="text-sm font-semibold text-text-primary mt-1">{title}</p>
+                <p className="text-xs text-text-muted mt-1">{desc}</p>
               </div>
             ))}
           </div>
-        </Card>
-      </div>
-
-      <Card variant="spotlight">
-        <h2 className="font-display text-lg text-text-display mb-3">Validated Behaviors</h2>
-        <GradientDivider className="mb-4" />
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-2.5 pr-4 label-caps text-text-muted">Test</th>
-                <th className="text-left py-2.5 pr-4 label-caps text-text-muted">Base 8B</th>
-                <th className="text-left py-2.5 pr-4 label-caps text-text-muted">FT 8B</th>
-                <th className="text-left py-2.5 label-caps text-text-muted">FT 4B</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                ['Qualifying questions (10 vague)', '1/10', '10/10', '9/10'],
-                ['Vision critique specificity', 'Vague', 'px + hex + WCAG', 'px + contrast'],
-                ['Token accuracy (training)', '—', '98.1%', '92.5%'],
-                ['Clean HTML output', 'Verbose', '0 wrapper chars', '0 wrapper chars'],
-              ].map(([test, base, ft8, ft4], i) => (
-                <tr key={i} className="border-b border-border-subtle hover:bg-bg-elevated/50 transition-colors">
-                  <td className="py-2.5 pr-4 text-text-primary">{test}</td>
-                  <td className="py-2.5 pr-4 text-text-secondary">{base}</td>
-                  <td className="py-2.5 pr-4 font-medium text-score-high">{ft8}</td>
-                  <td className="py-2.5 font-medium text-score-high">{ft4}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
-      </Card>
-    </PageWrapper>
+      </section>
+    </div>
   )
 }

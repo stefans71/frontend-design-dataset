@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom'
 import { getComponent } from '@/lib/api'
 import type { ComponentWithScore } from '@/lib/types'
 import ComponentDetail from '@/components/ComponentDetail'
-import PageWrapper from '@/components/ui/PageWrapper'
 import Shimmer from '@/components/ui/Shimmer'
 
 export default function ComponentPage() {
@@ -23,40 +22,36 @@ export default function ComponentPage() {
 
   if (loading) {
     return (
-      <PageWrapper>
-        <div className="space-y-4">
-          <Shimmer className="h-8 w-48" />
-          <Shimmer className="h-96" />
-        </div>
-      </PageWrapper>
+      <div className="page-enter max-w-6xl mx-auto px-6 py-8 space-y-4">
+        <Shimmer className="h-8 w-48" />
+        <Shimmer className="h-96" />
+      </div>
     )
   }
 
   if (error || !component) {
     return (
-      <PageWrapper>
-        <div className="flex flex-col items-center justify-center py-20">
-          <p className="text-lg font-medium text-text-muted">Component not found</p>
-          <Link to="/components" className="mt-3 text-sm text-accent no-underline hover:text-accent-hover transition-colors">
-            Back to Gallery
+      <div className="page-enter max-w-6xl mx-auto px-6 py-8">
+        <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border rounded-[var(--radius-xl)]">
+          <p className="font-display text-xl text-text-muted">Component not found</p>
+          <Link to="/components" className="mt-4 text-sm text-accent no-underline hover:text-accent-hover transition-colors">
+            ← Back to Gallery
           </Link>
         </div>
-      </PageWrapper>
+      </div>
     )
   }
 
   return (
-    <PageWrapper>
-      <div className="space-y-5">
-        <div className="flex items-center gap-3">
-          <Link to="/components" className="text-sm text-text-muted no-underline hover:text-accent transition-colors">
-            Gallery
-          </Link>
-          <span className="text-text-muted">/</span>
-          <span className="text-sm font-mono font-medium text-text-primary">{id}</span>
-        </div>
-        <ComponentDetail component={component} />
+    <div className="page-enter max-w-6xl mx-auto px-6 py-8">
+      <div className="flex items-center gap-2 mb-6">
+        <Link to="/components" className="label-caps text-text-muted no-underline hover:text-accent transition-colors">
+          Gallery
+        </Link>
+        <span className="text-text-muted/40">/</span>
+        <span className="label-caps text-accent">{id}</span>
       </div>
-    </PageWrapper>
+      <ComponentDetail component={component} />
+    </div>
   )
 }
