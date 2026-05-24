@@ -7,7 +7,7 @@ import Shimmer from '@/components/ui/Shimmer'
 
 export default function ComponentPage() {
   const { id } = useParams<{ id: string }>()
-  const [component, setComponent] = useState<(ComponentWithScore & { critique?: string }) | null>(null)
+  const [component, setComponent] = useState<(ComponentWithScore & { critique?: string; improved_html?: string }) | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 

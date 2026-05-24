@@ -95,6 +95,14 @@ const server = Bun.serve({
         component.critique = readFileSync(critiquePath, 'utf-8')
       }
 
+      const improvedPath = join(
+        import.meta.dir,
+        `../../output/assets/components/${id}/improved.html`
+      )
+      if (existsSync(improvedPath)) {
+        component.improved_html = readFileSync(improvedPath, 'utf-8')
+      }
+
       component.category = inferCategory(component.prompt as string)
       component.theme = inferTheme(component.prompt as string)
 

@@ -46,7 +46,7 @@ export default function ComponentCard({ component }: { component: ComponentWithS
 
       {/* Zone 3 — Metadata footer */}
       <div className="text-text-muted" style={{ padding: '8px 14px', borderTop: '1px solid var(--border-subtle)', fontSize: 11 }}>
-        {c.category} · {c.theme} · T={c.temperature}
+        Qwen3.6-27B · {c.category} · {c.theme} · T={c.temperature}
       </div>
     </Link>
   )

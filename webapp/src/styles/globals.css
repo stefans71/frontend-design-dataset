@@ -95,12 +95,6 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   background-image:
-    radial-gradient(ellipse at 20% 50%, rgba(249, 115, 22, 0.03) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 20%, rgba(249, 115, 22, 0.02) 0%, transparent 50%);
-}
-
-[data-theme="dark"] body {
-  background-image:
     radial-gradient(ellipse at 20% 50%, rgba(249, 115, 22, 0.04) 0%, transparent 60%),
     radial-gradient(ellipse at 80% 20%, rgba(249, 115, 22, 0.03) 0%, transparent 50%);
 }

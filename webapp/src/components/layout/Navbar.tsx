@@ -23,23 +23,39 @@ export default function Navbar() {
             <span className="text-text-primary" style={{ fontSize: 18, fontWeight: 800 }}>FDE</span>
             <span className="text-text-muted hidden sm:inline" style={{ fontSize: 13, marginLeft: 8 }}>Frontend Design Expert</span>
           </Link>
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center" style={{ gap: 4 }}>
             {links.map(l => {
               const active = l.to === '/' ? pathname === '/' : pathname.startsWith(l.to)
               return (
                 <Link
                   key={l.to}
                   to={l.to}
-                  className={`relative px-3 no-underline transition-colors duration-150`}
+                  className="no-underline transition-colors duration-150"
                   style={{
+                    padding: '8px 12px',
+                    borderRadius: 6,
                     fontSize: 14,
-                    lineHeight: '58px',
                     color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
                     fontWeight: active ? 600 : 400,
-                    borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent',
+                    background: 'transparent',
+                  }}
+                  onMouseEnter={e => {
+                    if (!active) {
+                      e.currentTarget.style.background = 'var(--bg-secondary)'
+                      e.currentTarget.style.color = 'var(--text-primary)'
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!active) {
+                      e.currentTarget.style.background = 'transparent'
+                      e.currentTarget.style.color = 'var(--text-secondary)'
+                    }
                   }}
                 >
                   {l.label}
+                  {active && (
+                    <span style={{ display: 'block', height: 2, background: 'var(--accent)', marginTop: 2, borderRadius: 1 }} />
+                  )}
                 </Link>
               )
             })}
@@ -53,7 +69,7 @@ export default function Navbar() {
             style={{ fontSize: 12, fontWeight: 600 }}
             aria-label="Decrease font size"
           >
-            A-
+            A−
           </button>
           <button
             onClick={increase}
