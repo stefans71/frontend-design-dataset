@@ -128,7 +128,7 @@ export default function Home() {
                       {c.prompt}
                     </p>
                   </div>
-                  <div className="text-text-muted" style={{ padding: '8px 14px', borderTop: '1px solid var(--border-subtle)', fontSize: 11 }}>
+                  <div style={{ padding: '8px 14px', borderTop: '1px solid var(--border-subtle)', fontSize: 11, color: '#22c55e' }}>
                     Qwen3.6-27B · {c.category} · {c.theme} · T={c.temperature}
                   </div>
                 </Link>
