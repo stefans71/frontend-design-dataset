@@ -93,7 +93,7 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
                     </div>
                     <span className="font-mono text-text-muted" style={{ fontSize: 11 }}>component.html</span>
                   </div>
-                  <span className="text-text-muted" style={{ fontSize: 11 }}>Qwen3.6-27B · T={c.temperature}</span>
+                  <span style={{ fontSize: 11, color: '#22c55e' }}>Qwen3.6-27B · T={c.temperature}</span>
                 </div>
                 <iframe
                   srcDoc={c.component_html}
@@ -128,7 +128,7 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
                 </div>
                 <span className="font-mono text-text-muted" style={{ fontSize: 11 }}>critique.md</span>
               </div>
-              <span className="text-text-muted" style={{ fontSize: 11 }}>GPT-5.4 Design Review</span>
+              <span style={{ fontSize: 11, color: '#22c55e' }}>GPT-5.4 Design Review</span>
             </div>
             <div style={{ padding: '20px 24px' }}>
               {c.critique ? (
@@ -155,7 +155,7 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
                     </div>
                     <span className="font-mono text-text-muted" style={{ fontSize: 11 }}>improved.html</span>
                   </div>
-                  <span className="text-text-muted" style={{ fontSize: 11 }}>Rewritten by GPT-5.4</span>
+                  <span style={{ fontSize: 11, color: '#22c55e' }}>Rewritten by GPT-5.4</span>
                 </div>
                 <iframe
                   srcDoc={c.improved_html}
