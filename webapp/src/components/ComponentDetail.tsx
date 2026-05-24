@@ -148,27 +148,47 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
       </div>
 
       <div className="lg:col-span-2 space-y-4">
-        <div className="rounded-lg border border-border bg-bg-card p-5">
-          <span className="section-label block mb-2">Prompt</span>
-          <p className="text-sm leading-relaxed text-text-secondary">{c.prompt}</p>
+        {/* Prompt */}
+        <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '20px 20px 16px' }}>
+          <div className="flex items-center gap-2" style={{ marginBottom: 12 }}>
+            <span className="section-label">Prompt</span>
+            <span className="text-text-muted" style={{ fontSize: 11 }}>·</span>
+            <span className="text-text-muted" style={{ fontSize: 11 }}>{c.id}</span>
+          </div>
+          <div style={{ padding: '14px 16px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius)', border: '1px solid var(--border-subtle)' }}>
+            <p className="text-text-primary" style={{ fontSize: 14, lineHeight: 1.65, margin: 0 }}>
+              {c.prompt}
+            </p>
+          </div>
+          <div className="flex items-center gap-3" style={{ marginTop: 12 }}>
+            <span className="text-text-muted" style={{ fontSize: 11 }}>Qwen3.6-27B</span>
+            <span className="text-text-muted" style={{ fontSize: 11 }}>·</span>
+            <span className="text-text-muted" style={{ fontSize: 11 }}>T={c.temperature}</span>
+            <span className="text-text-muted" style={{ fontSize: 11 }}>·</span>
+            <span className="text-text-muted" style={{ fontSize: 11 }}>{c.run}</span>
+          </div>
         </div>
 
-        <div className="rounded-lg border border-border bg-bg-card p-5">
-          <span className="section-label block mb-3">Score</span>
-          {score !== undefined && (
-            <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border-subtle">
-              <span className="font-mono text-2xl font-bold text-text-primary">{score}</span>
-              <span className="text-text-muted text-sm">/9</span>
-              <span className="ml-auto"><Badge variant={scoreVariant(score)}>{score >= 7 ? 'High' : score >= 5 ? 'Mid' : 'Low'}</Badge></span>
-            </div>
-          )}
+        {/* Score */}
+        <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '20px 20px 12px' }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+            <span className="section-label">Score</span>
+            {score !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-text-primary" style={{ fontSize: 20, fontWeight: 700 }}>{score}</span>
+                <span className="text-text-muted" style={{ fontSize: 13 }}>/9</span>
+                <Badge variant={scoreVariant(score)}>{score >= 7 ? 'High' : score >= 5 ? 'Mid' : 'Low'}</Badge>
+              </div>
+            )}
+          </div>
           {visual !== undefined && <ScoreBar label="Visual" value={visual} max={3} />}
           {alignment !== undefined && <ScoreBar label="Alignment" value={alignment} max={3} />}
           {interactivity !== undefined && <ScoreBar label="Interactivity" value={interactivity} max={3} />}
         </div>
 
-        <div className="rounded-lg border border-border bg-bg-card p-5">
-          <span className="section-label block mb-3">Metadata</span>
+        {/* Metadata */}
+        <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '20px 20px 12px' }}>
+          <span className="section-label block" style={{ marginBottom: 12 }}>Metadata</span>
           <MetaRow label="Category"><Badge>{c.category}</Badge></MetaRow>
           <MetaRow label="Theme"><Badge>{c.theme}</Badge></MetaRow>
           <MetaRow label="Temperature"><span className="font-mono text-sm text-text-primary">{c.temperature}</span></MetaRow>
