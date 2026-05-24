@@ -141,47 +141,79 @@ export default function Validation() {
                 </div>
               </div>
 
-              {/* Expanded critique comparison */}
+              {/* Expanded: images + critiques */}
               {isExpanded && (
                 <div style={{ padding: '0 20px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)' }}>
-                  {/* Critique tab switcher */}
-                  <div className="flex items-center" style={{ gap: 2, borderBottom: '1px solid var(--border)', marginBottom: 16 }}>
-                    {[
-                      { key: 'fine_tuned' as const, label: 'Fine-tuned Critique', score: r.fine_tuned_score },
-                      { key: 'base' as const, label: 'Base Critique', score: r.base_score },
-                    ].map(t => (
-                      <button
-                        key={t.key}
-                        onClick={e => { e.stopPropagation(); setCritiqueTab(t.key) }}
-                        className="cursor-pointer bg-transparent border-0 transition-colors duration-150"
-                        style={{
-                          padding: '8px 14px',
-                          fontSize: 13,
-                          fontWeight: critiqueTab === t.key ? 600 : 400,
-                          color: critiqueTab === t.key ? 'var(--text-primary)' : 'var(--text-muted)',
-                          borderBottom: critiqueTab === t.key ? '2px solid var(--accent)' : '2px solid transparent',
-                          marginBottom: -1,
-                        }}
-                      >
-                        {t.label}
-                        <span className="font-mono ml-2" style={{ fontSize: 11, color: t.score >= 7 ? 'var(--score-high)' : t.score >= 5 ? 'var(--score-mid)' : 'var(--score-low)' }}>
-                          {t.score}/10
+                  {/* Side-by-side screenshots */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+                    <div>
+                      <div className="section-label" style={{ marginBottom: 8 }}>
+                        Base Qwen3-VL-8B · <span className="font-mono">{r.base_score}/10</span>
+                      </div>
+                      <img
+                        src={`/screenshots/validation/base/${r.id}-desktop.webp`}
+                        alt="Base model output"
+                        className="w-full"
+                        style={{ borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                      />
+                    </div>
+                    <div>
+                      <div className="section-label" style={{ marginBottom: 8 }}>
+                        Fine-tuned 8B · <span className="font-mono">{r.fine_tuned_score}/10</span>
+                        <span className="font-mono" style={{ marginLeft: 8, color: r.delta > 0 ? 'var(--score-high)' : r.delta < 0 ? 'var(--score-low)' : 'var(--text-muted)' }}>
+                          {r.delta > 0 ? '+' : ''}{r.delta.toFixed(1)}
                         </span>
-                      </button>
-                    ))}
+                      </div>
+                      <img
+                        src={`/screenshots/validation/fine-tuned/${r.id}-desktop.webp`}
+                        alt="Fine-tuned model output"
+                        className="w-full"
+                        style={{ borderRadius: 'var(--radius)', border: r.delta > 0 ? '1px solid var(--score-high)' : '1px solid var(--border)' }}
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                      />
+                    </div>
                   </div>
 
-                  {/* Critique content */}
-                  <div className="rounded-lg border border-border" style={{ padding: '20px 24px', background: 'var(--bg-primary)' }}>
-                    {critiqueTab === 'fine_tuned' && r.fine_tuned_critique ? (
-                      <CritiquePanel critique={r.fine_tuned_critique} />
-                    ) : critiqueTab === 'base' && r.base_critique ? (
-                      <CritiquePanel critique={r.base_critique} />
-                    ) : (
-                      <p className="text-text-muted" style={{ fontSize: 14, textAlign: 'center', padding: '24px 0' }}>
-                        Critique not available
-                      </p>
-                    )}
+                  {/* Critique tabs below images */}
+                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                    <div className="flex items-center" style={{ gap: 2, borderBottom: '1px solid var(--border)', marginBottom: 16 }}>
+                      {[
+                        { key: 'fine_tuned' as const, label: 'Fine-tuned Critique', score: r.fine_tuned_score },
+                        { key: 'base' as const, label: 'Base Critique', score: r.base_score },
+                      ].map(t => (
+                        <button
+                          key={t.key}
+                          onClick={e => { e.stopPropagation(); setCritiqueTab(t.key) }}
+                          className="cursor-pointer bg-transparent border-0 transition-colors duration-150"
+                          style={{
+                            padding: '8px 14px',
+                            fontSize: 13,
+                            fontWeight: critiqueTab === t.key ? 600 : 400,
+                            color: critiqueTab === t.key ? 'var(--text-primary)' : 'var(--text-muted)',
+                            borderBottom: critiqueTab === t.key ? '2px solid var(--accent)' : '2px solid transparent',
+                            marginBottom: -1,
+                          }}
+                        >
+                          {t.label}
+                          <span className="font-mono ml-2" style={{ fontSize: 11, color: t.score >= 7 ? 'var(--score-high)' : t.score >= 5 ? 'var(--score-mid)' : 'var(--score-low)' }}>
+                            {t.score}/10
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="rounded-lg border border-border" style={{ padding: '20px 24px', background: 'var(--bg-primary)' }}>
+                      {critiqueTab === 'fine_tuned' && r.fine_tuned_critique ? (
+                        <CritiquePanel critique={r.fine_tuned_critique} />
+                      ) : critiqueTab === 'base' && r.base_critique ? (
+                        <CritiquePanel critique={r.base_critique} />
+                      ) : (
+                        <p className="text-text-muted" style={{ fontSize: 14, textAlign: 'center', padding: '24px 0' }}>
+                          Critique not available
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
