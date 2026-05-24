@@ -28,7 +28,7 @@ export default function Conversations() {
   ]
 
   return (
-    <div className="page-enter max-w-6xl mx-auto px-6 py-8">
+    <div className="page-enter page-container py-8">
       <div className="mb-8">
         <span className="label-caps text-accent block mb-2">Traces</span>
         <h1 className="font-display text-3xl font-700 text-text-display">Conversations</h1>

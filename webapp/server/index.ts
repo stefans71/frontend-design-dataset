@@ -49,12 +49,15 @@ const server = Bun.serve({
                       sort === 'score_desc' ? 'e.total DESC' :
                       sort === 'temperature' ? 'c.temperature ASC' : 'e.total DESC'
 
+      const hasPng = url.searchParams.get('hasPng')
+      const pngFilter = hasPng === '1' ? ' AND c.has_desktop_png = 1' : ''
+
       const rows = db.query(`
         SELECT c.id, c.prompt, c.temperature, c.run, c.suffix,
                e.total, e.visual_score, e.alignment_score, e.interactivity_score
         FROM components c
         JOIN eval_scores e ON c.id = e.component_id
-        WHERE e.total BETWEEN ? AND ?
+        WHERE e.total BETWEEN ? AND ?${pngFilter}
         ORDER BY ${orderBy}
         LIMIT ? OFFSET ?
       `).all(minScore, maxScore, limit, page * limit) as Record<string, string | number>[]
@@ -62,7 +65,7 @@ const server = Bun.serve({
       const total = (db.query(`
         SELECT COUNT(*) as n FROM components c
         JOIN eval_scores e ON c.id = e.component_id
-        WHERE e.total BETWEEN ? AND ?
+        WHERE e.total BETWEEN ? AND ?${pngFilter}
       `).get(minScore, maxScore) as Record<string, number>).n
 
       const items = rows

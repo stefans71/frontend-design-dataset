@@ -22,7 +22,7 @@ export default function ComponentPage() {
 
   if (loading) {
     return (
-      <div className="page-enter max-w-6xl mx-auto px-6 py-8 space-y-4">
+      <div className="page-enter page-container py-8 space-y-4">
         <Shimmer className="h-8 w-48" />
         <Shimmer className="h-96" />
       </div>
@@ -31,7 +31,7 @@ export default function ComponentPage() {
 
   if (error || !component) {
     return (
-      <div className="page-enter max-w-6xl mx-auto px-6 py-8">
+      <div className="page-enter page-container py-8">
         <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border rounded-[var(--radius-xl)]">
           <p className="font-display text-xl text-text-muted">Component not found</p>
           <Link to="/components" className="mt-4 text-sm text-accent no-underline hover:text-accent-hover transition-colors">
@@ -43,7 +43,7 @@ export default function ComponentPage() {
   }
 
   return (
-    <div className="page-enter max-w-6xl mx-auto px-6 py-8">
+    <div className="page-enter page-container py-8">
       <div className="flex items-center gap-2 mb-6">
         <Link to="/components" className="label-caps text-text-muted no-underline hover:text-accent transition-colors">
           Gallery

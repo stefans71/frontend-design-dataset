@@ -34,7 +34,7 @@ export default function Navbar() {
                   to={l.to}
                   className={`relative px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 no-underline ${
                     active
-                      ? 'text-accent bg-accent-subtle'
+                      ? 'text-text-primary font-semibold'
                       : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated'
                   }`}
                 >

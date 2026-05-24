@@ -10,6 +10,7 @@ export async function getComponents(params: {
   sort?: string
   page?: number
   limit?: number
+  hasPng?: number
 }): Promise<{ items: ComponentWithScore[]; total: number }> {
   const q = new URLSearchParams()
   Object.entries(params).forEach(([k, v]) => v !== undefined && q.set(k, String(v)))

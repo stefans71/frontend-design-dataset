@@ -30,7 +30,7 @@ export default function Validation() {
 
   if (loading) {
     return (
-      <div className="page-enter max-w-6xl mx-auto px-6 py-8 space-y-4">
+      <div className="page-enter page-container py-8 space-y-4">
         <Shimmer className="h-10 w-64" />
         <div className="grid grid-cols-3 gap-5">
           <Shimmer className="h-24" />
@@ -43,7 +43,7 @@ export default function Validation() {
   }
 
   return (
-    <div className="page-enter max-w-6xl mx-auto px-6 py-8">
+    <div className="page-enter page-container py-8">
       <div className="mb-8">
         <span className="label-caps text-accent block mb-2">Validation</span>
         <h1 className="font-display text-3xl font-700 text-text-display">Model Comparison</h1>

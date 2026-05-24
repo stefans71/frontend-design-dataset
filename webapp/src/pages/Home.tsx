@@ -84,20 +84,20 @@ export default function Home() {
 
   useEffect(() => {
     getStats().then(setStats)
-    getComponents({ sort: 'score_desc', limit: 6 }).then(r => setFeatured(r.items))
+    getComponents({ sort: 'score_desc', limit: 6, hasPng: 1 }).then(r => setFeatured(r.items))
   }, [])
 
   return (
     <div className="page-enter">
       {/* Hero Section */}
-      <section className="relative px-6 pt-20 pb-16 max-w-7xl mx-auto">
+      <section className="relative pt-12 pb-8">
         <div className="hero-gradient" />
-        <div className="relative">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-accent bg-accent-subtle mb-6">
-            <span className="glow-dot" />
-            <span className="label-caps text-accent">Dataset Explorer</span>
+        <div className="page-container relative">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-bg-elevated mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-text-muted" />
+            <span style={{ fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: "'Space Mono', monospace" }} className="text-text-muted">Dataset Explorer</span>
           </div>
-          <h1 className="font-display text-6xl md:text-7xl font-800 text-text-display leading-[0.95] max-w-3xl">
+          <h1 className="font-display font-800 text-text-display leading-[0.95] max-w-3xl" style={{ fontSize: 'clamp(28px, 4vw, 48px)' }}>
             Frontend Design{' '}
             <span className="text-gradient">Expert</span>
           </h1>
@@ -123,10 +123,11 @@ export default function Home() {
         </div>
       </section>
 
+
       {/* Stats Strip */}
       {stats && (
-        <section className="border-y border-border bg-bg-secondary/50">
-          <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-3 gap-8">
+        <section className="border-y border-border bg-bg-secondary/50 py-6">
+          <div className="page-container grid grid-cols-3 gap-8 items-start">
             <StatBlock label="Components" value={String(stats.total_components)} delay={0} />
             <StatBlock label="Conversations" value={String(stats.total_conversations)} delay={100} />
             <StatBlock label="Avg Score" value={stats.avg_score?.toFixed(1) ?? '—'} suffix="/ 9" delay={200} />
@@ -136,27 +137,29 @@ export default function Home() {
 
       {/* Featured Components — Bento Grid */}
       {featured.length > 0 && (
-        <section className="max-w-7xl mx-auto px-6 py-16">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <span className="label-caps text-accent block mb-2">Featured</span>
-              <h2 className="font-display text-3xl font-700 text-text-display">Top Scoring Components</h2>
+        <section className="py-16">
+          <div className="page-container">
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <span className="label-caps text-accent block mb-2">Featured</span>
+                <h2 className="font-display text-3xl font-700 text-text-display">Top Scoring Components</h2>
+              </div>
+              <Link to="/components" className="label-caps text-text-muted hover:text-accent transition-colors no-underline">
+                View all →
+              </Link>
             </div>
-            <Link to="/components" className="label-caps text-text-muted hover:text-accent transition-colors no-underline">
-              View all →
-            </Link>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            {featured.map((c, i) => (
-              <FeaturedCard key={c.id} component={c} size={i === 0 ? 'large' : 'normal'} index={i} />
-            ))}
+            <div className="grid grid-cols-3 gap-4">
+              {featured.map((c, i) => (
+                <FeaturedCard key={c.id} component={c} size={i === 0 ? 'large' : 'normal'} index={i} />
+              ))}
+            </div>
           </div>
         </section>
       )}
 
       {/* Info Section */}
       <section className="border-t border-border">
-        <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className="page-container py-16 grid grid-cols-1 md:grid-cols-2 gap-12" style={{ columnGap: '48px' }}>
           <div>
             <span className="label-caps text-accent block mb-3">Pipeline</span>
             <h2 className="font-display text-2xl font-700 text-text-display mb-4">6-Stage Process</h2>
@@ -229,9 +232,9 @@ export default function Home() {
 
       {/* Record Types Strip */}
       <section className="border-t border-border bg-bg-secondary/30">
-        <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="page-container py-12">
           <span className="label-caps text-text-muted block mb-6">Record Types</span>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4" style={{ gap: '16px' }}>
             {[
               ['prompt_to_html', 'Text → HTML', 'Prompt generates self-contained component'],
               ['screenshot_to_critique', 'Image → Critique', 'Visual analysis with px-level specifics'],
@@ -240,7 +243,7 @@ export default function Home() {
               ['screenshot_html_to_critique', 'Image+Code → Critique', 'Combined visual and code analysis'],
               ['qualifying_conversation', 'Vague → Questions → Build', 'Multi-turn qualifying behavior'],
             ].map(([type, title, desc]) => (
-              <div key={type} className="p-4 rounded-[var(--radius)] border border-border-subtle hover:border-border-accent transition-colors group">
+              <div key={type} className="p-4 rounded-[var(--radius)] border border-border-subtle hover:border-border-accent transition-colors group flex flex-col min-h-[100px]">
                 <code className="font-mono text-xs text-accent">{type}</code>
                 <p className="text-sm font-semibold text-text-primary mt-1">{title}</p>
                 <p className="text-xs text-text-muted mt-1">{desc}</p>

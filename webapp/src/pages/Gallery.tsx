@@ -31,7 +31,7 @@ export default function Gallery() {
   const gridClass = cols === 2 ? 'grid-cols-2' : cols === 3 ? 'grid-cols-3' : 'grid-cols-4'
 
   return (
-    <div className="page-enter max-w-7xl mx-auto px-6 py-8">
+    <div className="page-enter page-container py-8">
       <div className="flex items-end justify-between mb-8">
         <div>
           <span className="label-caps text-accent block mb-2">Gallery</span>
