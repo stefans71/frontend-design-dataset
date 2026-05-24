@@ -32,15 +32,15 @@ export default function Gallery() {
 
   return (
     <div className="page-container" style={{ paddingTop: 32, paddingBottom: 48 }}>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between" style={{ marginBottom: 24 }}>
         <div>
-          <h1 className="font-semibold text-text-primary" style={{ fontSize: 20 }}>Components</h1>
-          <p className="text-sm text-text-muted mt-0.5">{total} items</p>
+          <h1 className="text-text-primary" style={{ fontSize: 20, fontWeight: 600 }}>Components</h1>
+          <p className="text-text-muted" style={{ fontSize: 13, marginTop: 2 }}>{total} items</p>
         </div>
         <GridControl cols={cols} onChange={setCols} />
       </div>
 
-      <div className="flex gap-8">
+      <div className="flex" style={{ gap: 32 }}>
         <FilterSidebar
           filters={filters}
           onChange={f => { setFilters(f); setPage(0) }}
@@ -54,9 +54,9 @@ export default function Gallery() {
               ))}
             </div>
           ) : items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 border border-dashed border-border rounded-lg">
+            <div className="flex flex-col items-center justify-center" style={{ padding: '80px 0', border: '1px dashed var(--border)', borderRadius: 'var(--radius)' }}>
               <p className="text-text-muted" style={{ fontSize: 16 }}>No components found</p>
-              <p className="text-sm text-text-muted mt-1">Try adjusting your filters</p>
+              <p className="text-text-muted" style={{ fontSize: 14, marginTop: 4 }}>Try adjusting your filters</p>
             </div>
           ) : (
             <>
@@ -67,11 +67,12 @@ export default function Gallery() {
               </div>
 
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-1 mt-8">
+                <div className="flex items-center justify-center gap-1" style={{ marginTop: 32 }}>
                   <button
                     onClick={() => setPage(p => Math.max(0, p - 1))}
                     disabled={page === 0}
-                    className="px-2.5 py-1.5 text-sm rounded-md border border-border text-text-secondary hover:bg-bg-elevated transition-colors duration-150 disabled:opacity-25 cursor-pointer disabled:cursor-default"
+                    className="cursor-pointer disabled:cursor-default disabled:opacity-25 transition-colors duration-150"
+                    style={{ padding: '6px 10px', fontSize: 14, borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)' }}
                   >
                     ←
                   </button>
@@ -85,11 +86,16 @@ export default function Gallery() {
                       <button
                         key={pageNum}
                         onClick={() => setPage(pageNum)}
-                        className={`w-8 h-8 text-sm font-mono rounded-md cursor-pointer transition-colors duration-150 ${
-                          page === pageNum
-                            ? 'bg-bg-elevated text-text-primary font-medium border border-border'
-                            : 'text-text-muted hover:text-text-primary border border-transparent'
-                        }`}
+                        className="font-mono cursor-pointer transition-colors duration-150"
+                        style={{
+                          width: 32, height: 32,
+                          fontSize: 13,
+                          borderRadius: 'var(--radius)',
+                          border: page === pageNum ? '1px solid var(--accent)' : '1px solid transparent',
+                          background: page === pageNum ? 'var(--accent)' : 'transparent',
+                          color: page === pageNum ? '#fff' : 'var(--text-muted)',
+                          fontWeight: page === pageNum ? 600 : 400,
+                        }}
                       >
                         {pageNum + 1}
                       </button>
@@ -98,7 +104,8 @@ export default function Gallery() {
                   <button
                     onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                     disabled={page >= totalPages - 1}
-                    className="px-2.5 py-1.5 text-sm rounded-md border border-border text-text-secondary hover:bg-bg-elevated transition-colors duration-150 disabled:opacity-25 cursor-pointer disabled:cursor-default"
+                    className="cursor-pointer disabled:cursor-default disabled:opacity-25 transition-colors duration-150"
+                    style={{ padding: '6px 10px', fontSize: 14, borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)' }}
                   >
                     →
                   </button>

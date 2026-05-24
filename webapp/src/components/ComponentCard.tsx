@@ -1,11 +1,10 @@
 import { Link } from 'react-router-dom'
 import type { ComponentWithScore } from '@/lib/types'
-import Badge from '@/components/ui/Badge'
 
-function scoreVariant(score: number) {
-  if (score >= 7) return 'score-high' as const
-  if (score >= 5) return 'score-mid' as const
-  return 'score-low' as const
+function scoreColor(score: number) {
+  if (score >= 7) return 'bg-score-high/80 text-white'
+  if (score >= 5) return 'bg-score-mid/80 text-white'
+  return 'bg-score-low/80 text-white'
 }
 
 export default function ComponentCard({ component }: { component: ComponentWithScore; index?: number }) {
@@ -15,29 +14,39 @@ export default function ComponentCard({ component }: { component: ComponentWithS
   return (
     <Link
       to={`/components/${c.id}`}
-      className="block rounded-lg border border-border bg-bg-card overflow-hidden no-underline hover:border-text-muted transition-colors duration-150"
+      className="block overflow-hidden no-underline bg-bg-card transition-all duration-150 hover:-translate-y-0.5"
+      style={{ borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
     >
-      <div className="aspect-[4/3] bg-bg-secondary overflow-hidden">
+      {/* Zone 1 — Screenshot */}
+      <div className="relative overflow-hidden" style={{ aspectRatio: '4/3' }}>
         <img
           src={`/screenshots/${c.id}-desktop.webp`}
           alt={c.prompt}
           loading="lazy"
           className="w-full h-full object-cover object-top"
+          style={{ backgroundColor: 'var(--bg-secondary)' }}
           onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
         />
+        {score !== undefined && (
+          <span className={`absolute font-mono ${scoreColor(score)}`} style={{ top: 8, right: 8, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, backdropFilter: 'blur(4px)' }}>
+            {score}/9
+          </span>
+        )}
+        <span className="absolute text-white/80" style={{ top: 8, left: 8, fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 6, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
+          {c.category}
+        </span>
       </div>
-      <div className="p-3">
-        <p className="text-sm text-text-primary line-clamp-2 leading-snug">{c.prompt}</p>
-        <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-          <Badge>{c.category}</Badge>
-          <span className="text-xs text-text-muted">{c.theme}</span>
-          <span className="font-mono text-xs text-text-muted">T={c.temperature}</span>
-          {score !== undefined && (
-            <span className="ml-auto">
-              <Badge variant={scoreVariant(score)}>{score}/9</Badge>
-            </span>
-          )}
-        </div>
+
+      {/* Zone 2 — Prompt */}
+      <div style={{ padding: '12px 14px' }}>
+        <p className="text-text-primary" style={{ fontSize: 13, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {c.prompt}
+        </p>
+      </div>
+
+      {/* Zone 3 — Metadata footer */}
+      <div className="text-text-muted" style={{ padding: '8px 14px', borderTop: '1px solid var(--border-subtle)', fontSize: 11 }}>
+        {c.category} · {c.theme} · T={c.temperature}
       </div>
     </Link>
   )

@@ -38,17 +38,21 @@ function FilterGroup<T extends string>({ label, options, value, onSelect }: {
 }) {
   return (
     <div>
-      <span className="section-label block mb-2">{label}</span>
+      <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}>{label}</span>
       <div className="space-y-0.5">
         {options.map(o => (
           <button
             key={o.value}
             onClick={() => onSelect(o.value)}
-            className={`w-full text-left px-2.5 py-1.5 text-sm rounded-md cursor-pointer transition-colors duration-150 ${
-              value === o.value
-                ? 'text-text-primary font-medium bg-bg-elevated'
-                : 'text-text-secondary hover:text-text-primary'
-            }`}
+            className="w-full text-left cursor-pointer transition-colors duration-150 bg-transparent border-0"
+            style={{
+              padding: '6px 10px',
+              fontSize: 14,
+              borderRadius: 4,
+              color: value === o.value ? 'var(--text-primary)' : 'var(--text-secondary)',
+              fontWeight: value === o.value ? 500 : 400,
+              borderLeft: value === o.value ? '2px solid var(--accent)' : '2px solid transparent',
+            }}
           >
             {o.label}
           </button>
@@ -65,34 +69,37 @@ export default function FilterSidebar({ filters, onChange }: { filters: FilterSt
   const hasActiveFilters = filters.category !== 'all' || filters.theme !== 'all' || filters.minScore > 0 || filters.maxScore < 9
 
   return (
-    <aside className="shrink-0 space-y-5" style={{ width: 200 }}>
+    <aside className="shrink-0 space-y-5" style={{ width: 240 }}>
       <FilterGroup label="Category" options={categories} value={filters.category} onSelect={v => set('category', v)} />
       <FilterGroup label="Theme" options={themes} value={filters.theme} onSelect={v => set('theme', v)} />
       <FilterGroup label="Sort" options={sorts} value={filters.sort} onSelect={v => set('sort', v)} />
       <div>
-        <span className="section-label block mb-2">Score Range</span>
+        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}>Score Range</span>
         <div className="flex items-center gap-2">
           <input
             type="number"
             min={0} max={9}
             value={filters.minScore}
             onChange={e => set('minScore', Number(e.target.value))}
-            className="w-14 px-2 py-1.5 text-sm font-mono rounded-md border border-border bg-bg-card text-text-primary text-center focus:outline-none focus:border-text-muted transition-colors"
+            className="font-mono text-text-primary bg-bg-card text-center focus:outline-none transition-colors"
+            style={{ width: 56, height: 32, fontSize: 14, borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
           />
-          <span className="text-xs text-text-muted">—</span>
+          <span className="text-text-muted" style={{ fontSize: 12 }}>—</span>
           <input
             type="number"
             min={0} max={9}
             value={filters.maxScore}
             onChange={e => set('maxScore', Number(e.target.value))}
-            className="w-14 px-2 py-1.5 text-sm font-mono rounded-md border border-border bg-bg-card text-text-primary text-center focus:outline-none focus:border-text-muted transition-colors"
+            className="font-mono text-text-primary bg-bg-card text-center focus:outline-none transition-colors"
+            style={{ width: 56, height: 32, fontSize: 14, borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
           />
         </div>
       </div>
       {hasActiveFilters && (
         <button
           onClick={() => onChange({ category: 'all', theme: 'all', sort: 'score_desc', minScore: 0, maxScore: 9 })}
-          className="text-xs text-text-muted hover:text-text-secondary cursor-pointer transition-colors duration-150"
+          className="cursor-pointer transition-colors duration-150 bg-transparent border-0"
+          style={{ fontSize: 12, color: 'var(--text-muted)' }}
         >
           Reset filters
         </button>
