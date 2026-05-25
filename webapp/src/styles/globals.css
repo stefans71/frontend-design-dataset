@@ -155,6 +155,8 @@ body {
 
   .validation-stats-grid { grid-template-columns: 1fr 1fr !important; }
   .validation-expanded-grid { grid-template-columns: 1fr !important; }
+  .validation-nav-prompt { display: none; }
+  .validation-nav-scores { display: none; }
   .prompt-text { max-width: 180px; }
 
   h1 { font-size: clamp(24px, 6vw, 36px) !important; }
