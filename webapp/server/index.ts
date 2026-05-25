@@ -27,7 +27,17 @@ function inferCategory(prompt: string): string {
   // Marketing
   if (p.includes('hero section') || p.includes('cta section') || p.includes('call-to-action') ||
       p.includes('testimonial') || p.includes('landing page') || p.includes('marketing page') ||
-      p.includes('feature section') || p.includes('pricing page') || p.includes('announcement')) return 'marketing'
+      p.includes('feature section') || p.includes('pricing page') || p.includes('announcement') ||
+      p.includes('newsletter') || p.includes('email signup') || p.includes('waitlist') ||
+      p.includes('cta') || p.includes('start for free') || p.includes('get started') ||
+      p.includes('hero') || p.includes('above the fold')) return 'marketing'
+
+  // Misc UI components — not forms
+  if (p.includes('modal') || p.includes('dialog') || p.includes('toolbar') ||
+      p.includes('pagination') || p.includes('command palette') ||
+      p.includes('button states') || p.includes('floating action') ||
+      p.includes('toast') || p.includes('notification') || p.includes('badge') ||
+      p.includes('tooltip') || p.includes('popover')) return 'misc'
 
   // Forms — careful with 'sign'
   if (p.includes('login form') || p.includes('login page') ||
@@ -36,10 +46,8 @@ function inferCategory(prompt: string): string {
       p.includes('registration') || p.includes('checkout') || p.includes('payment form') ||
       p.includes('contact form') || p.includes('search bar') || p.includes('search input') ||
       p.includes('onboarding') || p.includes('2fa') || p.includes('authentication') ||
-      p.includes('modal') || p.includes('dialog') || p.includes('toolbar') ||
-      p.includes('command palette') || p.includes('pagination') || p.includes('upload') ||
-      p.includes('rich text') || p.includes('text editor') || p.includes('button states') ||
-      p.includes('input field') || p.includes('form field') || p.includes('wizard')) return 'form'
+      p.includes('upload') || p.includes('input field') || p.includes('form field') ||
+      p.includes('wizard')) return 'form'
 
   // Cards
   if (p.includes('pricing card') || p.includes('product card') || p.includes('profile card') ||
@@ -49,7 +57,7 @@ function inferCategory(prompt: string): string {
   // Looser catches — order matters
   if (p.includes('table') || p.includes('list view') || p.includes('data grid')) return 'data_display'
   if (p.includes('card') || p.includes('product') || p.includes('profile') || p.includes('pricing')) return 'card'
-  if (p.includes('form') || p.includes('input') || p.includes('button') || p.includes('filter')) return 'form'
+  if (p.includes('form') || p.includes('input') || p.includes('filter')) return 'form'
   if (p.includes('menu') || p.includes('navigation')) return 'navbar'
 
   return 'misc'
