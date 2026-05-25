@@ -54,11 +54,19 @@ export default function Validation() {
         <h2 style={{ fontSize: 18, fontWeight: 400, color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.4 }}>
           Base Qwen3-VL-8B vs Fine-Tuned — same 10 prompts, same hardware, scored by GPT-5.4
         </h2>
-        <p style={{ fontSize: 14, color: 'var(--text-muted)', maxWidth: 640, lineHeight: 1.6 }}>
-          Both models generated HTML components independently from the same prompts used in training.
-          GPT-5.4 scored each output using the same design critique rubric — visual hierarchy, spacing,
-          color fidelity, and prompt adherence.
-        </p>
+        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {[
+            { icon: '⚡', text: 'Same 10 prompts fed to both models independently' },
+            { icon: '🎯', text: 'GPT-5.4 scored each output — visual hierarchy, spacing, color fidelity, prompt adherence' },
+            { icon: '🔬', text: 'Same critique rubric used during training — true apples-to-apples comparison' },
+            { icon: '💻', text: 'Same hardware — RTX 3080 Ti 12GB, Q4_K_M quantization' },
+          ].map((item, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              <span style={{ fontSize: 13, marginTop: 1, flexShrink: 0 }}>{item.icon}</span>
+              <span>{item.text}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Summary stats */}
@@ -82,7 +90,10 @@ export default function Validation() {
 
       {/* Results */}
       <div style={{ marginBottom: 16 }}>
-        <span className="section-label block" style={{ marginBottom: 12 }}>Results by Component</span>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'default', marginBottom: 12 }}>
+          <span>↓</span>
+          <span>Click any row to see side-by-side screenshots and critique</span>
+        </div>
       </div>
 
       <div className="rounded-lg border border-border overflow-hidden">
