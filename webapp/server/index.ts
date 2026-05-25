@@ -7,12 +7,12 @@ const db = new Database(DB_PATH)
 
 function inferCategory(prompt: string): string {
   const p = prompt.toLowerCase()
-  if (p.includes('form') || p.includes('login') || p.includes('signup') || p.includes('checkout')) return 'form'
-  if (p.includes('nav') || p.includes('menu') || p.includes('sidebar')) return 'navbar'
-  if (p.includes('card') || p.includes('pricing') || p.includes('product') || p.includes('profile')) return 'card'
-  if (p.includes('mobile') || p.includes('bottom') || p.includes('tab bar')) return 'mobile'
-  if (p.includes('table') || p.includes('chart') || p.includes('dashboard') || p.includes('stat')) return 'data_display'
-  if (p.includes('cta') || p.includes('hero') || p.includes('testimonial') || p.includes('marketing')) return 'marketing'
+  if (p.includes('login') || p.includes('signup') || p.includes('sign up') || p.includes('register') || p.includes('checkout') || p.includes('payment') || p.includes('form') || p.includes('input')) return 'form'
+  if (p.includes('sidebar') || p.includes('navbar') || p.includes('navigation') || p.includes('nav bar') || p.includes('menu') || p.includes('breadcrumb')) return 'navbar'
+  if (p.includes('mobile') || p.includes('bottom sheet') || p.includes('tab bar') || p.includes('bottom nav') || p.includes('swipe')) return 'mobile'
+  if (p.includes('table') || p.includes('chart') || p.includes('graph') || p.includes('dashboard') || p.includes('stat') || p.includes('metric') || p.includes('analytics') || p.includes('invoice') || p.includes('report')) return 'data_display'
+  if (p.includes('landing') || p.includes('hero') || p.includes('cta') || p.includes('call to action') || p.includes('testimonial') || p.includes('pricing') || p.includes('feature') || p.includes('marketing') || p.includes('newsletter') || p.includes('banner') || p.includes('announcement')) return 'marketing'
+  if (p.includes('card') || p.includes('product') || p.includes('profile') || p.includes('avatar') || p.includes('badge') || p.includes('tag') || p.includes('chip')) return 'card'
   return 'misc'
 }
 
