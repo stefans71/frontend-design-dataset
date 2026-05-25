@@ -23,11 +23,15 @@ export default function Home() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'start' }}>
           {/* Left column */}
           <div>
-            <span className="section-label block" style={{ marginBottom: 16 }}>FINE-TUNED MODEL</span>
-            <h1 style={{ fontSize: 52, fontWeight: 800, lineHeight: 1.08, letterSpacing: '-0.03em' }}>
-              <span className="text-text-primary">Qwen3-VL-8B</span><br />
-              <span className="text-text-secondary">Fine-Tuned on</span><br />
-              <span className="text-text-secondary">GPT-5.4 Critiques</span>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#2dd4bf', marginBottom: 12 }}>
+              FINE-TUNED MODEL
+            </div>
+            <h1 style={{ fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: 8 }}>
+              Qwen3-VL-8B
+              <br />
+              <span style={{ color: 'var(--text-secondary)' }}>Fine-Tuned on </span>
+              <span style={{ color: '#2dd4bf' }}>GPT-5.4</span>
+              <span style={{ color: 'var(--text-secondary)' }}> Critiques</span>
             </h1>
 
             {/* Training data table */}
@@ -81,8 +85,8 @@ export default function Home() {
               </a>
               <Link
                 to="/components"
-                className="inline-flex items-center no-underline text-text-secondary hover:text-text-primary transition-colors duration-150"
-                style={{ padding: '10px 16px', fontSize: 14, fontWeight: 500 }}
+                className="inline-flex items-center no-underline transition-colors duration-150"
+                style={{ padding: '10px 20px', border: '1px solid #2dd4bf', color: '#2dd4bf', borderRadius: 'var(--radius)', fontSize: 14, fontWeight: 500 }}
               >
                 Browse Training Data →
               </Link>
@@ -121,8 +125,8 @@ export default function Home() {
             </div>
             {/* Fine-tuned model panel */}
             <div>
-              <div className="flex items-center gap-2" style={{ padding: '10px 14px', background: '#0a0a0a', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#22c55e', marginLeft: 24 }}>
+              <div className="flex items-center gap-2" style={{ padding: '10px 14px', background: '#0a0a0a', borderTop: '2px solid #2dd4bf', borderBottom: '1px solid var(--border)' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#2dd4bf', marginLeft: 24 }}>
                   FRONTEND DESIGN EXPERT (FINE-TUNED)
                 </span>
               </div>
@@ -132,20 +136,20 @@ export default function Home() {
                   <span className="text-text-secondary">"Build me a website for my dog daycare called Stay Fit"</span>
                 </div>
                 <div style={{ marginBottom: 4 }}>
-                  <span style={{ color: '#22c55e' }}>assistant:</span>{' '}
+                  <span style={{ color: '#2dd4bf' }}>assistant:</span>{' '}
                   <span className="text-text-secondary">I'd love to help! A few questions first:</span>
                 </div>
                 <div className="text-text-secondary">
-                  <span className="text-accent" style={{ fontWeight: 600 }}>1.</span> What services do you offer — boarding, grooming, training?
+                  <span style={{ color: '#2dd4bf', fontWeight: 600 }}>1.</span> What services do you offer — boarding, grooming, training?
                 </div>
                 <div className="text-text-secondary">
-                  <span className="text-accent" style={{ fontWeight: 600 }}>2.</span> Do you have brand colors or a logo to match?
+                  <span style={{ color: '#2dd4bf', fontWeight: 600 }}>2.</span> Do you have brand colors or a logo to match?
                 </div>
                 <div className="text-text-secondary">
-                  <span className="text-accent" style={{ fontWeight: 600 }}>3.</span> Should visitors be able to book appointments online?
+                  <span style={{ color: '#2dd4bf', fontWeight: 600 }}>3.</span> Should visitors be able to book appointments online?
                 </div>
                 <div className="text-text-secondary">
-                  <span className="text-accent" style={{ fontWeight: 600 }}>4.</span> What tone — playful and fun, or professional and clean?
+                  <span style={{ color: '#2dd4bf', fontWeight: 600 }}>4.</span> What tone — playful and fun, or professional and clean?
                 </div>
               </div>
             </div>
@@ -157,10 +161,10 @@ export default function Home() {
       <section style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
         <div className="page-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', padding: '24px 0' }}>
           {[
-            { label: 'QUALIFYING QUESTIONS', value: '1/10', arrow: '→', value2: '10/10', sub: 'base → fine-tuned' },
-            { label: 'AVG SCORE DELTA', value: '+1.0', sub: '/ 10 points' },
-            { label: 'TRAINING RECORDS', value: '3,090', sub: 'component + conversation' },
-            { label: 'LICENSE', value: 'Apache 2.0', sub: 'weights + dataset' },
+            { label: 'QUALIFYING QUESTIONS', sub: 'base → fine-tuned', custom: true },
+            { label: 'AVG SCORE DELTA', value: '+1.0', color: '#4ade80', sub: '/ 10 points' },
+            { label: 'TRAINING RECORDS', value: '3,090', color: 'var(--accent)', sub: 'component + conversation' },
+            { label: 'LICENSE', value: 'Apache 2.0', color: 'var(--text-primary)', sub: 'weights + dataset' },
           ].map((stat, i) => (
             <div
               key={i}
@@ -174,14 +178,14 @@ export default function Home() {
                 {stat.label}
               </span>
               <div style={{ marginTop: 8 }}>
-                {stat.arrow ? (
+                {'custom' in stat && stat.custom ? (
                   <span className="font-mono" style={{ fontSize: 28, fontWeight: 700 }}>
-                    <span className="text-text-muted">{stat.value}</span>
-                    <span className="text-text-muted" style={{ fontSize: 16, margin: '0 6px' }}>{stat.arrow}</span>
-                    <span className="text-accent">{stat.value2}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>1/10</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 16, margin: '0 6px' }}>→</span>
+                    <span style={{ color: '#2dd4bf', fontWeight: 800 }}>10/10</span>
                   </span>
                 ) : (
-                  <span className="font-mono text-accent" style={{ fontSize: 28, fontWeight: 700 }}>{stat.value}</span>
+                  <span className="font-mono" style={{ fontSize: 28, fontWeight: 800, color: stat.color }}>{stat.value}</span>
                 )}
               </div>
               <span className="text-text-muted" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>{stat.sub}</span>
