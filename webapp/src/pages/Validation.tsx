@@ -45,15 +45,19 @@ export default function Validation() {
     <div className="page-container" style={{ paddingTop: 32, paddingBottom: 64 }}>
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
-        <span className="section-label block" style={{ marginBottom: 8 }}>VALIDATION · FINE-TUNED MODEL</span>
-        <h1 className="text-text-primary" style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.2 }}>
-          Base vs Fine-Tuned<br />
-          <span className="text-text-secondary">Qwen3-VL-8B</span>
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12 }}>
+          VALIDATION · FINE-TUNED MODEL
+        </div>
+        <h1 className="text-text-primary" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, marginBottom: 8 }}>
+          Does fine-tuning actually improve output?
         </h1>
-        <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.6, marginTop: 8, maxWidth: 560 }}>
-          Same 10 prompts. Both models generated HTML components independently.
-          GPT-5.4 scored each output using the same design critique rubric used during training
-          — measuring visual hierarchy, spacing, color fidelity, and prompt adherence.
+        <h2 style={{ fontSize: 18, fontWeight: 400, color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.4 }}>
+          Base Qwen3-VL-8B vs Fine-Tuned — same 10 prompts, same hardware, scored by GPT-5.4
+        </h2>
+        <p style={{ fontSize: 14, color: 'var(--text-muted)', maxWidth: 640, lineHeight: 1.6 }}>
+          Both models generated HTML components independently from the same prompts used in training.
+          GPT-5.4 scored each output using the same design critique rubric — visual hierarchy, spacing,
+          color fidelity, and prompt adherence.
         </p>
       </div>
 
@@ -118,10 +122,10 @@ export default function Validation() {
                     {isExpanded ? '▾' : '▸'}
                   </span>
                   <div style={{ minWidth: 0 }}>
-                    <div className="font-mono text-text-muted" style={{ fontSize: 11, marginBottom: 2 }}>
+                    <div className="font-mono text-text-muted" style={{ fontSize: 11, marginBottom: 4 }}>
                       {r.component_id || r.id}
                     </div>
-                    <div className="text-text-primary" style={{ fontSize: 13, maxWidth: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 14, color: 'var(--accent)', fontWeight: 500, maxWidth: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {r.prompt || r.id}
                     </div>
                   </div>
@@ -150,8 +154,11 @@ export default function Validation() {
                   {/* Side-by-side screenshots */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
                     <div>
-                      <div className="section-label" style={{ marginBottom: 8 }}>
-                        Base Qwen3-VL-8B · <span className="font-mono">{r.base_score}/10</span>
+                      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        Base Qwen3-VL-8B
+                        <span style={{ padding: '2px 8px', background: 'var(--bg-primary)', borderRadius: 4, fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
+                          {r.base_score}/10
+                        </span>
                       </div>
                       <img
                         src={`/screenshots/validation/base/${r.id}-desktop.webp`}
@@ -162,10 +169,23 @@ export default function Validation() {
                       />
                     </div>
                     <div>
-                      <div className="section-label" style={{ marginBottom: 8 }}>
-                        Fine-tuned 8B · <span className="font-mono">{r.fine_tuned_score}/10</span>
-                        <span className="font-mono" style={{ marginLeft: 8, color: r.delta > 0 ? 'var(--score-high)' : r.delta < 0 ? 'var(--score-low)' : 'var(--text-muted)' }}>
-                          {r.delta > 0 ? '+' : ''}{r.delta.toFixed(1)}
+                      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        Fine-Tuned 8B
+                        <span style={{
+                          padding: '2px 8px',
+                          background: r.delta > 0 ? 'rgba(74, 222, 128, 0.1)' : 'var(--bg-primary)',
+                          border: r.delta > 0 ? '1px solid rgba(74, 222, 128, 0.3)' : 'none',
+                          borderRadius: 4,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: r.delta > 0 ? 'var(--score-high)' : r.delta < 0 ? 'var(--score-low)' : 'var(--text-secondary)',
+                        }}>
+                          {r.fine_tuned_score}/10
+                          {r.delta !== 0 && (
+                            <span style={{ marginLeft: 4 }}>
+                              {r.delta > 0 ? '+' : ''}{r.delta.toFixed(1)}
+                            </span>
+                          )}
                         </span>
                       </div>
                       <img
