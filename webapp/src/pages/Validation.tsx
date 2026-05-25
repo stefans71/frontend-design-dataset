@@ -29,8 +29,8 @@ export default function Validation() {
 
   const openRow = (i: number) => { setAnchorRow(i); setActiveIndex(i); setCritiqueTab('fine_tuned') }
   const closeRow = () => { setAnchorRow(null); setActiveIndex(null) }
-  const handlePrev = () => { if (activeIndex !== null && activeIndex > 0) { setActiveIndex(activeIndex - 1); setCritiqueTab('fine_tuned') } }
-  const handleNext = () => { if (activeIndex !== null && activeIndex < results.length - 1) { setActiveIndex(activeIndex + 1); setCritiqueTab('fine_tuned') } }
+  const handlePrev = () => { if (activeIndex !== null && activeIndex > 0) { const n = activeIndex - 1; setActiveIndex(n); setAnchorRow(n); setCritiqueTab('fine_tuned') } }
+  const handleNext = () => { if (activeIndex !== null && activeIndex < results.length - 1) { const n = activeIndex + 1; setActiveIndex(n); setAnchorRow(n); setCritiqueTab('fine_tuned') } }
 
   useEffect(() => {
     getValidationResults()
@@ -192,6 +192,19 @@ export default function Validation() {
                     →
                   </button>
                 </div>
+
+                <button
+                  onClick={closeRow}
+                  style={{
+                    padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius)', color: 'var(--text-muted)', cursor: 'pointer',
+                    fontSize: 14, lineHeight: 1, transition: 'all 150ms',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+                >
+                  ✕
+                </button>
               </div>
             </div>
           )
