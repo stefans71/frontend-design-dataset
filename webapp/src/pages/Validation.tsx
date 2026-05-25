@@ -115,14 +115,65 @@ export default function Validation() {
       </div>
 
       <div className="rounded-lg border border-border overflow-hidden">
-        {/* Table header */}
-        <div className="bg-bg-secondary" style={{ display: 'grid', gridTemplateColumns: '1fr 100px 80px 80px 70px', padding: '10px 20px', borderBottom: '1px solid var(--border)' }}>
-          <span className="section-label">Prompt</span>
-          <span className="section-label text-center">Category</span>
-          <span className="section-label text-center">Base 8B</span>
-          <span className="section-label text-center">FT 8B</span>
-          <span className="section-label text-right">Delta</span>
-        </div>
+        {/* Table header — swaps to nav bar when expanded */}
+        {activeIndex !== null ? (() => {
+          const ar = results[activeIndex]
+          return (
+            <div className="bg-bg-secondary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', borderBottom: '1px solid var(--border)', position: 'sticky', top: 60, zIndex: 10 }}>
+              <button
+                onClick={handlePrev}
+                disabled={activeIndex === 0}
+                className="cursor-pointer disabled:cursor-default"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                  fontSize: 12, fontWeight: 500,
+                  color: activeIndex === 0 ? 'var(--text-muted)' : 'var(--text-primary)',
+                  opacity: activeIndex === 0 ? 0.4 : 1,
+                }}
+              >
+                ←
+              </button>
+              <div className="flex items-center gap-4" style={{ minWidth: 0, flex: 1, justifyContent: 'center' }}>
+                <span className="font-mono text-text-muted" style={{ fontSize: 11 }}>{ar.component_id || ar.id}</span>
+                <span className="text-text-primary" style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {ar.prompt || ar.id}
+                </span>
+                <Badge>{ar.category}</Badge>
+                <span className="font-mono text-text-secondary" style={{ fontSize: 12 }}>{ar.base_score}</span>
+                <span className="font-mono font-semibold" style={{ fontSize: 12, color: ar.fine_tuned_score >= 7 ? 'var(--score-high)' : ar.fine_tuned_score >= 5 ? 'var(--score-mid)' : 'var(--score-low)' }}>
+                  {ar.fine_tuned_score}
+                </span>
+                <span className={`font-mono font-semibold ${ar.delta >= 0 ? 'text-score-high' : 'text-score-low'}`} style={{ fontSize: 12 }}>
+                  {ar.delta >= 0 ? '+' : ''}{ar.delta.toFixed(1)}
+                </span>
+                <span className="text-text-muted" style={{ fontSize: 11 }}>{activeIndex + 1}/{results.length}</span>
+              </div>
+              <button
+                onClick={handleNext}
+                disabled={activeIndex === results.length - 1}
+                className="cursor-pointer disabled:cursor-default"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                  fontSize: 12, fontWeight: 500,
+                  color: activeIndex === results.length - 1 ? 'var(--text-muted)' : 'var(--text-primary)',
+                  opacity: activeIndex === results.length - 1 ? 0.4 : 1,
+                }}
+              >
+                →
+              </button>
+            </div>
+          )
+        })() : (
+          <div className="bg-bg-secondary" style={{ display: 'grid', gridTemplateColumns: '1fr 100px 80px 80px 70px', padding: '10px 20px', borderBottom: '1px solid var(--border)' }}>
+            <span className="section-label">Prompt</span>
+            <span className="section-label text-center">Category</span>
+            <span className="section-label text-center">Base 8B</span>
+            <span className="section-label text-center">FT 8B</span>
+            <span className="section-label text-right">Delta</span>
+          </div>
+        )}
 
         {/* Rows */}
         {results.map((r, i) => {
@@ -179,44 +230,7 @@ export default function Validation() {
               {isAnchor && activeIndex !== null && (() => {
                 const ar = results[activeIndex]
                 return (
-                <div style={{ padding: '0 20px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)' }}>
-                  {/* Prev/Next navigation */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                    <button
-                      onClick={e => { e.stopPropagation(); handlePrev() }}
-                      disabled={activeIndex === 0}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 6,
-                        padding: '8px 14px',
-                        background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-                        color: activeIndex === 0 ? 'var(--text-muted)' : 'var(--text-primary)',
-                        cursor: activeIndex === 0 ? 'not-allowed' : 'pointer',
-                        fontSize: 13, fontWeight: 500,
-                        opacity: activeIndex === 0 ? 0.4 : 1,
-                      }}
-                    >
-                      ← Previous
-                    </button>
-                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                      {activeIndex + 1} of {results.length}
-                    </span>
-                    <button
-                      onClick={e => { e.stopPropagation(); handleNext() }}
-                      disabled={activeIndex === results.length - 1}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 6,
-                        padding: '8px 14px',
-                        background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-                        color: activeIndex === results.length - 1 ? 'var(--text-muted)' : 'var(--text-primary)',
-                        cursor: activeIndex === results.length - 1 ? 'not-allowed' : 'pointer',
-                        fontSize: 13, fontWeight: 500,
-                        opacity: activeIndex === results.length - 1 ? 0.4 : 1,
-                      }}
-                    >
-                      Next →
-                    </button>
-                  </div>
-
+                <div style={{ padding: '16px 20px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)' }}>
                   {/* Side-by-side screenshots */}
                   <div className="validation-expanded-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
                     <div>
