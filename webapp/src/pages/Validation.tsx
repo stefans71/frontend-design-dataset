@@ -27,10 +27,19 @@ export default function Validation() {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [critiqueTab, setCritiqueTab] = useState<'fine_tuned' | 'base'>('fine_tuned')
 
+  const scrollToRow = (i: number) => {
+    setTimeout(() => {
+      const el = document.querySelector(`[data-row="${i}"]`)
+      if (el) {
+        const top = el.getBoundingClientRect().top + window.scrollY - 80
+        window.scrollTo({ top, behavior: 'smooth' })
+      }
+    }, 50)
+  }
   const openRow = (i: number) => { setAnchorRow(i); setActiveIndex(i); setCritiqueTab('fine_tuned') }
   const closeRow = () => { setAnchorRow(null); setActiveIndex(null) }
-  const handlePrev = () => { if (activeIndex !== null && activeIndex > 0) { const n = activeIndex - 1; setActiveIndex(n); setAnchorRow(n); setCritiqueTab('fine_tuned') } }
-  const handleNext = () => { if (activeIndex !== null && activeIndex < results.length - 1) { const n = activeIndex + 1; setActiveIndex(n); setAnchorRow(n); setCritiqueTab('fine_tuned') } }
+  const handlePrev = () => { if (activeIndex !== null && activeIndex > 0) { const n = activeIndex - 1; setActiveIndex(n); setAnchorRow(n); setCritiqueTab('fine_tuned'); scrollToRow(n) } }
+  const handleNext = () => { if (activeIndex !== null && activeIndex < results.length - 1) { const n = activeIndex + 1; setActiveIndex(n); setAnchorRow(n); setCritiqueTab('fine_tuned'); scrollToRow(n) } }
 
   useEffect(() => {
     getValidationResults()
@@ -114,7 +123,7 @@ export default function Validation() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-border overflow-hidden">
+      <div className="rounded-lg border border-border" style={{ overflow: 'clip' }}>
         {/* Table header — swaps to nav bar when expanded */}
         {activeIndex !== null ? (() => {
           const ar = results[activeIndex]
@@ -223,7 +232,7 @@ export default function Validation() {
           const isAnchor = anchorRow === i
           const isActive = activeIndex === i
           return (
-            <div key={r.id}>
+            <div key={r.id} data-row={i}>
               <div
                 onClick={() => isAnchor ? closeRow() : openRow(i)}
                 className="cursor-pointer transition-colors duration-100"
