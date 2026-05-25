@@ -19,16 +19,16 @@ export default function Home() {
   return (
     <div>
       {/* SECTION 1 — HERO */}
-      <section className="page-container" style={{ paddingTop: 64, paddingBottom: 56 }}>
+      <section className="page-container" style={{ paddingTop: 64, paddingBottom: 32 }}>
         <div className="hero-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'start' }}>
           {/* Left column */}
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#2dd4bf', marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12 }}>
               FINE-TUNED MODEL
             </div>
-            <h1 className="hero-title" style={{ fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: 8 }}>
+            <h1 className="hero-title" style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.02em', marginBottom: 8 }}>
               <span style={{
-                background: 'linear-gradient(135deg, #f97316 0%, #2dd4bf 100%)',
+                background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -36,9 +36,9 @@ export default function Home() {
                 Qwen3-VL-8B
               </span>
               <br />
-              <span style={{ color: 'var(--text-secondary)' }}>Fine-Tuned on </span>
-              <span style={{ color: '#fff' }}>GPT-5.4</span>
-              <span style={{ color: 'var(--text-secondary)' }}> Critiques</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Fine-Tuned on{' '}
+                <span style={{ color: '#2dd4bf', whiteSpace: 'nowrap' }}>GPT-5.4</span>{' '}Critiques
+              </span>
             </h1>
 
             {/* Training data table */}
@@ -93,7 +93,7 @@ export default function Home() {
               <Link
                 to="/components"
                 className="inline-flex items-center no-underline transition-colors duration-150"
-                style={{ padding: '10px 20px', border: '1px solid #2dd4bf', color: '#2dd4bf', borderRadius: 'var(--radius)', fontSize: 14, fontWeight: 500 }}
+                style={{ fontSize: 14, color: '#2dd4bf', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, padding: '10px 4px' }}
               >
                 Browse Training Data →
               </Link>
@@ -101,7 +101,11 @@ export default function Home() {
           </div>
 
           {/* Right column — Terminal demo */}
-          <div className="hero-terminal" style={{ borderRadius: 'var(--radius)', overflow: 'hidden', border: '1px solid var(--border)' }}>
+          <div className="hero-terminal">
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12 }}>
+              WHY IT MATTERS
+            </div>
+          <div style={{ borderRadius: 'var(--radius)', overflow: 'hidden', border: '1px solid var(--border)' }}>
             {/* Base model panel */}
             <div>
               <div className="flex items-center gap-2" style={{ padding: '10px 14px', background: '#0a0a0a', borderBottom: '1px solid var(--border)' }}>
@@ -161,6 +165,7 @@ export default function Home() {
               </div>
             </div>
           </div>
+          </div>
         </div>
       </section>
 
@@ -168,10 +173,10 @@ export default function Home() {
       <section style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
         <div className="page-container stats-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', padding: '24px 0' }}>
           {[
-            { label: 'QUALIFYING QUESTIONS', sub: 'base → fine-tuned', custom: true },
+            { label: 'QUALIFYING QUESTIONS', sub: 'qualifying questions', custom: true },
             { label: 'AVG SCORE DELTA', value: '+1.0', color: '#4ade80', sub: '/ 10 points' },
-            { label: 'TRAINING RECORDS', value: '3,090', color: 'var(--accent)', sub: 'component + conversation' },
-            { label: 'LICENSE', value: 'Apache 2.0', color: 'var(--text-primary)', sub: 'weights + dataset' },
+            { label: 'TRAINING RECORDS', value: '3,090', color: 'var(--accent)', sub: 'training records' },
+            { label: 'LICENSE', value: 'Apache 2.0', color: 'var(--text-primary)', sub: 'open source' },
           ].map((stat, i) => (
             <div
               key={i}
