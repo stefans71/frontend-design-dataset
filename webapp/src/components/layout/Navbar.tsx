@@ -21,9 +21,9 @@ export default function Navbar() {
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center no-underline">
             <span className="text-text-primary" style={{ fontSize: 18, fontWeight: 800 }}>FDE</span>
-            <span className="text-text-muted hidden sm:inline" style={{ fontSize: 13, marginLeft: 8 }}>Frontend Design Expert</span>
+            <span className="text-text-muted hidden sm:inline navbar-brand-subtitle" style={{ fontSize: 13, marginLeft: 8 }}>Frontend Design Expert</span>
           </Link>
-          <div className="flex items-center" style={{ gap: 4 }}>
+          <div className="flex items-center navbar-links" style={{ gap: 4 }}>
             {links.map(l => {
               const active = l.to === '/' ? pathname === '/' : pathname.startsWith(l.to)
               return (
@@ -61,7 +61,7 @@ export default function Navbar() {
             })}
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 navbar-controls">
           <button
             onClick={decrease}
             disabled={size === 'sm'}

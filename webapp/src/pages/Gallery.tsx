@@ -37,10 +37,10 @@ export default function Gallery() {
           <h1 className="text-text-primary" style={{ fontSize: 20, fontWeight: 600 }}>Components</h1>
           <p className="text-text-muted" style={{ fontSize: 13, marginTop: 2 }}>{total} items</p>
         </div>
-        <GridControl cols={cols} onChange={setCols} />
+        <div className="grid-control"><GridControl cols={cols} onChange={setCols} /></div>
       </div>
 
-      <div className="flex" style={{ gap: 32 }}>
+      <div className="flex gallery-layout" style={{ gap: 32 }}>
         <FilterSidebar
           filters={filters}
           onChange={f => { setFilters(f); setPage(0) }}
@@ -60,7 +60,7 @@ export default function Gallery() {
             </div>
           ) : (
             <>
-              <div className={`grid ${gridClass}`} style={{ gap: 16 }}>
+              <div className={`grid ${gridClass} gallery-grid`} style={{ gap: 16 }}>
                 {items.map((c, i) => (
                   <ComponentCard key={c.id} component={c} index={i} />
                 ))}

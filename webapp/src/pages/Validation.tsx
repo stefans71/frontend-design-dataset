@@ -70,7 +70,7 @@ export default function Validation() {
       </div>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: 12, marginBottom: 32 }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 validation-stats-grid" style={{ gap: 12, marginBottom: 32 }}>
         <StatCard label="BASE MODEL" sublabel="First-pass avg" value="4.5" suffix="/10" />
         <StatCard label="FINE-TUNED 8B" sublabel="First-pass avg" value="5.5" suffix="/10" />
         <StatCard
@@ -136,7 +136,7 @@ export default function Validation() {
                     <div className="font-mono text-text-muted" style={{ fontSize: 11, marginBottom: 4 }}>
                       {r.component_id || r.id}
                     </div>
-                    <div style={{ fontSize: 14, color: 'var(--accent)', fontWeight: 500, maxWidth: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div className="prompt-text" style={{ fontSize: 14, color: 'var(--accent)', fontWeight: 500, maxWidth: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {r.prompt || r.id}
                     </div>
                   </div>
@@ -163,7 +163,7 @@ export default function Validation() {
               {isExpanded && (
                 <div style={{ padding: '0 20px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)' }}>
                   {/* Side-by-side screenshots */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+                  <div className="validation-expanded-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
                     <div>
                       <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                         Base Qwen3-VL-8B

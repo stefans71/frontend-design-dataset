@@ -20,14 +20,21 @@ export default function Home() {
     <div>
       {/* SECTION 1 — HERO */}
       <section className="page-container" style={{ paddingTop: 64, paddingBottom: 56 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'start' }}>
+        <div className="hero-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'start' }}>
           {/* Left column */}
           <div>
             <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#2dd4bf', marginBottom: 12 }}>
               FINE-TUNED MODEL
             </div>
-            <h1 style={{ fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: 8 }}>
-              Qwen3-VL-8B
+            <h1 className="hero-title" style={{ fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: 8 }}>
+              <span style={{
+                background: 'linear-gradient(135deg, #f97316 0%, #2dd4bf 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}>
+                Qwen3-VL-8B
+              </span>
               <br />
               <span style={{ color: 'var(--text-secondary)' }}>Fine-Tuned on </span>
               <span style={{ color: '#2dd4bf' }}>GPT-5.4</span>
@@ -64,7 +71,7 @@ export default function Home() {
             </div>
 
             {/* Buttons */}
-            <div className="flex items-center gap-3" style={{ marginTop: 24 }}>
+            <div className="flex items-center gap-3 hero-buttons" style={{ marginTop: 24 }}>
               <a
                 href="https://huggingface.co/stefans71/frontend-design-expert-8b"
                 target="_blank"
@@ -94,7 +101,7 @@ export default function Home() {
           </div>
 
           {/* Right column — Terminal demo */}
-          <div style={{ borderRadius: 'var(--radius)', overflow: 'hidden', border: '1px solid var(--border)' }}>
+          <div className="hero-terminal" style={{ borderRadius: 'var(--radius)', overflow: 'hidden', border: '1px solid var(--border)' }}>
             {/* Base model panel */}
             <div>
               <div className="flex items-center gap-2" style={{ padding: '10px 14px', background: '#0a0a0a', borderBottom: '1px solid var(--border)' }}>
@@ -159,7 +166,7 @@ export default function Home() {
 
       {/* SECTION 2 — STATS ROW */}
       <section style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
-        <div className="page-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', padding: '24px 0' }}>
+        <div className="page-container stats-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', padding: '24px 0' }}>
           {[
             { label: 'QUALIFYING QUESTIONS', sub: 'base → fine-tuned', custom: true },
             { label: 'AVG SCORE DELTA', value: '+1.0', color: '#4ade80', sub: '/ 10 points' },
@@ -204,7 +211,7 @@ export default function Home() {
           GPT-5.4 taught a smaller model expert design reasoning through structured critique and improvement examples.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 16, marginTop: 32 }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 how-it-works-grid" style={{ gap: 16, marginTop: 32 }}>
           {[
             {
               step: '01',
@@ -295,7 +302,7 @@ export default function Home() {
               and improved rewrites. This is the dataset, not fine-tuned model output.
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: 16, marginTop: 32 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 featured-grid" style={{ gap: 16, marginTop: 32 }}>
               {featured.map(c => {
                 const score = c.score?.total ?? c.total
                 return (
@@ -357,7 +364,7 @@ export default function Home() {
             Run locally on consumer hardware
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 16, marginTop: 32 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 download-grid" style={{ gap: 16, marginTop: 32 }}>
             {/* 8B Expert card */}
             <div style={{
               border: '1px solid var(--accent)',

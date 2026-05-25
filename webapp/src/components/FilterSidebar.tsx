@@ -69,7 +69,7 @@ export default function FilterSidebar({ filters, onChange }: { filters: FilterSt
   const hasActiveFilters = filters.category !== 'all' || filters.theme !== 'all' || filters.minScore > 0 || filters.maxScore < 9
 
   return (
-    <aside className="shrink-0 space-y-5" style={{ width: 240 }}>
+    <aside className="shrink-0 space-y-5 gallery-sidebar" style={{ width: 240 }}>
       <FilterGroup label="Category" options={categories} value={filters.category} onSelect={v => set('category', v)} />
       <FilterGroup label="Theme" options={themes} value={filters.theme} onSelect={v => set('theme', v)} />
       <FilterGroup label="Sort" options={sorts} value={filters.sort} onSelect={v => set('sort', v)} />

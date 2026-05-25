@@ -56,7 +56,7 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
   ]
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 component-detail-layout">
       <div className="lg:col-span-3 space-y-4">
         {/* Tab switcher */}
         <div className="flex items-center" style={{ gap: 2, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
