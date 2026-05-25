@@ -79,20 +79,30 @@ export default function Validation() {
         <h1 className="text-text-primary" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, marginBottom: 8 }}>
           Does fine-tuning actually improve output?
         </h1>
-        <h2 style={{ fontSize: 18, fontWeight: 400, color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.4 }}>
+        <div style={{ fontSize: 16, marginBottom: 16, lineHeight: 1.6, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
           <span style={{
-            background: 'linear-gradient(90deg, #f97316 0%, #f97316 20%, #2dd4bf 80%, #2dd4bf 100%)',
+            background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text', fontWeight: 600,
+            backgroundClip: 'text', fontWeight: 800, fontSize: 18,
           }}>Qwen3-VL-8B</span>
-          {' '}Base vs{' '}
           <span style={{
-            background: 'linear-gradient(90deg, #f97316 0%, #f97316 20%, #2dd4bf 80%, #2dd4bf 100%)',
+            padding: '2px 10px', background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+            borderRadius: 99, fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em',
+          }}>BASE</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>vs</span>
+          <span style={{
+            background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text', fontWeight: 600,
+            backgroundClip: 'text', fontWeight: 800, fontSize: 18,
           }}>Qwen3-VL-8B</span>
-          {' '}Fine-Tuned — same 10 prompts, same hardware, scored by GPT-5.4
-        </h2>
+          <span style={{
+            padding: '2px 10px', background: 'rgba(45, 212, 191, 0.1)', border: '1px solid rgba(45, 212, 191, 0.3)',
+            borderRadius: 99, fontSize: 12, fontWeight: 600, color: '#2dd4bf', letterSpacing: '0.05em',
+          }}>FINE-TUNED</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>
+            — same 10 prompts, same hardware, scored by GPT-5.4
+          </span>
+        </div>
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[
             { Icon: Zap, text: 'Same 10 prompts fed to both models independently' },
