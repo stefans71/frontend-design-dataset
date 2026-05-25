@@ -26,20 +26,20 @@ export default function Home() {
             <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12 }}>
               FINE-TUNED MODEL
             </div>
-            <h1 className="hero-title" style={{ fontSize: 'clamp(24px, 3.5vw, 44px)', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.02em', marginBottom: 8 }}>
+            <h1 className="hero-title" style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800, lineHeight: 1.2, letterSpacing: '-0.02em', marginBottom: 8 }}>
               <span style={{
-                background: 'linear-gradient(90deg, #f97316 0%, #fb923c 100%)',
+                background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
+                display: 'block',
               }}>
                 Qwen3-VL-8B
               </span>
-              <br />
-              <span style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                Fine-Tuned on{' '}
+              <span style={{ color: 'var(--text-secondary)', display: 'block' }}>
+                Fine-Tuned on
               </span>
-              <span style={{ color: '#ffffff', whiteSpace: 'nowrap' }}>
+              <span style={{ color: '#ffffff', display: 'block' }}>
                 GPT-5.4 Critiques
               </span>
             </h1>

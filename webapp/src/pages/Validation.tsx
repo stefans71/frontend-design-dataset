@@ -23,7 +23,7 @@ function StatCard({ label, sublabel, value, suffix, variant }: { label: string; 
 export default function Validation() {
   const [results, setResults] = useState<ValidationResult[]>([])
   const [loading, setLoading] = useState(true)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [critiqueTab, setCritiqueTab] = useState<'fine_tuned' | 'base'>('fine_tuned')
 
   useEffect(() => {
@@ -31,6 +31,25 @@ export default function Validation() {
       .then(setResults)
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (expandedIndex === null) return
+      if (e.key === 'ArrowRight' && expandedIndex < results.length - 1) {
+        setExpandedIndex(expandedIndex + 1)
+        setCritiqueTab('fine_tuned')
+      }
+      if (e.key === 'ArrowLeft' && expandedIndex > 0) {
+        setExpandedIndex(expandedIndex - 1)
+        setCritiqueTab('fine_tuned')
+      }
+      if (e.key === 'Escape') {
+        setExpandedIndex(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [expandedIndex, results.length])
 
   if (loading) {
     return (
@@ -109,12 +128,12 @@ export default function Validation() {
 
         {/* Rows */}
         {results.map((r, i) => {
-          const isExpanded = expandedId === r.id
+          const isExpanded = expandedIndex === i
           return (
             <div key={r.id}>
               <div
                 onClick={() => {
-                  setExpandedId(isExpanded ? null : r.id)
+                  setExpandedIndex(isExpanded ? null : i)
                   setCritiqueTab('fine_tuned')
                 }}
                 className="cursor-pointer transition-colors duration-100"
@@ -163,6 +182,43 @@ export default function Validation() {
               {/* Expanded: images + critiques */}
               {isExpanded && (
                 <div style={{ padding: '0 20px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)' }}>
+                  {/* Prev/Next navigation */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <button
+                      onClick={e => { e.stopPropagation(); setExpandedIndex(i > 0 ? i - 1 : i); setCritiqueTab('fine_tuned') }}
+                      disabled={i === 0}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '8px 14px',
+                        background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                        color: i === 0 ? 'var(--text-muted)' : 'var(--text-primary)',
+                        cursor: i === 0 ? 'not-allowed' : 'pointer',
+                        fontSize: 13, fontWeight: 500,
+                        opacity: i === 0 ? 0.4 : 1,
+                      }}
+                    >
+                      ← Previous
+                    </button>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      {i + 1} of {results.length}
+                    </span>
+                    <button
+                      onClick={e => { e.stopPropagation(); setExpandedIndex(i < results.length - 1 ? i + 1 : i); setCritiqueTab('fine_tuned') }}
+                      disabled={i === results.length - 1}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '8px 14px',
+                        background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                        color: i === results.length - 1 ? 'var(--text-muted)' : 'var(--text-primary)',
+                        cursor: i === results.length - 1 ? 'not-allowed' : 'pointer',
+                        fontSize: 13, fontWeight: 500,
+                        opacity: i === results.length - 1 ? 0.4 : 1,
+                      }}
+                    >
+                      Next →
+                    </button>
+                  </div>
+
                   {/* Side-by-side screenshots */}
                   <div className="validation-expanded-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
                     <div>
@@ -210,9 +266,14 @@ export default function Validation() {
                     </div>
                   </div>
 
-                  {/* Critique tabs below images */}
+                  {/* Critique pill tabs */}
                   <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
-                    <div className="flex items-center" style={{ gap: 2, borderBottom: '1px solid var(--border)', marginBottom: 16 }}>
+                    <div style={{
+                      display: 'flex', gap: 4, padding: 4,
+                      background: 'var(--bg-secondary)', borderRadius: 'var(--radius)',
+                      width: 'fit-content', marginBottom: 16,
+                      border: '1px solid var(--border)',
+                    }}>
                       {[
                         { key: 'fine_tuned' as const, label: 'Fine-tuned Critique', score: r.fine_tuned_score },
                         { key: 'base' as const, label: 'Base Critique', score: r.base_score },
@@ -220,18 +281,27 @@ export default function Validation() {
                         <button
                           key={t.key}
                           onClick={e => { e.stopPropagation(); setCritiqueTab(t.key) }}
-                          className="cursor-pointer bg-transparent border-0 transition-colors duration-150"
                           style={{
-                            padding: '8px 14px',
-                            fontSize: 13,
-                            fontWeight: critiqueTab === t.key ? 600 : 400,
+                            padding: '6px 14px',
+                            borderRadius: 'calc(var(--radius) - 2px)',
+                            border: 'none', cursor: 'pointer',
+                            fontSize: 13, fontWeight: 500,
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            transition: 'all 150ms',
+                            background: critiqueTab === t.key ? 'var(--bg-card)' : 'transparent',
                             color: critiqueTab === t.key ? 'var(--text-primary)' : 'var(--text-muted)',
-                            borderBottom: critiqueTab === t.key ? '2px solid var(--accent)' : '2px solid transparent',
-                            marginBottom: -1,
+                            boxShadow: critiqueTab === t.key ? 'var(--shadow-sm)' : 'none',
                           }}
                         >
                           {t.label}
-                          <span className="font-mono ml-2" style={{ fontSize: 11, color: t.score >= 7 ? 'var(--score-high)' : t.score >= 5 ? 'var(--score-mid)' : 'var(--score-low)' }}>
+                          <span style={{
+                            padding: '2px 7px', borderRadius: 99, fontSize: 11, fontWeight: 700,
+                            background: critiqueTab === t.key
+                              ? t.key === 'fine_tuned' ? 'rgba(74, 222, 128, 0.15)' : 'rgba(156, 163, 175, 0.15)'
+                              : 'transparent',
+                            color: t.key === 'fine_tuned' ? 'var(--score-high)' : 'var(--text-muted)',
+                            border: `1px solid ${t.key === 'fine_tuned' ? 'rgba(74,222,128,0.3)' : 'var(--border)'}`,
+                          }}>
                             {t.score}/10
                           </span>
                         </button>
