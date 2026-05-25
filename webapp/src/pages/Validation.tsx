@@ -80,7 +80,18 @@ export default function Validation() {
           Does fine-tuning actually improve output?
         </h1>
         <h2 style={{ fontSize: 18, fontWeight: 400, color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.4 }}>
-          Base Qwen3-VL-8B vs Fine-Tuned — same 10 prompts, same hardware, scored by GPT-5.4
+          <span style={{
+            background: 'linear-gradient(90deg, #f97316 0%, #f97316 20%, #2dd4bf 80%, #2dd4bf 100%)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text', fontWeight: 600,
+          }}>Qwen3-VL-8B</span>
+          {' '}Base vs{' '}
+          <span style={{
+            background: 'linear-gradient(90deg, #f97316 0%, #f97316 20%, #2dd4bf 80%, #2dd4bf 100%)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text', fontWeight: 600,
+          }}>Qwen3-VL-8B</span>
+          {' '}Fine-Tuned — same 10 prompts, same hardware, scored by GPT-5.4
         </h2>
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[
