@@ -23,8 +23,14 @@ function StatCard({ label, sublabel, value, suffix, variant }: { label: string; 
 export default function Validation() {
   const [results, setResults] = useState<ValidationResult[]>([])
   const [loading, setLoading] = useState(true)
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
+  const [anchorRow, setAnchorRow] = useState<number | null>(null)
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [critiqueTab, setCritiqueTab] = useState<'fine_tuned' | 'base'>('fine_tuned')
+
+  const openRow = (i: number) => { setAnchorRow(i); setActiveIndex(i); setCritiqueTab('fine_tuned') }
+  const closeRow = () => { setAnchorRow(null); setActiveIndex(null) }
+  const handlePrev = () => { if (activeIndex !== null && activeIndex > 0) { setActiveIndex(activeIndex - 1); setCritiqueTab('fine_tuned') } }
+  const handleNext = () => { if (activeIndex !== null && activeIndex < results.length - 1) { setActiveIndex(activeIndex + 1); setCritiqueTab('fine_tuned') } }
 
   useEffect(() => {
     getValidationResults()
@@ -34,22 +40,14 @@ export default function Validation() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (expandedIndex === null) return
-      if (e.key === 'ArrowRight' && expandedIndex < results.length - 1) {
-        setExpandedIndex(expandedIndex + 1)
-        setCritiqueTab('fine_tuned')
-      }
-      if (e.key === 'ArrowLeft' && expandedIndex > 0) {
-        setExpandedIndex(expandedIndex - 1)
-        setCritiqueTab('fine_tuned')
-      }
-      if (e.key === 'Escape') {
-        setExpandedIndex(null)
-      }
+      if (activeIndex === null) return
+      if (e.key === 'ArrowRight') handleNext()
+      if (e.key === 'ArrowLeft') handlePrev()
+      if (e.key === 'Escape') closeRow()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [expandedIndex, results.length])
+  }, [activeIndex, results.length])
 
   if (loading) {
     return (
@@ -128,29 +126,27 @@ export default function Validation() {
 
         {/* Rows */}
         {results.map((r, i) => {
-          const isExpanded = expandedIndex === i
+          const isAnchor = anchorRow === i
+          const isActive = activeIndex === i
           return (
             <div key={r.id}>
               <div
-                onClick={() => {
-                  setExpandedIndex(isExpanded ? null : i)
-                  setCritiqueTab('fine_tuned')
-                }}
+                onClick={() => isAnchor ? closeRow() : openRow(i)}
                 className="cursor-pointer transition-colors duration-100"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr 100px 80px 80px 70px',
                   padding: '12px 20px',
                   alignItems: 'center',
-                  borderBottom: isExpanded ? 'none' : '1px solid var(--border-subtle)',
-                  background: isExpanded ? 'var(--bg-secondary)' : i % 2 === 0 ? 'transparent' : 'var(--bg-card)',
+                  borderBottom: isAnchor ? 'none' : '1px solid var(--border-subtle)',
+                  background: isActive ? 'var(--bg-elevated)' : isAnchor ? 'var(--bg-secondary)' : i % 2 === 0 ? 'transparent' : 'var(--bg-card)',
                 }}
-                onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.background = 'var(--bg-secondary)' }}
-                onMouseLeave={e => { if (!isExpanded) e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'var(--bg-card)' }}
+                onMouseEnter={e => { if (!isAnchor) e.currentTarget.style.background = 'var(--bg-secondary)' }}
+                onMouseLeave={e => { if (!isAnchor && !isActive) e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'var(--bg-card)' }}
               >
                 <div className="flex items-center gap-2">
                   <span className="text-text-muted" style={{ fontSize: 11, width: 12, textAlign: 'center' }}>
-                    {isExpanded ? '▾' : '▸'}
+                    {isAnchor ? '▾' : '▸'}
                   </span>
                   <div style={{ minWidth: 0 }}>
                     <div className="font-mono text-text-muted" style={{ fontSize: 11, marginBottom: 4 }}>
@@ -179,40 +175,42 @@ export default function Validation() {
                 </div>
               </div>
 
-              {/* Expanded: images + critiques */}
-              {isExpanded && (
+              {/* Expanded panel — anchored to this row, shows results[activeIndex] */}
+              {isAnchor && activeIndex !== null && (() => {
+                const ar = results[activeIndex]
+                return (
                 <div style={{ padding: '0 20px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)' }}>
                   {/* Prev/Next navigation */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                     <button
-                      onClick={e => { e.stopPropagation(); setExpandedIndex(i > 0 ? i - 1 : i); setCritiqueTab('fine_tuned') }}
-                      disabled={i === 0}
+                      onClick={e => { e.stopPropagation(); handlePrev() }}
+                      disabled={activeIndex === 0}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 6,
                         padding: '8px 14px',
                         background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-                        color: i === 0 ? 'var(--text-muted)' : 'var(--text-primary)',
-                        cursor: i === 0 ? 'not-allowed' : 'pointer',
+                        color: activeIndex === 0 ? 'var(--text-muted)' : 'var(--text-primary)',
+                        cursor: activeIndex === 0 ? 'not-allowed' : 'pointer',
                         fontSize: 13, fontWeight: 500,
-                        opacity: i === 0 ? 0.4 : 1,
+                        opacity: activeIndex === 0 ? 0.4 : 1,
                       }}
                     >
                       ← Previous
                     </button>
                     <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                      {i + 1} of {results.length}
+                      {activeIndex + 1} of {results.length}
                     </span>
                     <button
-                      onClick={e => { e.stopPropagation(); setExpandedIndex(i < results.length - 1 ? i + 1 : i); setCritiqueTab('fine_tuned') }}
-                      disabled={i === results.length - 1}
+                      onClick={e => { e.stopPropagation(); handleNext() }}
+                      disabled={activeIndex === results.length - 1}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 6,
                         padding: '8px 14px',
                         background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-                        color: i === results.length - 1 ? 'var(--text-muted)' : 'var(--text-primary)',
-                        cursor: i === results.length - 1 ? 'not-allowed' : 'pointer',
+                        color: activeIndex === results.length - 1 ? 'var(--text-muted)' : 'var(--text-primary)',
+                        cursor: activeIndex === results.length - 1 ? 'not-allowed' : 'pointer',
                         fontSize: 13, fontWeight: 500,
-                        opacity: i === results.length - 1 ? 0.4 : 1,
+                        opacity: activeIndex === results.length - 1 ? 0.4 : 1,
                       }}
                     >
                       Next →
@@ -225,11 +223,11 @@ export default function Validation() {
                       <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                         Base Qwen3-VL-8B
                         <span style={{ padding: '2px 8px', background: 'var(--bg-primary)', borderRadius: 4, fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
-                          {r.base_score}/10
+                          {ar.base_score}/10
                         </span>
                       </div>
                       <img
-                        src={`/screenshots/validation/base/${r.id}-desktop.webp`}
+                        src={`/screenshots/validation/base/${ar.id}-desktop.webp`}
                         alt="Base model output"
                         className="w-full"
                         style={{ borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
@@ -241,26 +239,26 @@ export default function Validation() {
                         Fine-Tuned 8B
                         <span style={{
                           padding: '2px 8px',
-                          background: r.delta > 0 ? 'rgba(74, 222, 128, 0.1)' : 'var(--bg-primary)',
-                          border: r.delta > 0 ? '1px solid rgba(74, 222, 128, 0.3)' : 'none',
+                          background: ar.delta > 0 ? 'rgba(74, 222, 128, 0.1)' : 'var(--bg-primary)',
+                          border: ar.delta > 0 ? '1px solid rgba(74, 222, 128, 0.3)' : 'none',
                           borderRadius: 4,
                           fontSize: 12,
                           fontWeight: 700,
-                          color: r.delta > 0 ? 'var(--score-high)' : r.delta < 0 ? 'var(--score-low)' : 'var(--text-secondary)',
+                          color: ar.delta > 0 ? 'var(--score-high)' : ar.delta < 0 ? 'var(--score-low)' : 'var(--text-secondary)',
                         }}>
-                          {r.fine_tuned_score}/10
-                          {r.delta !== 0 && (
+                          {ar.fine_tuned_score}/10
+                          {ar.delta !== 0 && (
                             <span style={{ marginLeft: 4 }}>
-                              {r.delta > 0 ? '+' : ''}{r.delta.toFixed(1)}
+                              {ar.delta > 0 ? '+' : ''}{ar.delta.toFixed(1)}
                             </span>
                           )}
                         </span>
                       </div>
                       <img
-                        src={`/screenshots/validation/fine-tuned/${r.id}-desktop.webp`}
+                        src={`/screenshots/validation/fine-tuned/${ar.id}-desktop.webp`}
                         alt="Fine-tuned model output"
                         className="w-full"
-                        style={{ borderRadius: 'var(--radius)', border: r.delta > 0 ? '1px solid var(--score-high)' : '1px solid var(--border)' }}
+                        style={{ borderRadius: 'var(--radius)', border: ar.delta > 0 ? '1px solid var(--score-high)' : '1px solid var(--border)' }}
                         onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
                       />
                     </div>
@@ -275,8 +273,8 @@ export default function Validation() {
                       border: '1px solid var(--border)',
                     }}>
                       {[
-                        { key: 'fine_tuned' as const, label: 'Fine-tuned Critique', score: r.fine_tuned_score },
-                        { key: 'base' as const, label: 'Base Critique', score: r.base_score },
+                        { key: 'fine_tuned' as const, label: 'Fine-tuned Critique', score: ar.fine_tuned_score },
+                        { key: 'base' as const, label: 'Base Critique', score: ar.base_score },
                       ].map(t => (
                         <button
                           key={t.key}
@@ -309,10 +307,10 @@ export default function Validation() {
                     </div>
 
                     <div className="rounded-lg border border-border" style={{ padding: '20px 24px', background: 'var(--bg-primary)' }}>
-                      {critiqueTab === 'fine_tuned' && r.fine_tuned_critique ? (
-                        <CritiquePanel critique={r.fine_tuned_critique} />
-                      ) : critiqueTab === 'base' && r.base_critique ? (
-                        <CritiquePanel critique={r.base_critique} />
+                      {critiqueTab === 'fine_tuned' && ar.fine_tuned_critique ? (
+                        <CritiquePanel critique={ar.fine_tuned_critique} />
+                      ) : critiqueTab === 'base' && ar.base_critique ? (
+                        <CritiquePanel critique={ar.base_critique} />
                       ) : (
                         <p className="text-text-muted" style={{ fontSize: 14, textAlign: 'center', padding: '24px 0' }}>
                           Critique not available
@@ -321,7 +319,8 @@ export default function Validation() {
                     </div>
                   </div>
                 </div>
-              )}
+                )
+              })()}
             </div>
           )
         })}
