@@ -37,7 +37,7 @@ export default function Home() {
               </span>
               <br />
               <span style={{ color: 'var(--text-secondary)' }}>Fine-Tuned on </span>
-              <span style={{ color: '#2dd4bf' }}>GPT-5.4</span>
+              <span style={{ color: '#fff' }}>GPT-5.4</span>
               <span style={{ color: 'var(--text-secondary)' }}> Critiques</span>
             </h1>
 
@@ -181,7 +181,7 @@ export default function Home() {
                 borderRight: i < 3 ? '1px solid var(--border)' : 'none',
               }}
             >
-              <span style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 500 }}>
+              <span style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 500 }}>
                 {stat.label}
               </span>
               <div style={{ marginTop: 8 }}>
@@ -195,7 +195,7 @@ export default function Home() {
                   <span className="font-mono" style={{ fontSize: 28, fontWeight: 800, color: stat.color }}>{stat.value}</span>
                 )}
               </div>
-              <span className="text-text-muted" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>{stat.sub}</span>
+              <span className="text-text-secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>{stat.sub}</span>
             </div>
           ))}
         </div>

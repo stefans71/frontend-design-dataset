@@ -3,17 +3,18 @@ import { getValidationResults } from '@/lib/api'
 import type { ValidationResult } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import Shimmer from '@/components/ui/Shimmer'
+import { Zap, Target, Microscope, Monitor } from 'lucide-react'
 import CritiquePanel from '@/components/CritiquePanel'
 
 function StatCard({ label, sublabel, value, suffix, variant }: { label: string; sublabel: string; value: string; suffix?: string; variant?: 'default' | 'positive' | 'negative' }) {
   const color = variant === 'positive' ? 'text-score-high' : variant === 'negative' ? 'text-score-low' : 'text-text-primary'
   return (
     <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '20px 24px' }}>
-      <span className="section-label block" style={{ marginBottom: 2 }}>{label}</span>
-      <span className="text-text-muted block" style={{ fontSize: 11, marginBottom: 10 }}>{sublabel}</span>
+      <span className="block text-text-secondary" style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 500, marginBottom: 2 }}>{label}</span>
+      <span className="text-text-secondary block" style={{ fontSize: 11, marginBottom: 10 }}>{sublabel}</span>
       <div className="flex items-baseline gap-1">
         <span className={`font-mono ${color}`} style={{ fontSize: 32, fontWeight: 700, lineHeight: 1 }}>{value}</span>
-        {suffix && <span className="text-text-muted" style={{ fontSize: 14 }}>{suffix}</span>}
+        {suffix && <span className="text-text-secondary" style={{ fontSize: 14 }}>{suffix}</span>}
       </div>
     </div>
   )
@@ -56,13 +57,13 @@ export default function Validation() {
         </h2>
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[
-            { icon: '⚡', text: 'Same 10 prompts fed to both models independently' },
-            { icon: '🎯', text: 'GPT-5.4 scored each output — visual hierarchy, spacing, color fidelity, prompt adherence' },
-            { icon: '🔬', text: 'Same critique rubric used during training — true apples-to-apples comparison' },
-            { icon: '💻', text: 'Same hardware — RTX 3080 Ti 12GB, Q4_K_M quantization' },
+            { Icon: Zap, text: 'Same 10 prompts fed to both models independently' },
+            { Icon: Target, text: 'GPT-5.4 scored each output — visual hierarchy, spacing, color fidelity, prompt adherence' },
+            { Icon: Microscope, text: 'Same critique rubric used during training — true apples-to-apples comparison' },
+            { Icon: Monitor, text: 'Same hardware — RTX 3080 Ti 12GB, Q4_K_M quantization' },
           ].map((item, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              <span style={{ fontSize: 13, marginTop: 1, flexShrink: 0 }}>{item.icon}</span>
+              <item.Icon size={14} style={{ marginTop: 3, flexShrink: 0, color: 'var(--text-muted)' }} />
               <span>{item.text}</span>
             </div>
           ))}
@@ -71,8 +72,8 @@ export default function Validation() {
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 validation-stats-grid" style={{ gap: 12, marginBottom: 32 }}>
-        <StatCard label="BASE MODEL" sublabel="First-pass avg" value="4.5" suffix="/10" />
-        <StatCard label="FINE-TUNED 8B" sublabel="First-pass avg" value="5.5" suffix="/10" />
+        <StatCard label="BASE MODEL" sublabel="First-pass avg" value="4.5" suffix="/10" variant="negative" />
+        <StatCard label="FINE-TUNED 8B" sublabel="First-pass avg" value="5.5" suffix="/10" variant="positive" />
         <StatCard
           label="IMPROVEMENT"
           sublabel="Design delta"
