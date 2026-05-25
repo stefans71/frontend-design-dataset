@@ -38,25 +38,37 @@ function FilterGroup<T extends string>({ label, options, value, onSelect }: {
 }) {
   return (
     <div>
-      <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}>{label}</span>
+      <div style={{
+        fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase',
+        color: 'var(--text-muted)', marginBottom: 8, paddingBottom: 4,
+        borderBottom: '1px solid var(--border-subtle)',
+      }}>
+        {label}
+      </div>
       <div className="space-y-0.5">
-        {options.map(o => (
-          <button
-            key={o.value}
-            onClick={() => onSelect(o.value)}
-            className="w-full text-left cursor-pointer transition-colors duration-150 bg-transparent border-0"
-            style={{
-              padding: '6px 10px',
-              fontSize: 14,
-              borderRadius: 4,
-              color: value === o.value ? 'var(--text-primary)' : 'var(--text-secondary)',
-              fontWeight: value === o.value ? 500 : 400,
-              borderLeft: value === o.value ? '2px solid var(--accent)' : '2px solid transparent',
-            }}
-          >
-            {o.label}
-          </button>
-        ))}
+        {options.map(o => {
+          const isActive = value === o.value
+          return (
+            <button
+              key={o.value}
+              onClick={() => onSelect(o.value)}
+              className="w-full text-left cursor-pointer bg-transparent border-0"
+              style={{
+                padding: '6px 8px',
+                paddingLeft: isActive ? 10 : 8,
+                fontSize: 14,
+                borderRadius: 4,
+                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: isActive ? 500 : 400,
+                borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent',
+                background: isActive ? 'var(--bg-secondary)' : 'transparent',
+                transition: 'all 150ms',
+              }}
+            >
+              {o.label}
+            </button>
+          )
+        })}
       </div>
     </div>
   )
@@ -74,7 +86,13 @@ export default function FilterSidebar({ filters, onChange }: { filters: FilterSt
       <FilterGroup label="Theme" options={themes} value={filters.theme} onSelect={v => set('theme', v)} />
       <FilterGroup label="Sort" options={sorts} value={filters.sort} onSelect={v => set('sort', v)} />
       <div>
-        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}>Score Range</span>
+        <div style={{
+          fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase',
+          color: 'var(--text-muted)', marginBottom: 8, paddingBottom: 4,
+          borderBottom: '1px solid var(--border-subtle)',
+        }}>
+          Score Range
+        </div>
         <div className="flex items-center gap-2">
           <input
             type="number"
