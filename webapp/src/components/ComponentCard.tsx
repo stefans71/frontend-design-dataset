@@ -10,7 +10,7 @@ export default function ComponentCard({ component }: { component: ComponentWithS
   return (
     <Link
       to={`/components/${c.id}`}
-      className="block overflow-hidden no-underline bg-bg-card transition-all duration-150 hover:-translate-y-0.5"
+      className="block overflow-hidden no-underline bg-bg-card card-hover-lift"
       style={{ borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
     >
       {/* Zone 1 — Screenshot */}
@@ -65,11 +65,11 @@ export default function ComponentCard({ component }: { component: ComponentWithS
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
           <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)',
+            fontFamily: 'var(--font-mono)', fontSize: 10,
             background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: 4,
             border: '1px solid var(--border-subtle)', flexShrink: 0,
           }}>
-            Qwen3.6-27B
+            <span style={{ background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 700 }}>Qwen3.6-27B</span>
           </span>
           <span style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {c.category} · {c.theme} · T={c.temperature}

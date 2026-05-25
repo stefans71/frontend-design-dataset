@@ -93,7 +93,7 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
                     </div>
                     <span className="font-mono text-text-muted" style={{ fontSize: 11 }}>component.html</span>
                   </div>
-                  <span style={{ fontSize: 11, color: '#22c55e' }}>Qwen3.6-27B · T={c.temperature}</span>
+                  <span style={{ fontSize: 11, color: '#22c55e' }}><span style={{ background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 700 }}>Qwen3.6-27B</span> · T={c.temperature}</span>
                 </div>
                 <iframe
                   srcDoc={c.component_html}
@@ -190,7 +190,7 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
             </p>
           </div>
           <div className="flex items-center gap-3" style={{ marginTop: 12 }}>
-            <span className="text-text-muted" style={{ fontSize: 11 }}>Qwen3.6-27B</span>
+            <span style={{ fontSize: 11, background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 700 }}>Qwen3.6-27B</span>
             <span className="text-text-muted" style={{ fontSize: 11 }}>·</span>
             <span className="text-text-muted" style={{ fontSize: 11 }}>T={c.temperature}</span>
             <span className="text-text-muted" style={{ fontSize: 11 }}>·</span>

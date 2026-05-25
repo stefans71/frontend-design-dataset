@@ -68,7 +68,7 @@ export default function Conversations() {
       </div>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 validation-stats-grid" style={{ gap: 12, marginBottom: 32 }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 validation-stats-grid page-enter" style={{ gap: 12, marginBottom: 32 }}>
         <StatCard label="TOTAL TRACES" sublabel="In training set" value="254" color="var(--text-primary)" />
         <StatCard label="QUALIFYING" sublabel="Ask before building" value="150" color="var(--score-high)" />
         <StatCard label="IMMEDIATE" sublabel="Direct code output" value="104" color="var(--accent)" />
@@ -104,7 +104,7 @@ export default function Conversations() {
           ))}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {convs.map(conv => {
             const isExpanded = expanded === conv.id
             const isQualifying = conv.type === 'qualifying_conversation'

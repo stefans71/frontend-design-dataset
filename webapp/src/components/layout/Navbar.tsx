@@ -30,7 +30,7 @@ export default function Navbar() {
                 <Link
                   key={l.to}
                   to={l.to}
-                  className="no-underline transition-colors duration-150"
+                  className={`no-underline transition-colors duration-150 nav-link ${active ? 'active' : ''}`}
                   style={{
                     padding: '8px 12px',
                     borderRadius: 6,
@@ -53,9 +53,6 @@ export default function Navbar() {
                   }}
                 >
                   {l.label}
-                  {active && (
-                    <span style={{ display: 'block', height: 2, background: 'var(--accent)', marginTop: 2, borderRadius: 1 }} />
-                  )}
                 </Link>
               )
             })}

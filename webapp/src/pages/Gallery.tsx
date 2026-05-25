@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useComponents } from '@/hooks/useComponents'
+import { useInView } from '@/hooks/useInView'
 import type { GridCols, FilterCategory, FilterTheme, SortBy } from '@/lib/types'
 import ComponentCard from '@/components/ComponentCard'
 import FilterSidebar from '@/components/FilterSidebar'
@@ -27,6 +28,7 @@ export default function Gallery() {
   }
   const { items, total, loading } = useComponents(params)
   const totalPages = Math.ceil(total / 24)
+  const { ref: gridRef, visible: gridVisible } = useInView({ threshold: 0.05 })
 
   const gridClass = cols === 2 ? 'grid-cols-2' : cols === 3 ? 'grid-cols-3' : 'grid-cols-4'
 
@@ -88,9 +90,15 @@ export default function Gallery() {
             </div>
           ) : (
             <>
-              <div className={`grid ${gridClass} gallery-grid`} style={{ gap: 16 }}>
+              <div key={page} ref={gridRef} className={`grid ${gridClass} gallery-grid`} style={{ gap: 16 }}>
                 {items.map((c, i) => (
-                  <ComponentCard key={c.id} component={c} index={i} />
+                  <div
+                    key={c.id}
+                    className={`reveal-stagger ${gridVisible ? 'visible' : ''}`}
+                    style={{ '--stagger-index': i } as React.CSSProperties}
+                  >
+                    <ComponentCard component={c} index={i} />
+                  </div>
                 ))}
               </div>
 

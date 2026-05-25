@@ -126,7 +126,7 @@ export default function Validation() {
       </div>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 validation-stats-grid" style={{ gap: 12, marginBottom: 32 }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 validation-stats-grid page-enter" style={{ gap: 12, marginBottom: 32 }}>
         <StatCard label="BASE MODEL" sublabel="First-pass avg" value="4.5" suffix="/10" variant="negative" />
         <StatCard label="FINE-TUNED 8B" sublabel="First-pass avg" value="5.5" suffix="/10" variant="positive" />
         <StatCard
@@ -316,7 +316,7 @@ export default function Validation() {
                   <div className="validation-expanded-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
                     <div>
                       <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        Base Qwen3-VL-8B
+                        Base <span style={{ background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 800 }}>Qwen3-VL-8B</span>
                         <span style={{ padding: '2px 8px', background: 'var(--bg-primary)', borderRadius: 4, fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
                           {ar.base_score}/10
                         </span>
@@ -331,7 +331,7 @@ export default function Validation() {
                     </div>
                     <div>
                       <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        Fine-Tuned 8B
+                        Fine-Tuned <span style={{ background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 800 }}>8B</span>
                         <span style={{
                           padding: '2px 8px',
                           background: ar.delta > 0 ? 'rgba(74, 222, 128, 0.1)' : 'var(--bg-primary)',
@@ -470,14 +470,16 @@ export default function Validation() {
             </thead>
             <tbody>
               {[
-                { condition: 'Base Qwen3-VL-8B — first pass', score: '4.50', delta: '—', deltaColor: 'var(--text-muted)', note: '' },
-                { condition: 'Base Qwen3-VL-8B — after self-critique', score: '4.00', delta: '-0.50', deltaColor: 'var(--score-low)', note: 'gets worse' },
-                { condition: 'Fine-tuned 8B — first pass', score: '5.50', delta: '+1.00 vs base', deltaColor: 'var(--score-high)', note: '' },
-                { condition: 'Fine-tuned 8B — after self-critique', score: '5.15', delta: '-0.35', deltaColor: 'var(--score-mid)', note: 'degrades less' },
+                { prefix: 'Base', model: 'Qwen3-VL-8B', suffix: '— first pass', score: '4.50', delta: '—', deltaColor: 'var(--text-muted)', note: '' },
+                { prefix: 'Base', model: 'Qwen3-VL-8B', suffix: '— after self-critique', score: '4.00', delta: '-0.50', deltaColor: 'var(--score-low)', note: 'gets worse' },
+                { prefix: 'Fine-tuned', model: '8B', suffix: '— first pass', score: '5.50', delta: '+1.00 vs base', deltaColor: 'var(--score-high)', note: '' },
+                { prefix: 'Fine-tuned', model: '8B', suffix: '— after self-critique', score: '5.15', delta: '-0.35', deltaColor: 'var(--score-mid)', note: 'degrades less' },
               ].map((row, i) => (
                 <tr key={i} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td className="text-text-primary" style={{ padding: '12px 16px', fontSize: 14 }}>
-                    {row.condition}
+                    {row.prefix}{' '}
+                    <span style={{ background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 700 }}>{row.model}</span>
+                    {' '}{row.suffix}
                     {row.note && (
                       <span className="text-text-muted" style={{ marginLeft: 8, fontSize: 11 }}>
                         — {row.note}

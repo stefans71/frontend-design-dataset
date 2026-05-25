@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getComponents } from '@/lib/api'
+import { useInView } from '@/hooks/useInView'
 import type { ComponentWithScore } from '@/lib/types'
 
 function scoreColor(score: number) {
@@ -11,6 +12,12 @@ function scoreColor(score: number) {
 
 export default function Home() {
   const [featured, setFeatured] = useState<ComponentWithScore[]>([])
+
+  const { ref: statsRef, visible: statsVisible } = useInView()
+  const { ref: howRef, visible: howVisible } = useInView()
+  const { ref: compareRef, visible: compareVisible } = useInView()
+  const { ref: featuredRef, visible: featuredVisible } = useInView()
+  const { ref: downloadRef, visible: downloadVisible } = useInView()
 
   useEffect(() => {
     getComponents({ sort: 'score_desc', limit: 6, hasPng: 1 }).then(r => setFeatured(r.items))
@@ -173,8 +180,8 @@ export default function Home() {
       </section>
 
       {/* SECTION 2 — STATS ROW */}
-      <section style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
-        <div className="page-container stats-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', padding: '24px 0' }}>
+      <section ref={statsRef} style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+        <div className={`page-container stats-row reveal ${statsVisible ? 'visible' : ''}`} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', padding: '24px 0' }}>
           {[
             { label: 'QUALIFYING QUESTIONS', sub: 'qualifying questions', custom: true },
             { label: 'AVG SCORE DELTA', value: '+1.0', color: '#4ade80', sub: '/ 10 points' },
@@ -210,7 +217,8 @@ export default function Home() {
       </section>
 
       {/* SECTION 3 — HOW THE TRAINING DATA WAS BUILT */}
-      <section className="page-container" style={{ paddingTop: 56, paddingBottom: 56 }}>
+      <section ref={howRef}>
+      <div className={`page-container reveal ${howVisible ? 'visible' : ''}`} style={{ paddingTop: 56, paddingBottom: 56 }}>
         <span className="section-label block" style={{ marginBottom: 8 }}>HOW IT WORKS</span>
         <h2 className="text-text-primary" style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.2 }}>
           Teacher-Student Distillation
@@ -261,11 +269,12 @@ export default function Home() {
             </div>
           ))}
         </div>
+      </div>
       </section>
 
       {/* SECTION 4 — BEFORE / AFTER */}
-      <section className="border-t border-border">
-        <div className="page-container" style={{ paddingTop: 56, paddingBottom: 56 }}>
+      <section ref={compareRef} className="border-t border-border">
+        <div className={`page-container reveal ${compareVisible ? 'visible' : ''}`} style={{ paddingTop: 56, paddingBottom: 56 }}>
           <span className="section-label block" style={{ marginBottom: 8 }}>FINE-TUNED MODEL OUTPUT</span>
           <h2 className="text-text-primary" style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.2 }}>
             Same prompt. Different result.
@@ -299,8 +308,8 @@ export default function Home() {
 
       {/* SECTION 5 — BROWSE THE TRAINING DATA */}
       {featured.length > 0 && (
-        <section className="border-t border-border">
-          <div className="page-container" style={{ paddingTop: 56, paddingBottom: 56 }}>
+        <section ref={featuredRef} className="border-t border-border">
+          <div className={`page-container reveal ${featuredVisible ? 'visible' : ''}`} style={{ paddingTop: 56, paddingBottom: 56 }}>
             <span className="section-label block" style={{ marginBottom: 8 }}>TRAINING DATASET</span>
             <h2 className="text-text-primary" style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.2 }}>
               500 GPT-5.4 Improved Components
@@ -317,7 +326,7 @@ export default function Home() {
                   <Link
                     key={c.id}
                     to={`/components/${c.id}`}
-                    className="block overflow-hidden no-underline bg-bg-card transition-all duration-150 hover:-translate-y-0.5"
+                    className="block overflow-hidden no-underline bg-bg-card card-hover-lift"
                     style={{ borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
                   >
                     <div className="relative overflow-hidden" style={{ aspectRatio: '4/3' }}>
@@ -344,7 +353,7 @@ export default function Home() {
                       </p>
                     </div>
                     <div style={{ padding: '8px 14px', borderTop: '1px solid var(--border-subtle)', fontSize: 11, color: '#22c55e' }}>
-                      Qwen3.6-27B · {c.category} · {c.theme} · T={c.temperature}
+                      <span style={{ background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 700 }}>Qwen3.6-27B</span> · {c.category} · {c.theme} · T={c.temperature}
                     </div>
                   </Link>
                 )
@@ -365,8 +374,8 @@ export default function Home() {
       )}
 
       {/* SECTION 6 — DOWNLOAD THE MODEL */}
-      <section className="border-t border-border">
-        <div className="page-container" style={{ paddingTop: 56, paddingBottom: 64 }}>
+      <section ref={downloadRef} className="border-t border-border">
+        <div className={`page-container reveal ${downloadVisible ? 'visible' : ''}`} style={{ paddingTop: 56, paddingBottom: 64 }}>
           <span className="section-label block" style={{ marginBottom: 8 }}>OPEN SOURCE</span>
           <h2 className="text-text-primary" style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.2 }}>
             Run locally on consumer hardware

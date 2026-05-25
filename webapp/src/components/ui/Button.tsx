@@ -17,7 +17,7 @@ const sizeClasses = {
 export default function Button({ children, variant = 'primary', size = 'md', className = '', ...props }: ButtonProps) {
   return (
     <button
-      className={`inline-flex items-center justify-center font-medium rounded-md cursor-pointer transition-colors duration-150 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center justify-center font-medium rounded-md cursor-pointer btn-press ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       {...props}
     >
       {children}

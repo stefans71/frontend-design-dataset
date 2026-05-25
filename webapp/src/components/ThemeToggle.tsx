@@ -5,7 +5,7 @@ export default function ThemeToggle({ theme, onToggle }: { theme: string; onTogg
       className="flex items-center justify-center w-8 h-8 rounded-md text-text-muted hover:text-text-secondary border border-transparent hover:border-border transition-colors duration-150 cursor-pointer bg-transparent"
       aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`theme-icon ${theme === 'dark' ? 'rotate' : ''}`}>
         {theme === 'light' ? (
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
         ) : (
