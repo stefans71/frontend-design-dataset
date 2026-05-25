@@ -7,12 +7,51 @@ const db = new Database(DB_PATH)
 
 function inferCategory(prompt: string): string {
   const p = prompt.toLowerCase()
-  if (p.includes('login') || p.includes('signup') || p.includes('sign up') || p.includes('register') || p.includes('checkout') || p.includes('payment') || p.includes('form') || p.includes('input')) return 'form'
-  if (p.includes('sidebar') || p.includes('navbar') || p.includes('navigation') || p.includes('nav bar') || p.includes('menu') || p.includes('breadcrumb')) return 'navbar'
-  if (p.includes('mobile') || p.includes('bottom sheet') || p.includes('tab bar') || p.includes('bottom nav') || p.includes('swipe')) return 'mobile'
-  if (p.includes('table') || p.includes('chart') || p.includes('graph') || p.includes('dashboard') || p.includes('stat') || p.includes('metric') || p.includes('analytics') || p.includes('invoice') || p.includes('report')) return 'data_display'
-  if (p.includes('landing') || p.includes('hero') || p.includes('cta') || p.includes('call to action') || p.includes('testimonial') || p.includes('pricing') || p.includes('feature') || p.includes('marketing') || p.includes('newsletter') || p.includes('banner') || p.includes('announcement')) return 'marketing'
-  if (p.includes('card') || p.includes('product') || p.includes('profile') || p.includes('avatar') || p.includes('badge') || p.includes('tag') || p.includes('chip')) return 'card'
+
+  // Mobile first
+  if (p.includes('mobile') || p.includes('bottom sheet') || p.includes('bottom nav') ||
+      p.includes('tab bar') || p.includes('phone screen') || p.includes('ios app') ||
+      p.includes('android') || p.includes('app screen') || p.includes('swipe')) return 'mobile'
+
+  // Navigation
+  if (p.includes('sidebar') || p.includes('navbar') || p.includes('nav bar') ||
+      p.includes('navigation') || p.includes('breadcrumb') || p.includes('mega menu') ||
+      p.includes('top menu') || p.includes('side menu') || p.includes('dropdown menu')) return 'navbar'
+
+  // Data display
+  if (p.includes('dashboard') || p.includes('analytics') || p.includes('invoice') ||
+      p.includes('data table') || p.includes('chart') || p.includes('graph') ||
+      p.includes('kpi') || p.includes('leaderboard') || p.includes('activity feed') ||
+      p.includes('metrics') || p.includes('stats card')) return 'data_display'
+
+  // Marketing
+  if (p.includes('hero section') || p.includes('cta section') || p.includes('call-to-action') ||
+      p.includes('testimonial') || p.includes('landing page') || p.includes('marketing page') ||
+      p.includes('feature section') || p.includes('pricing page') || p.includes('announcement')) return 'marketing'
+
+  // Forms — careful with 'sign'
+  if (p.includes('login form') || p.includes('login page') ||
+      p.includes('sign up') || p.includes('sign-up') || p.includes('signup') ||
+      p.includes('sign in') || p.includes('sign-in') || p.includes('signin') ||
+      p.includes('registration') || p.includes('checkout') || p.includes('payment form') ||
+      p.includes('contact form') || p.includes('search bar') || p.includes('search input') ||
+      p.includes('onboarding') || p.includes('2fa') || p.includes('authentication') ||
+      p.includes('modal') || p.includes('dialog') || p.includes('toolbar') ||
+      p.includes('command palette') || p.includes('pagination') || p.includes('upload') ||
+      p.includes('rich text') || p.includes('text editor') || p.includes('button states') ||
+      p.includes('input field') || p.includes('form field') || p.includes('wizard')) return 'form'
+
+  // Cards
+  if (p.includes('pricing card') || p.includes('product card') || p.includes('profile card') ||
+      p.includes('user card') || p.includes('feature card') || p.includes('stat card') ||
+      p.includes('card component') || p.includes('pricing tier') || p.includes('plan card')) return 'card'
+
+  // Looser catches — order matters
+  if (p.includes('table') || p.includes('list view') || p.includes('data grid')) return 'data_display'
+  if (p.includes('card') || p.includes('product') || p.includes('profile') || p.includes('pricing')) return 'card'
+  if (p.includes('form') || p.includes('input') || p.includes('button') || p.includes('filter')) return 'form'
+  if (p.includes('menu') || p.includes('navigation')) return 'navbar'
+
   return 'misc'
 }
 

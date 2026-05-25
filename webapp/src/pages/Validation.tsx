@@ -79,29 +79,36 @@ export default function Validation() {
         <h1 className="text-text-primary" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, marginBottom: 8 }}>
           Does fine-tuning actually improve output?
         </h1>
-        <div style={{ fontSize: 16, marginBottom: 16, lineHeight: 1.6, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
-          <span style={{
-            background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text', fontWeight: 800, fontSize: 18,
-          }}>Qwen3-VL-8B</span>
-          <span style={{
-            padding: '2px 10px', background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-            borderRadius: 99, fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em',
-          }}>BASE</span>
-          <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>vs</span>
-          <span style={{
-            background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text', fontWeight: 800, fontSize: 18,
-          }}>Qwen3-VL-8B</span>
-          <span style={{
-            padding: '2px 10px', background: 'rgba(45, 212, 191, 0.1)', border: '1px solid rgba(45, 212, 191, 0.3)',
-            borderRadius: 99, fontSize: 12, fontWeight: 600, color: '#2dd4bf', letterSpacing: '0.05em',
-          }}>FINE-TUNED</span>
-          <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-            — same 10 prompts, same hardware, scored by GPT-5.4
-          </span>
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <span style={{
+              background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text', fontWeight: 800, fontSize: '20px',
+            }}>Qwen3-VL-8B</span>
+            <span style={{
+              padding: '2px 10px', background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+              borderRadius: '99px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.08em',
+            }}>BASE</span>
+          </div>
+          <div style={{
+            fontSize: '13px', fontWeight: 800, color: 'var(--text-muted)',
+            letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px', paddingLeft: '4px',
+          }}>vs</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <span style={{
+              background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text', fontWeight: 800, fontSize: '20px',
+            }}>Qwen3-VL-8B</span>
+            <span style={{
+              padding: '2px 10px', background: 'rgba(45, 212, 191, 0.1)', border: '1px solid rgba(45, 212, 191, 0.3)',
+              borderRadius: '99px', fontSize: '11px', fontWeight: 700, color: '#2dd4bf', letterSpacing: '0.08em',
+            }}>FINE-TUNED</span>
+          </div>
+          <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+            Same 10 prompts, same hardware, scored by GPT-5.4
+          </div>
         </div>
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[
