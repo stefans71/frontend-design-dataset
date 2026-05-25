@@ -28,7 +28,7 @@ export default function Home() {
             </div>
             <h1 className="hero-title" style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800, lineHeight: 1.2, letterSpacing: '-0.02em', marginBottom: 8 }}>
               <span style={{
-                background: 'linear-gradient(90deg, #f97316 0%, #f97316 20%, #2dd4bf 80%, #2dd4bf 100%)',
+                background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
