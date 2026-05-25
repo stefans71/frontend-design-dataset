@@ -3,7 +3,7 @@ import { getValidationResults } from '@/lib/api'
 import type { ValidationResult } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import Shimmer from '@/components/ui/Shimmer'
-import { Zap, Target, Microscope, Monitor } from 'lucide-react'
+import { Zap, Target, Microscope, Monitor, ChevronDown } from 'lucide-react'
 import CritiquePanel from '@/components/CritiquePanel'
 
 function StatCard({ label, sublabel, value, suffix, variant }: { label: string; sublabel: string; value: string; suffix?: string; variant?: 'default' | 'positive' | 'negative' }) {
@@ -26,6 +26,7 @@ export default function Validation() {
   const [anchorRow, setAnchorRow] = useState<number | null>(null)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [critiqueTab, setCritiqueTab] = useState<'fine_tuned' | 'base'>('fine_tuned')
+  const [critiqueOpen, setCritiqueOpen] = useState(false)
 
   const scrollToRow = (i: number) => {
     setTimeout(() => {
@@ -36,10 +37,10 @@ export default function Validation() {
       }
     }, 50)
   }
-  const openRow = (i: number) => { setAnchorRow(i); setActiveIndex(i); setCritiqueTab('fine_tuned') }
+  const openRow = (i: number) => { setAnchorRow(i); setActiveIndex(i); setCritiqueTab('fine_tuned'); setCritiqueOpen(false) }
   const closeRow = () => { setAnchorRow(null); setActiveIndex(null) }
-  const handlePrev = () => { if (activeIndex !== null && activeIndex > 0) { const n = activeIndex - 1; setActiveIndex(n); setAnchorRow(n); setCritiqueTab('fine_tuned'); scrollToRow(n) } }
-  const handleNext = () => { if (activeIndex !== null && activeIndex < results.length - 1) { const n = activeIndex + 1; setActiveIndex(n); setAnchorRow(n); setCritiqueTab('fine_tuned'); scrollToRow(n) } }
+  const handlePrev = () => { if (activeIndex !== null && activeIndex > 0) { const n = activeIndex - 1; setActiveIndex(n); setAnchorRow(n); setCritiqueTab('fine_tuned'); setCritiqueOpen(false); scrollToRow(n) } }
+  const handleNext = () => { if (activeIndex !== null && activeIndex < results.length - 1) { const n = activeIndex + 1; setActiveIndex(n); setAnchorRow(n); setCritiqueTab('fine_tuned'); setCritiqueOpen(false); scrollToRow(n) } }
 
   useEffect(() => {
     getValidationResults()
@@ -344,7 +345,7 @@ export default function Validation() {
                       ].map(t => (
                         <button
                           key={t.key}
-                          onClick={e => { e.stopPropagation(); setCritiqueTab(t.key) }}
+                          onClick={e => { e.stopPropagation(); if (critiqueTab === t.key && critiqueOpen) { setCritiqueOpen(false) } else { setCritiqueTab(t.key); setCritiqueOpen(true) } }}
                           style={{
                             padding: '6px 14px',
                             borderRadius: 'calc(var(--radius) - 2px)',
@@ -357,6 +358,11 @@ export default function Validation() {
                             boxShadow: critiqueTab === t.key ? 'var(--shadow-sm)' : 'none',
                           }}
                         >
+                          <ChevronDown size={12} style={{
+                            transition: 'transform 200ms',
+                            transform: critiqueTab === t.key && critiqueOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                            color: critiqueTab === t.key ? 'var(--text-secondary)' : 'var(--text-muted)',
+                          }} />
                           {t.label}
                           <span style={{
                             padding: '2px 7px', borderRadius: 99, fontSize: 11, fontWeight: 700,
@@ -372,16 +378,20 @@ export default function Validation() {
                       ))}
                     </div>
 
-                    <div className="rounded-lg border border-border" style={{ padding: '20px 24px', background: 'var(--bg-primary)' }}>
-                      {critiqueTab === 'fine_tuned' && ar.fine_tuned_critique ? (
-                        <CritiquePanel critique={ar.fine_tuned_critique} />
-                      ) : critiqueTab === 'base' && ar.base_critique ? (
-                        <CritiquePanel critique={ar.base_critique} />
-                      ) : (
-                        <p className="text-text-muted" style={{ fontSize: 14, textAlign: 'center', padding: '24px 0' }}>
-                          Critique not available
-                        </p>
-                      )}
+                    <div className={`expand-content ${critiqueOpen ? 'open' : ''}`}>
+                      <div>
+                        <div className="rounded-lg border border-border" style={{ padding: '20px 24px', background: 'var(--bg-primary)' }}>
+                          {critiqueTab === 'fine_tuned' && ar.fine_tuned_critique ? (
+                            <CritiquePanel critique={ar.fine_tuned_critique} />
+                          ) : critiqueTab === 'base' && ar.base_critique ? (
+                            <CritiquePanel critique={ar.base_critique} />
+                          ) : (
+                            <p className="text-text-muted" style={{ fontSize: 14, textAlign: 'center', padding: '24px 0' }}>
+                              Critique not available
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
