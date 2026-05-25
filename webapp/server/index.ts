@@ -52,26 +52,28 @@ const server = Bun.serve({
       const hasPng = url.searchParams.get('hasPng')
       const pngFilter = hasPng === '1' ? ' AND c.has_desktop_png = 1' : ''
 
-      const rows = db.query(`
+      const allRows = db.query(`
         SELECT c.id, c.prompt, c.temperature, c.run, c.suffix,
-               e.total, e.visual_score, e.alignment_score, e.interactivity_score
+               e.total, e.visual_score, e.alignment_score, e.interactivity_score,
+               c.has_desktop_png
         FROM components c
         JOIN eval_scores e ON c.id = e.component_id
         WHERE e.total BETWEEN ? AND ?${pngFilter}
         ORDER BY ${orderBy}
-        LIMIT ? OFFSET ?
-      `).all(minScore, maxScore, limit, page * limit) as Record<string, string | number>[]
+      `).all(minScore, maxScore) as Record<string, string | number>[]
 
-      const total = (db.query(`
-        SELECT COUNT(*) as n FROM components c
-        JOIN eval_scores e ON c.id = e.component_id
-        WHERE e.total BETWEEN ? AND ?${pngFilter}
-      `).get(minScore, maxScore) as Record<string, number>).n
+      const enriched = allRows.map(r => ({
+        ...r,
+        category: inferCategory(r.prompt as string),
+        theme: inferTheme(r.prompt as string),
+      }))
 
-      const items = rows
-        .map(r => ({ ...r, category: inferCategory(r.prompt as string), theme: inferTheme(r.prompt as string) }))
+      const filtered = enriched
         .filter(r => !category || category === 'all' || r.category === category)
         .filter(r => !theme || theme === 'all' || r.theme === theme)
+
+      const total = filtered.length
+      const items = filtered.slice(page * limit, (page + 1) * limit)
 
       return Response.json({ items, total }, { headers })
     }
