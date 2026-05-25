@@ -139,7 +139,6 @@ export default function Validation() {
                   padding: '12px 20px',
                   alignItems: 'center',
                   borderBottom: isAnchor ? 'none' : '1px solid var(--border-subtle)',
-                  borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
                   background: isActive ? 'var(--bg-elevated)' : isAnchor ? 'var(--bg-secondary)' : i % 2 === 0 ? 'transparent' : 'var(--bg-card)',
                 }}
                 onMouseEnter={e => { if (!isAnchor) e.currentTarget.style.background = 'var(--bg-secondary)' }}
