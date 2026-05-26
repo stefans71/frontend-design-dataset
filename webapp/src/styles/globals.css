@@ -107,6 +107,7 @@ html {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 html[data-font-size="sm"] { font-size: 13px; }
@@ -144,9 +145,11 @@ body {
   .page-container { padding: 0 16px; }
 
   .navbar-brand-subtitle { display: none; }
-  .navbar-links { gap: 4px; }
-  .navbar-links a { padding: 6px 8px; font-size: 13px; }
-  .navbar-controls { gap: 4px; }
+  .navbar-brand-group { gap: 12px; min-width: 0; }
+  .navbar-links { gap: 2px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .navbar-links::-webkit-scrollbar { display: none; }
+  .navbar-links a { padding: 6px 8px; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+  .navbar-controls { gap: 2px; flex-shrink: 0; }
 
   .hero-grid { grid-template-columns: 1fr !important; gap: 32px; }
   .hero-terminal { display: none; }
@@ -179,14 +182,20 @@ body {
   .validation-expanded-grid { grid-template-columns: 1fr !important; }
   .validation-nav-prompt { display: none; }
   .validation-nav-scores { display: none; }
+  .validation-table-wrap { overflow-x: auto !important; }
   .prompt-text { max-width: 180px; }
 
   h1 { font-size: clamp(24px, 6vw, 36px) !important; }
   h2 { font-size: clamp(18px, 4vw, 24px) !important; }
 }
 
+@media (max-width: 480px) {
+  .navbar-controls button[aria-label="Decrease font size"],
+  .navbar-controls button[aria-label="Increase font size"] { display: none; }
+}
+
 @media (max-width: 390px) {
-  .navbar-links a { padding: 4px 6px; font-size: 12px; }
+  .navbar-links a { padding: 4px 5px; font-size: 11px; }
   .hero-title { font-size: 26px !important; }
   .stats-row { grid-template-columns: 1fr !important; }
 }

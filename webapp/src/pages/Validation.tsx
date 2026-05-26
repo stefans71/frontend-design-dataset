@@ -152,7 +152,7 @@ export default function Validation() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-border" style={{ overflow: 'clip' }}>
+      <div className="rounded-lg border border-border validation-table-wrap" style={{ overflow: 'clip' }}>
         {/* Table header — swaps to nav bar when expanded */}
         {activeIndex !== null ? (() => {
           const ar = results[activeIndex]

@@ -18,7 +18,7 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-bg-primary border-b border-border" style={{ height: 60 }}>
       <div className="page-container flex items-center justify-between h-full">
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-8 navbar-brand-group">
           <Link to="/" className="flex items-center no-underline">
             <span className="text-text-primary" style={{ fontSize: 18, fontWeight: 800 }}>FDE</span>
             <span className="text-text-muted hidden sm:inline navbar-brand-subtitle" style={{ fontSize: 13, marginLeft: 8 }}>Frontend Design Expert</span>
