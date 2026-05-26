@@ -67,6 +67,24 @@ function inferTheme(prompt: string): 'dark' | 'light' {
   return prompt.toLowerCase().includes('dark') ? 'dark' : 'light'
 }
 
+function inferDomain(text: string): string {
+  const t = text.toLowerCase()
+
+  if (t.includes('law firm') || t.includes('legal') || t.includes('attorney') || t.includes('lawyer')) return 'legal'
+  if (t.includes('restaurant') || t.includes('cafe') || t.includes('food') || t.includes('menu') || t.includes('dining') || t.includes('bakery') || t.includes('coffee')) return 'restaurant'
+  if (t.includes('ecommerce') || t.includes('e-commerce') || t.includes('online store') || t.includes('shop') || t.includes('product page') || t.includes('checkout') || t.includes('cart')) return 'e-commerce'
+  if (t.includes('saas') || t.includes('software') || t.includes('dashboard') || t.includes('analytics') || t.includes('app') || t.includes('platform')) return 'saas'
+  if (t.includes('real estate') || t.includes('property') || t.includes('listing') || t.includes('rental') || t.includes('housing')) return 'real-estate'
+  if (t.includes('healthcare') || t.includes('medical') || t.includes('clinic') || t.includes('hospital') || t.includes('patient') || t.includes('health')) return 'healthcare'
+  if (t.includes('finance') || t.includes('banking') || t.includes('investment') || t.includes('fintech') || t.includes('savings') || t.includes('budget') || t.includes('payment')) return 'finance'
+  if (t.includes('education') || t.includes('learning') || t.includes('course') || t.includes('school') || t.includes('student') || t.includes('tutor')) return 'education'
+  if (t.includes('fitness') || t.includes('gym') || t.includes('yoga') || t.includes('workout') || t.includes('training')) return 'fitness'
+  if (t.includes('travel') || t.includes('booking') || t.includes('hotel') || t.includes('flight') || t.includes('vacation')) return 'travel'
+  if (t.includes('portfolio') || t.includes('photography') || t.includes('creative') || t.includes('design studio') || t.includes('agency')) return 'creative'
+
+  return 'other'
+}
+
 const server = Bun.serve({
   port: Number(process.env.PORT || 3001),
   fetch(req) {
@@ -149,6 +167,8 @@ const server = Bun.serve({
 
     if (url.pathname === '/api/conversations') {
       const type = url.searchParams.get('type')
+      const domain = url.searchParams.get('domain')
+      const sort = url.searchParams.get('sort') || 'default'
       const page = Number(url.searchParams.get('page') || 0)
       const limit = 20
 
@@ -158,30 +178,40 @@ const server = Bun.serve({
         whereClause = 'WHERE type = ?'
         params.push(type)
       }
-      params.push(limit, page * limit)
 
-      const rows = db.query(`
+      const orderBy = sort === 'turns_desc' ? 'turn_count DESC' :
+                       sort === 'turns_asc' ? 'turn_count ASC' : 'rowid'
+
+      const allRows = db.query(`
         SELECT id, type, domain, persona, turn_count, messages_json
         FROM conversations
         ${whereClause}
-        ORDER BY rowid
-        LIMIT ? OFFSET ?
+        ORDER BY ${orderBy}
       `).all(...params) as Record<string, string | number>[]
 
-      const countParams: string[] = []
-      if (type && type !== 'all') countParams.push(type)
+      const enriched = allRows.map(r => {
+        const messages = JSON.parse(r.messages_json as string)
+        const firstUserMsg = messages.find((m: any) => m.role === 'user')
+        return {
+          ...r,
+          messages,
+          domain: inferDomain(firstUserMsg?.content || ''),
+        }
+      })
 
-      const total = (db.query(`
-        SELECT COUNT(*) as n FROM conversations
-        ${whereClause}
-      `).get(...countParams) as Record<string, number>).n
+      const filtered = domain && domain !== 'all'
+        ? enriched.filter(r => r.domain === domain)
+        : enriched
 
-      const items = rows.map(r => ({
-        ...r,
-        messages: JSON.parse(r.messages_json as string)
-      }))
+      const total = filtered.length
+      const items = filtered.slice(page * limit, (page + 1) * limit)
 
-      return Response.json({ items, total }, { headers })
+      const domainCounts: Record<string, number> = {}
+      for (const r of enriched) {
+        domainCounts[r.domain] = (domainCounts[r.domain] || 0) + 1
+      }
+
+      return Response.json({ items, total, domainCounts }, { headers })
     }
 
     if (url.pathname === '/api/validation') {

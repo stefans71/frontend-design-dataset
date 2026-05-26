@@ -29,8 +29,10 @@ export async function getComponent(id: string): Promise<ComponentWithScore & {
 
 export async function getConversations(params: {
   type?: string
+  domain?: string
+  sort?: string
   page?: number
-}): Promise<{ items: Conversation[]; total: number }> {
+}): Promise<{ items: Conversation[]; total: number; domainCounts?: Record<string, number> }> {
   const q = new URLSearchParams()
   Object.entries(params).forEach(([k, v]) => v !== undefined && q.set(k, String(v)))
   const res = await fetch(`${BASE}/conversations?${q}`)
