@@ -14,6 +14,7 @@ output/validation/*
 !output/validation/self-improve-scores.jsonl
 
 CLAUDE.md
+!FRONTEND-DESIGN-DATASET-V2/CLAUDE.md
 TEST-QWEN35-9B.md
 .claude/
 improved.html
