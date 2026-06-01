@@ -35,10 +35,29 @@ while IFS= read -r line; do
 
   if [ -n "$LATEST" ]; then
     mkdir -p "$RESULTS/$ID"
+    # Save all artifacts (briefs, plans, handoffs, logs)
     cp -r "$LATEST" "$RESULTS/$ID/artifacts"
-    # Copy any HTML output files
-    find "$LATEST" -name "*.html" -exec cp {} "$RESULTS/$ID/" \;
-    find . -name "index.html" -newer "$LATEST" -exec cp {} "$RESULTS/$ID/output.html" \; 2>/dev/null
+
+    # Collect working-tree files created/modified by the workflow.
+    # The implement node writes to paths decided by prd.md/plan.md —
+    # there's no fixed output path. Use git to find everything new.
+    git diff --name-only --diff-filter=ACMR HEAD > /tmp/changed-files.txt 2>/dev/null
+    git ls-files --others --exclude-standard >> /tmp/changed-files.txt 2>/dev/null
+
+    if [ -s /tmp/changed-files.txt ]; then
+      mkdir -p "$RESULTS/$ID/src"
+      while IFS= read -r f; do
+        mkdir -p "$RESULTS/$ID/src/$(dirname "$f")"
+        cp "$f" "$RESULTS/$ID/src/$f" 2>/dev/null
+      done < /tmp/changed-files.txt
+      echo "=== Saved $(wc -l < /tmp/changed-files.txt) files to $RESULTS/$ID/src/ ==="
+    fi
+
+    # Also extract file list from plan.md for cross-reference
+    if [ -f "$LATEST/plan.md" ]; then
+      grep -E '^\s*-\s*\*\*File:\*\*' "$LATEST/plan.md" > "$RESULTS/$ID/planned-files.txt" 2>/dev/null
+    fi
+
     echo "=== Saved: $RESULTS/$ID ==="
   else
     echo "=== WARNING: No artifacts found for $ID ==="
@@ -46,6 +65,7 @@ while IFS= read -r line; do
 
   # Clean working directory for next run
   git checkout -- . 2>/dev/null || true
+  git clean -fd 2>/dev/null || true
 
   echo ""
 done <<< "$PROMPTS"
