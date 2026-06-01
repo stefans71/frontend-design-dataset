@@ -63,8 +63,9 @@ nodes:
         For anything you cannot infer, use these defaults:
           - frontend_level: 5 (intermediate)
           - design_background: "know_what_i_want"
-          - tech_stack: "react_tailwind"
-          - css_approach: "tailwind"
+          - tech_stack: "vanilla_html"
+          - css_approach: "inline"
+          - output_format: "single_file_html"
           - design_tools: "none"
           - communication_style: "explain_decisions"
 
@@ -128,8 +129,9 @@ nodes:
         run the workflow again after this to refine further:
           - frontend_level: 5
           - design_background: "know_what_i_want"
-          - tech_stack: "you_decide"
-          - css_approach: "you_decide"
+          - tech_stack: "vanilla_html"
+          - css_approach: "inline"
+          - output_format: "single_file_html"
           - design_tools: "none"
           - communication_style: "show_options"
           - you_decide_count: 6 (auto_decide_technical: true)
@@ -168,6 +170,7 @@ nodes:
       case "$APPROACH" in
         tailwind|you_decide)  SECTION="tailwind" ; NOTE="" ;;
         css_modules)          SECTION="css_modules" ; NOTE="" ;;
+        inline)               SECTION="css_modules" ; NOTE="NOTE: The project uses inline CSS only, not Tailwind or CSS Modules.\nMap all Tailwind utility references to their CSS equivalents.\nExample: text-lg = font-size: 1.125rem; line-height: 1.75rem\nExample: min-h-12 = min-height: 3rem (48px)\nExample: rounded-xl = border-radius: 0.75rem\nAll output goes in a single <style> block inside index.html.\n\n" ;;
         vanilla_css)          SECTION="css_modules" ; NOTE="NOTE: These patterns use CSS Modules syntax. For vanilla CSS, replace module imports with global BEM-prefixed classes (e.g., .ui-button). All CSS custom properties and @media queries are identical.\n\n" ;;
         styled_components)    SECTION="tailwind" ; NOTE="NOTE: These patterns use Tailwind utilities in JSX className strings. For styled-components, convert each utility to its CSS property equivalent in a styled template literal. Example: className=\"min-h-12 rounded-xl px-5\" becomes styled.button\`min-height: var(--touch-min); border-radius: var(--radius-md); padding: 0 var(--space-5);\`. Focus rings, transitions, and reduced-motion rules use the same CSS properties.\n\n" ;;
         *)                    SECTION="tailwind" ; NOTE="" ;;
@@ -285,7 +288,6 @@ nodes:
     allowed_tools: [read, write]
     expected_artifacts:
       - $ARTIFACTS_DIR/design-tokens.md
-      - design-system/tokens.css
     prompt: |
       You are in the TOKEN SYSTEM phase. You have NO memory of prior phases.
 
@@ -297,7 +299,7 @@ nodes:
 
       Define the COMPLETE design token system for this project.
 
-      COLOR ARCHITECTURE (use oklch() color space for Tailwind v4):
+      COLOR ARCHITECTURE (use oklch() color space):
         - Primary brand (main actions, CTAs)
         - Secondary (structural elements, headers)
         - Accent (highlights, ratings, warnings)
@@ -367,26 +369,28 @@ nodes:
       Reference $ARTIFACTS_DIR/ux-patterns.md for how components use these tokens.
 
       CSS APPROACH (from user profile):
-      If css_approach is "tailwind" or "you_decide": use Tailwind v4 @theme syntax
-        (NO tailwind.config.ts — v4 uses CSS-native config):
-        @theme {
+      If css_approach is "inline": use :root CSS custom properties inside a <style>
+        block in index.html. All tokens go in :root { ... }. No external files.
+        Example:
+        :root {
           --color-primary: oklch(...);
           --color-primary-lt: oklch(...);
         }
+      If "tailwind" or "you_decide": use Tailwind v4 @theme syntax.
       If "css_modules": use :root CSS custom properties with module-scoped imports.
-        Do NOT use @theme syntax.
       If "vanilla_css": use :root custom properties with documented fallbacks.
-        Do NOT use @theme syntax.
       If "styled_components": use a ThemeProvider with a JS theme object.
-        Do NOT use @theme syntax.
 
       Write to:
         $ARTIFACTS_DIR/design-tokens.md  - documentation + rationale + usage examples
-        design-system/tokens.css         - actual token definitions (this is the source of truth)
+        Include the actual CSS custom property definitions as a :root block in the
+        documentation. The implement node will copy these into index.html's <style>.
+
+      Do NOT create design-system/tokens.css or any separate CSS file.
+      All tokens stay in the artifact documentation for the implement node to use.
 
       Update $ARTIFACTS_DIR/HANDOFF.md:
-        - Add: Tokens written: [list key token names]
-        - Update Current State: design-system/tokens.css [filled with real tokens]
+        - Add: Tokens defined: [list key token names]
         - Add Breadcrumb: "Token naming: [pattern used]"
 
   - id: inventory
@@ -411,8 +415,8 @@ nodes:
       For EACH component:
         ## ComponentName
         - Purpose: one sentence
-        - File: src/components/ui/ComponentName.tsx
-        - Props: TypeScript interface (write it out)
+        - HTML section: describe where it appears in the single index.html file
+        - Attributes: list configurable states and variants
         - Variants: list all variant options (e.g. size: sm/md/lg, intent: primary/secondary)
         - States: which data states apply (loading, empty, error, populated, disabled)
         - User action: what does the user DO with this?
@@ -494,10 +498,8 @@ nodes:
         4. $ARTIFACTS_DIR/design-tokens.md   - token system
         5. $ARTIFACTS_DIR/components.md      - component inventory + acceptance criteria
 
-      Explore the existing codebase to understand current state:
-        - Read package.json, tsconfig.json for project config
-        - Check src/ structure for existing patterns
-        - Identify files that need to be created or modified
+      Note: the output is a single self-contained index.html file with inline CSS.
+      No build tools, no frameworks, no external dependencies.
 
       Write $ARTIFACTS_DIR/prd.md with EXACTLY these sections:
 
@@ -507,8 +509,8 @@ nodes:
         One paragraph: what the user wants and why (from brief.md intent statement).
 
         ## Tech Stack
-        From user-profile.json preferences. If "you_decide", choose based on the
-        project's existing setup or recommend React + Tailwind as default.
+        From user-profile.json preferences. Default is vanilla HTML with inline CSS
+        in a single index.html file. No frameworks, no build tools.
 
         ## Requirements
         Bullet list of functional requirements derived from components.md.
@@ -524,9 +526,9 @@ nodes:
         Libraries to install. "None" if all deps are already present.
 
         ## Acceptance Criteria
-        Numbered, testable checks. Each must be verifiable by running a command
-        or reading a specific file. Merge criteria from components.md with
-        structural checks (typecheck, lint, build, tests pass).
+        Numbered, testable checks. Each must be verifiable by reading index.html.
+        Check: file exists, >2000 chars, has <!DOCTYPE html>, has <style> block,
+        contains semantic HTML tags, no external CDN links.
 
       Output ONLY the PRD file. Do not summarize in chat.
 
@@ -543,10 +545,10 @@ nodes:
         1. $ARTIFACTS_DIR/prd.md             - requirements + acceptance criteria
         2. $ARTIFACTS_DIR/user-profile.json  - user tech stack preferences
         3. $ARTIFACTS_DIR/components.md      - component specs with props and variants
-        4. $ARTIFACTS_DIR/design-tokens.md   - token system
-        5. design-system/tokens.css          - actual token values
+        4. $ARTIFACTS_DIR/design-tokens.md   - token system + actual token values
 
-      Read every file listed under "Files to Modify" in the PRD.
+      Note: all output goes into a single index.html file with inline CSS.
+      Plan steps should describe sections of the HTML file, not separate files.
 
       Write $ARTIFACTS_DIR/plan.md as an ordered list of steps:
 
@@ -611,6 +613,14 @@ nodes:
       - $ARTIFACTS_DIR/build-summary.md
       - $ARTIFACTS_DIR/implement-log.md
     prompt: |
+      IMPORTANT: Output a single self-contained HTML file named index.html.
+      - Use only inline CSS in a <style> block in <head>
+      - No external CDN, no Tailwind, no frameworks, no npm packages
+      - No imports, no JSX, no TypeScript
+      - All JavaScript inline in a <script> block if needed
+      - The file must render correctly by opening index.html directly in a browser
+      - Minimum 3000 characters of meaningful HTML+CSS
+
       You are in the IMPLEMENTATION phase. You have NO memory of prior phases.
 
       Read in this order:
@@ -620,115 +630,102 @@ nodes:
         4. $ARTIFACTS_DIR/prd.md               - requirements + acceptance criteria
         5. $ARTIFACTS_DIR/user-profile.json    - user preferences
         6. $ARTIFACTS_DIR/design-tokens.md     - token system rationale
-        7. design-system/tokens.css            - actual token values (READ THIS FILE)
-        8. $ARTIFACTS_DIR/components.md        - component list + acceptance criteria
-        9. src/utils/cn.ts                     - cn() helper you must use
-        10. $ARTIFACTS_DIR/ux-patterns.md    - UX code patterns (COPY THESE EXACTLY)
+        7. $ARTIFACTS_DIR/components.md        - component list + acceptance criteria
+        8. $ARTIFACTS_DIR/ux-patterns.md       - UX code patterns (adapt to inline CSS)
 
       If $ARTIFACTS_DIR/context-estimate.md does not exist, skip context budget
       warnings and proceed normally.
-      If $ARTIFACTS_DIR/build-summary.md exists: read it to see what is done already.
-      Do not re-implement existing files - read them first.
 
-      Execute steps from plan.md in order, one at a time. For EACH step:
-        1. Read the files listed under "Files to read first" for that step.
-        2. Make the change exactly as described in "Change".
-        3. Run the "Verify" command for that step.
-        4. If verification fails, diagnose and fix (up to 3 attempts).
-        5. Append to $ARTIFACTS_DIR/implement-log.md:
-             Step N: <done | fixed-after-K-tries | skipped — reason>
+      Write all components into a single index.html file in the working directory.
+      Use CSS custom properties (--color-primary, --space-4, etc.) defined in a
+      :root block inside <style>. Translate all design tokens from design-tokens.md
+      into CSS custom properties.
 
       IMPLEMENTATION RULES:
-        - Build in order: Button -> Badge -> Skeleton -> Card
-        - Mobile-first: base styles for 375px, md: and lg: overrides for desktop
+        - ALL output goes into one file: index.html
+        - Mobile-first: base styles for 375px, @media queries for tablet/desktop
         - Every interactive element needs ALL states: default, hover, active, focus-visible, disabled
-        - Touch targets: min-h-[var(--touch-min)] or min-h-12 (48px) on every tappable element
-        - Use CSS variables: bg-[var(--color-surface)], text-[var(--color-ink)]
-          If Tailwind picked up @theme tokens as utility classes, prefer those
-        - Use cn() from @/utils/cn for conditional className construction
-        - Zero hardcoded hex values. Zero hardcoded px sizes outside the token system.
-
-      UX PATTERNS (from ux-patterns.md — follow these exactly):
-        - Copy the button-states pattern for every Button variant
-        - Copy the card-elevation pattern for interactive Cards
-        - Copy the skeleton-pulse pattern for Skeleton components
-        - Copy the focus-ring pattern for every interactive element
-        - Copy the form-controls pattern for any input/select/textarea
-        - Apply the reduced-motion pattern to every animated element
-        - Use the responsive-container pattern for page layout
-        - Use the touch-target pattern for icon-only buttons
+        - Touch targets: min-height 48px on every tappable element
+        - Use CSS custom properties for all colors, spacing, typography
+        - Zero hardcoded hex values outside the :root token block
+        - No external dependencies — everything inline
 
       MOTION (mandatory):
-        - Every hover/focus change MUST use transition with motion tokens
-        - Every animation MUST include reduced-motion fallback
+        - Every hover/focus change MUST use CSS transition
+        - Every animation MUST include @media (prefers-reduced-motion: reduce) fallback
 
       RESPONSIVE (mandatory):
-        - Base = mobile (375px), md: for tablet, lg: for desktop
+        - Base = mobile (375px), @media for tablet (768px), desktop (1024px)
         - No horizontal overflow at 375px
 
       ACCESSIBILITY (non-negotiable):
-        - focus-visible: always present, never suppressed
-        - Native disabled on native controls
+        - :focus-visible styles on all interactive elements
+        - Semantic HTML (button, nav, main, section, form, label)
         - All text 4.5:1 contrast on its background
 
-      After EACH component, write a Vitest test (src/components/ui/ComponentName.test.tsx):
-        - Render test: renders without throwing
-        - Props test: key variants render correct DOM
-        - Accessibility: role and aria attributes present where defined
+      After writing index.html, append to $ARTIFACTS_DIR/implement-log.md:
+        - File written: index.html
+        - Character count (approximate)
+        - Components included
 
-      After each component:
-        - Run: bun run typecheck 2>&1 | tail -10
-        - Fix TypeScript errors before moving to the next component
-        - Append to $ARTIFACTS_DIR/build-summary.md:
-            ComponentName OK - src/components/ui/ComponentName.tsx + test
-
-      MANDATE CHECK before marking each component done:
-        [] Touch targets >= 48px on interactive elements (min-h-12)
-        [] All states present (hover, active, focus-visible, disabled)
-        [] Transitions use motion tokens (--duration-fast, --ease-out)
-        [] focus-visible has ring — not suppressed
-        [] Zero hardcoded values — tokens or utilities only
-        [] Responsive: no overflow at 375px
-        [] Reduced motion handled (motion-reduce: on all animations)
-        [] Native disabled on native controls
-        [] TypeScript: bun run typecheck passes
-
-      When all 4 components are done:
-        Update $ARTIFACTS_DIR/HANDOFF.md - mark all 4 done, update breadcrumbs
-        Output to chat: "Built 4 components: Button OK Badge OK Skeleton OK Card OK. TypeScript clean."
+      Update $ARTIFACTS_DIR/HANDOFF.md and write $ARTIFACTS_DIR/build-summary.md
+      confirming the output.
 
   - id: verify
     type: bash
     allow_failure: true
-    timeout: 180000
+    timeout: 30000
     command: |
       REPORT="$ARTIFACTS_DIR/quality-report.md"
       printf '# Quality Report\nGenerated: %s\n\n' "$(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')" > "$REPORT"
       PASS=0; FAIL=0
-      run_check() {
-        local name="$1"; shift
-        printf '## %s\n' "$name" >> "$REPORT"
-        if "$@" >> "$REPORT" 2>&1; then
-          printf 'PASS\n\n' >> "$REPORT"; PASS=$((PASS+1))
-        else
-          printf 'FAIL\n\n' >> "$REPORT"; FAIL=$((FAIL+1))
-        fi
-      }
-      run_check "TypeScript"  bun run typecheck
-      run_check "ESLint"      bun run lint
-      run_check "Prettier"    bun run format:check
-      run_check "Unit tests"  bun run test -- --reporter=verbose
-      run_check "Vite build"  bun run build
-      if [ -d dist ]; then
-        run_check "Bundle size" bun run size
-      fi
-      IMG=$(grep -rn '<img' src/ 2>/dev/null | grep -v 'loading=' | wc -l || echo 0)
-      printf '## Lazy loading\n' >> "$REPORT"
-      if [ "$IMG" -eq 0 ]; then
+
+      # 1. index.html exists
+      printf '## File exists\n' >> "$REPORT"
+      if [ -f index.html ]; then
         printf 'PASS\n\n' >> "$REPORT"; PASS=$((PASS+1))
       else
-        printf 'FAIL - %d img tags missing loading attribute\n\n' "$IMG" >> "$REPORT"; FAIL=$((FAIL+1))
+        printf 'FAIL - index.html not found\n\n' >> "$REPORT"; FAIL=$((FAIL+1))
       fi
+
+      # 2. File size > 2000 chars
+      printf '## File size\n' >> "$REPORT"
+      if [ -f index.html ]; then
+        CHARS=$(wc -c < index.html)
+        if [ "$CHARS" -gt 2000 ]; then
+          printf 'PASS - %d characters\n\n' "$CHARS" >> "$REPORT"; PASS=$((PASS+1))
+        else
+          printf 'FAIL - only %d characters (minimum 2000)\n\n' "$CHARS" >> "$REPORT"; FAIL=$((FAIL+1))
+        fi
+      else
+        printf 'FAIL - file missing\n\n' >> "$REPORT"; FAIL=$((FAIL+1))
+      fi
+
+      # 3. Valid DOCTYPE
+      printf '## DOCTYPE\n' >> "$REPORT"
+      if grep -qi '<!DOCTYPE html>' index.html 2>/dev/null; then
+        printf 'PASS\n\n' >> "$REPORT"; PASS=$((PASS+1))
+      else
+        printf 'FAIL - no <!DOCTYPE html> declaration\n\n' >> "$REPORT"; FAIL=$((FAIL+1))
+      fi
+
+      # 4. Contains <style> block
+      printf '## Style block\n' >> "$REPORT"
+      if grep -q '<style' index.html 2>/dev/null; then
+        printf 'PASS\n\n' >> "$REPORT"; PASS=$((PASS+1))
+      else
+        printf 'FAIL - no <style> block found\n\n' >> "$REPORT"; FAIL=$((FAIL+1))
+      fi
+
+      # 5. Meaningful content (not just skeleton)
+      printf '## Content check\n' >> "$REPORT"
+      TAGS=$(grep -oE '<(button|form|input|nav|section|main|h[1-6]|table|ul|ol)' index.html 2>/dev/null | wc -l)
+      if [ "$TAGS" -gt 3 ]; then
+        printf 'PASS - %d semantic HTML tags found\n\n' "$TAGS" >> "$REPORT"; PASS=$((PASS+1))
+      else
+        printf 'FAIL - only %d semantic tags (minimum 4)\n\n' "$TAGS" >> "$REPORT"; FAIL=$((FAIL+1))
+      fi
+
       printf '---\nSummary: %d passed, %d failed\n' "$PASS" "$FAIL" >> "$REPORT"
       echo "Quality: $PASS passed, $FAIL failed"
 
@@ -748,7 +745,7 @@ nodes:
         3. $ARTIFACTS_DIR/design-tokens.md     - the token system the code must follow
         4. $ARTIFACTS_DIR/quality-report.md    - automated gate results
         5. $ARTIFACTS_DIR/components.md        - acceptance criteria per component
-        6. src/components/ui/                  - the actual implementation (read each file)
+        6. index.html                          - the actual implementation (single file)
         7. $ARTIFACTS_DIR/user-profile.json    - adapt review communication
         8. $ARTIFACTS_DIR/prd.md               - acceptance criteria to verify
         9. $ARTIFACTS_DIR/plan.md              - what was planned vs. what was built
@@ -811,8 +808,8 @@ nodes:
       You are running as $MODEL_NAME (size: $MODEL_SIZE, context: $MODEL_CONTEXT tokens, vision: $MODEL_VISION).
 
       Adapt your review depth to your capabilities:
-      - small (sub-9B): focus on structural correctness (HTML semantics, prop types, token usage,
-        build passes). Skip nuanced visual design critique — flag items you are uncertain about and
+      - small (sub-9B): focus on structural correctness (HTML semantics, CSS token usage,
+        file validity). Skip nuanced visual design critique — flag items you are uncertain about and
         recommend the user verify visually or with a larger model.
       - medium (9B-35B): full design conformance review including domain-specificity, intent
         alignment, color harmony, and spacing rhythm.
@@ -846,15 +843,16 @@ nodes:
         Read:
           1. $ARTIFACTS_DIR/HANDOFF.md           - current state
           2. $ARTIFACTS_DIR/review-report.md     - every FAIL item with file:line
-          3. design-system/tokens.css            - token values for corrections
-          4. $ARTIFACTS_DIR/user-profile.json    - adapt communication
+          3. index.html                          - the actual output to fix
+          4. $ARTIFACTS_DIR/design-tokens.md     - token values for corrections
+          5. $ARTIFACTS_DIR/user-profile.json    - adapt communication
 
         Fix ONLY items marked FAIL. Do not refactor PASS items.
+        All fixes go in index.html (the single output file).
         For each fix:
-          - Read the file at the specified location
+          - Read the relevant section of index.html
           - Make the surgical change
-          - Run: bun run typecheck 2>&1 | tail -5
-          - Append to $ARTIFACTS_DIR/rework-summary.md: "Fixed: [file:line] - [what changed]"
+          - Append to $ARTIFACTS_DIR/rework-summary.md: "Fixed: [issue] - [what changed]"
 
         USER ADAPTATION:
         - frontend_level 1-3: explain each fix (what was wrong, why, what the fix does).
@@ -862,8 +860,8 @@ nodes:
 
         MODEL AWARENESS:
         You are $MODEL_NAME (size: $MODEL_SIZE).
-        - small (sub-9B): fix only concrete FAIL items (TypeScript errors, missing tokens, wrong
-          HTML elements). Do not attempt subjective design improvements — self-critique at this
+        - small (sub-9B): fix only concrete FAIL items (missing tokens, wrong
+          HTML elements, broken CSS). Do not attempt subjective design improvements — self-critique at this
           size tends to degrade output quality.
         - medium or large (9B+): fix all FAIL items and improve WARN items where you are
           confident in the improvement.
@@ -874,23 +872,26 @@ nodes:
   - id: verify-rework
     type: bash
     allow_failure: true
-    timeout: 180000
+    timeout: 30000
     command: |
       REPORT="$ARTIFACTS_DIR/quality-report-rework.md"
       printf '# Quality Report (Post-Rework)\nGenerated: %s\n\n' "$(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')" > "$REPORT"
       PASS=0; FAIL=0
-      run_check() {
-        local name="$1"; shift
-        printf '## %s\n' "$name" >> "$REPORT"
-        if "$@" >> "$REPORT" 2>&1; then
-          printf 'PASS\n\n' >> "$REPORT"; PASS=$((PASS+1))
+      if [ -f index.html ]; then
+        CHARS=$(wc -c < index.html)
+        if [ "$CHARS" -gt 2000 ]; then
+          printf '## File size\nPASS - %d characters\n\n' "$CHARS" >> "$REPORT"; PASS=$((PASS+1))
         else
-          printf 'FAIL\n\n' >> "$REPORT"; FAIL=$((FAIL+1))
+          printf '## File size\nFAIL - only %d characters\n\n' "$CHARS" >> "$REPORT"; FAIL=$((FAIL+1))
         fi
-      }
-      run_check "TypeScript" bun run typecheck
-      run_check "ESLint"     bun run lint
-      run_check "Unit tests" bun run test -- --reporter=verbose
+        if grep -q '<style' index.html; then
+          printf '## Style block\nPASS\n\n' >> "$REPORT"; PASS=$((PASS+1))
+        else
+          printf '## Style block\nFAIL\n\n' >> "$REPORT"; FAIL=$((FAIL+1))
+        fi
+      else
+        printf '## File exists\nFAIL - index.html not found\n\n' >> "$REPORT"; FAIL=$((FAIL+1))
+      fi
       printf '---\nSummary: %d passed, %d failed\n' "$PASS" "$FAIL" >> "$REPORT"
       echo "Post-rework: $PASS passed, $FAIL failed"
 

@@ -22,7 +22,7 @@ Results go in: output/validation/pi-harness-scores.jsonl
 - 6 approval gates in web-design.yaml must be stripped → web-design-batch.yaml
 - Harness is purely text-based — no vision/screenshots used
 - Port 11434 llama-server OpenAI-compatible endpoint
-- pi -p slash command support: UNCONFIRMED — test before batch run
+- pi -p slash command support: CONFIRMED — reads CLI source, expandPromptTemplates=true in print mode
 
 ## AutoDL Setup (RTX PRO 6000, ~$1/hr)
 Clone from: 3080 Ti instance (dbfb41b9f9-ce413e40)
@@ -49,9 +49,9 @@ PI must run from project directory (finds .pi/workflows/ relative to cwd)
 
 ## Files in This Directory
 - AUTODL-setup-research/autodl-resarch-060126.md   ← operational runbook
-- web-design-batch.yaml                            ← TO CREATE (gates stripped)
-- batch-test.sh                                    ← TO CREATE (loop script)
-- parse-results.py                                 ← TO CREATE (adapt from parse-baseline.py)
+- web-design-batch.yaml                            ← gates stripped, vanilla HTML output (18 nodes)
+- batch-test.sh                                    ← loop script for 10 test prompts
+- parse-results.py                                 ← collects output.html files into JSON for scoring
 
 ## Pi Harness Location (VPS)
 /root/tinkering/Local-LLMs/Local-LLM-Agent/pi-harness-stable/
@@ -82,3 +82,16 @@ Output: output/validation/pi-harness-scores.jsonl
 - Dataset site: qwen.data-analytics.space
 - Main dataset repo: ../  (frontend-design-dataset)
 - Pi harness: /root/tinkering/Local-LLMs/Local-LLM-Agent/pi-harness-stable/
+
+## Smoke Test Command (run on AutoDL after setup)
+```bash
+# Single prompt test before full batch run
+cd /root/autodl-tmp/pi-harness-stable
+pi -p "/workflow run web-design-batch Build a simple login form with email and password fields"
+
+# Check output
+ls -la index.html 2>/dev/null || echo "No index.html"
+wc -c index.html 2>/dev/null || echo "Empty output"
+```
+Expected: index.html > 3000 chars, contains <!DOCTYPE html>, inline CSS only.
+If this fails, debug before running the full 10-prompt batch.
