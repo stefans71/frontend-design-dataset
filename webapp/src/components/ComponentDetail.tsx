@@ -49,10 +49,10 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
   const alignment = c.score?.alignment_score ?? c.alignment_score
   const interactivity = c.score?.interactivity_score ?? c.interactivity_score
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'original', label: 'Original' },
-    { key: 'critique', label: 'Critique' },
-    { key: 'improved', label: 'Improved' },
+  const tabs: { key: Tab; label: string; available: boolean }[] = [
+    { key: 'original', label: 'Original', available: true },
+    { key: 'critique', label: 'Critique', available: !!c.critique },
+    { key: 'improved', label: 'Improved', available: !!c.improved_html },
   ]
 
   return (
@@ -60,23 +60,30 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
       <div className="lg:col-span-3 space-y-4">
         {/* Tab switcher */}
         <div className="flex items-center" style={{ gap: 2, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
-          {tabs.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className="cursor-pointer bg-transparent border-0 transition-colors duration-150"
-              style={{
-                padding: '10px 16px',
-                fontSize: 14,
-                fontWeight: tab === t.key ? 600 : 400,
-                color: tab === t.key ? 'var(--text-primary)' : 'var(--text-muted)',
-                borderBottom: tab === t.key ? '2px solid var(--accent)' : '2px solid transparent',
-                marginBottom: -1,
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
+          {tabs.map(t => {
+            const isActive = tab === t.key
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className="cursor-pointer bg-transparent border-0 transition-colors duration-150"
+                style={{
+                  padding: '10px 16px',
+                  fontSize: 14,
+                  fontWeight: isActive && t.available ? 600 : 400,
+                  color: !t.available
+                    ? isActive ? 'var(--text-muted)' : 'color-mix(in srgb, var(--text-muted) 50%, transparent)'
+                    : isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+                  borderBottom: isActive
+                    ? t.available ? '2px solid var(--accent)' : '2px dashed var(--text-muted)'
+                    : '2px solid transparent',
+                  marginBottom: -1,
+                }}
+              >
+                {t.label}
+              </button>
+            )
+          })}
         </div>
 
         {/* Tab content */}
