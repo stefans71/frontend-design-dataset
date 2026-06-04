@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useComponents } from '@/hooks/useComponents'
 import type { GridCols, FilterCategory, FilterTheme, SortBy } from '@/lib/types'
 import ComponentCard from '@/components/ComponentCard'
@@ -7,8 +8,10 @@ import GridControl from '@/components/GridControl'
 import Shimmer from '@/components/ui/Shimmer'
 
 export default function Gallery() {
+  const navigate = useNavigate()
   const [cols, setCols] = useState<GridCols>(3)
   const [page, setPage] = useState(0)
+  const [search, setSearch] = useState('')
   const [filters, setFilters] = useState({
     category: 'all' as FilterCategory,
     theme: 'all' as FilterTheme,
@@ -74,6 +77,67 @@ export default function Gallery() {
         />
 
         <div className="flex-1 min-w-0">
+          {/* Search + pagination bar */}
+          <div className="flex items-center justify-between" style={{ marginBottom: 16, gap: 12 }}>
+            <form
+              onSubmit={e => {
+                e.preventDefault()
+                const q = search.trim()
+                if (!q) return
+                const numMatch = q.match(/(\d{1,3})/)
+                const runMatch = q.match(/r(?:un)?(\d)/)
+                if (numMatch) {
+                  const num = numMatch[1].padStart(3, '0')
+                  const run = runMatch ? runMatch[1] : '0'
+                  navigate(`/components/component-${num}-run${run}`)
+                }
+              }}
+              className="flex items-center"
+              style={{ gap: 6 }}
+            >
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Jump to # (e.g. 54, 012-r3)"
+                className="text-text-primary bg-bg-card focus:outline-none transition-colors"
+                style={{
+                  width: 200, height: 32, fontSize: 13, padding: '0 10px',
+                  borderRadius: 'var(--radius)', border: '1px solid var(--border)',
+                }}
+              />
+              <button
+                type="submit"
+                className="cursor-pointer text-text-muted hover:text-text-primary bg-transparent transition-colors duration-150"
+                style={{ height: 32, padding: '0 10px', fontSize: 13, borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
+              >
+                Go
+              </button>
+            </form>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2" style={{ fontSize: 13 }}>
+                <button
+                  onClick={() => setPage(p => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="cursor-pointer disabled:cursor-default disabled:opacity-25 transition-colors duration-150 bg-transparent"
+                  style={{ padding: '4px 8px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                >
+                  ←
+                </button>
+                <span className="font-mono text-text-muted" style={{ fontSize: 12 }}>
+                  {page + 1} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                  className="cursor-pointer disabled:cursor-default disabled:opacity-25 transition-colors duration-150 bg-transparent"
+                  style={{ padding: '4px 8px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                >
+                  →
+                </button>
+              </div>
+            )}
+          </div>
           {loading ? (
             <div className={`grid ${gridClass}`} style={{ gap: 16 }}>
               {Array.from({ length: 6 }).map((_, i) => (

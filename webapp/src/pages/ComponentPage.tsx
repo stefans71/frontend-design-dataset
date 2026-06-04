@@ -44,12 +44,22 @@ export default function ComponentPage() {
 
   return (
     <div className="page-container" style={{ paddingTop: 32, paddingBottom: 48 }}>
-      <div className="flex items-center gap-2 mb-6 text-sm">
-        <Link to="/components" className="text-text-muted no-underline hover:text-text-primary transition-colors duration-150">
-          Components
+      <div className="flex items-center gap-3 mb-6">
+        <Link
+          to="/components"
+          className="flex items-center justify-center no-underline text-text-muted hover:text-text-primary hover:bg-bg-secondary transition-colors duration-150"
+          style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid var(--border)', flexShrink: 0 }}
+          aria-label="Back to Training Data"
+        >
+          <span style={{ fontSize: 16 }}>←</span>
         </Link>
-        <span className="text-text-muted">/</span>
-        <span className="text-text-primary font-medium">{id}</span>
+        <div className="flex items-center gap-2 text-sm">
+          <Link to="/components" className="text-text-muted no-underline hover:text-text-primary transition-colors duration-150">
+            Components
+          </Link>
+          <span className="text-text-muted">/</span>
+          <span className="text-text-primary font-medium">{id}</span>
+        </div>
       </div>
       <ComponentDetail component={component} />
     </div>
