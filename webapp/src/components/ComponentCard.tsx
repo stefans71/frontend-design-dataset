@@ -7,6 +7,9 @@ export default function ComponentCard({ component }: { component: ComponentWithS
   const score = c.score?.total ?? c.total
   const [imgFailed, setImgFailed] = useState(false)
 
+  const idMatch = c.id.match(/component-(\d+)-run(\d+)/)
+  const shortId = idMatch ? `#${idMatch[1]}-r${idMatch[2]}` : c.id
+
   return (
     <Link
       to={`/components/${c.id}`}
@@ -48,6 +51,14 @@ export default function ComponentCard({ component }: { component: ComponentWithS
         )}
         <span className="absolute" style={{ top: 8, left: 8, fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 6, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', color: 'rgba(255,255,255,0.8)' }}>
           {c.category}
+        </span>
+        <span className="absolute font-mono" style={{
+          bottom: 8, right: 8, fontSize: 10, fontWeight: 600,
+          padding: '2px 6px', borderRadius: 4,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          color: 'rgba(255,255,255,0.7)',
+        }}>
+          {shortId}
         </span>
       </div>
 

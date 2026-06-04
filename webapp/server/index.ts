@@ -112,6 +112,8 @@ const server = Bun.serve({
 
       const orderBy = sort === 'score_asc' ? 'e.total ASC' :
                       sort === 'score_desc' ? 'e.total DESC' :
+                      sort === 'id_asc' ? 'c.id ASC' :
+                      sort === 'id_desc' ? 'c.id DESC' :
                       sort === 'temperature' ? 'c.temperature ASC' : 'e.total DESC'
 
       const hasPng = url.searchParams.get('hasPng')

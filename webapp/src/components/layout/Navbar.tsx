@@ -6,7 +6,7 @@ import { useFontSize } from '@/hooks/useFontSize'
 const links = [
   { to: '/', label: 'Home' },
   { to: '/validation', label: 'Validation' },
-  { to: '/components', label: 'Gallery' },
+  { to: '/components', label: 'Training Data' },
   { to: '/conversations', label: 'Conversations' },
 ]
 

@@ -27,6 +27,8 @@ const themes: { value: FilterTheme; label: string }[] = [
 const sorts: { value: SortBy; label: string }[] = [
   { value: 'score_desc', label: 'Score ↓' },
   { value: 'score_asc', label: 'Score ↑' },
+  { value: 'id_asc', label: 'ID ↑' },
+  { value: 'id_desc', label: 'ID ↓' },
   { value: 'temperature', label: 'Temperature' },
 ]
 

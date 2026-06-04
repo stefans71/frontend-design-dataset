@@ -63,6 +63,6 @@ export interface ValidationResult {
 
 export type GridCols = 2 | 3 | 4
 export type Theme = 'light' | 'dark'
-export type SortBy = 'score_desc' | 'score_asc' | 'category' | 'temperature'
+export type SortBy = 'score_desc' | 'score_asc' | 'category' | 'temperature' | 'id_asc' | 'id_desc'
 export type FilterCategory = 'all' | 'form' | 'card' | 'navbar' | 'mobile' | 'marketing' | 'data_display'
 export type FilterTheme = 'all' | 'dark' | 'light'
