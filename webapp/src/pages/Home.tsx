@@ -7,11 +7,25 @@ export default function Home() {
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12 }}>
           FRONTEND DESIGN EXPERT
         </div>
-        <h1 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, lineHeight: 1.2, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-          Open-source design models for local LLMs
+        <h1 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, lineHeight: 1.2, letterSpacing: '-0.02em' }}>
+          <span style={{
+            background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            display: 'inline-block',
+          }}>
+            Qwen3-VL-8B
+          </span>
+          <span style={{ color: 'var(--text-primary)', display: 'block' }}>
+            Fine-Tuned for
+          </span>
+          <span style={{ color: 'var(--text-primary)', display: 'block' }}>
+            Frontend Design
+          </span>
         </h1>
         <p className="text-text-secondary" style={{ fontSize: 16, lineHeight: 1.6, marginTop: 16, maxWidth: 520 }}>
-          Fine-tuned vision-language models that ask the right questions, critique designs with specific measurements, and produce clean HTML output.
+          A vision-language model that critiques UI screenshots with px-level precision, asks qualifying questions before building, and outputs clean self-contained HTML — trained on 3,090 GPT-5.4 design critiques. Runs locally on a 12GB GPU.
         </p>
 
         <div className="flex items-center gap-4" style={{ marginTop: 32 }}>
