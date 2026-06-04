@@ -5,9 +5,7 @@ import { useFontSize } from '@/hooks/useFontSize'
 
 const links = [
   { to: '/', label: 'Home' },
-  { to: '/validation', label: 'Validation' },
-  { to: '/components', label: 'Training Data' },
-  { to: '/conversations', label: 'Conversations' },
+  { to: '/fine-tuned', label: 'Fine Tuned' },
 ]
 
 export default function Navbar() {
@@ -25,7 +23,11 @@ export default function Navbar() {
           </Link>
           <div className="flex items-center navbar-links" style={{ gap: 4 }}>
             {links.map(l => {
-              const active = l.to === '/' ? pathname === '/' : pathname.startsWith(l.to)
+              const active = l.to === '/'
+                ? pathname === '/'
+                : l.to === '/fine-tuned'
+                  ? pathname !== '/'
+                  : pathname.startsWith(l.to)
               return (
                 <Link
                   key={l.to}

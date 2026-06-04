@@ -151,6 +151,10 @@ body {
   .navbar-links a { padding: 6px 8px; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
   .navbar-controls { gap: 2px; flex-shrink: 0; }
 
+  .section-nav .page-container { overflow-x: auto; scrollbar-width: none; }
+  .section-nav .page-container::-webkit-scrollbar { display: none; }
+  .section-nav a { white-space: nowrap; flex-shrink: 0; }
+
   .hero-grid { grid-template-columns: 1fr !important; gap: 32px; }
   .hero-terminal { display: none; }
   .hero-title { font-size: clamp(28px, 8vw, 42px) !important; }
