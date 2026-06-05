@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useComponents } from '@/hooks/useComponents'
 import type { GridCols, FilterCategory, FilterTheme, SortBy } from '@/lib/types'
 import ComponentCard from '@/components/ComponentCard'
@@ -9,9 +9,14 @@ import Shimmer from '@/components/ui/Shimmer'
 
 export default function Gallery() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [cols, setCols] = useState<GridCols>(3)
-  const [page, setPage] = useState(0)
+  const [page, setPage] = useState(() => Number(searchParams.get('page') || 0))
   const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    sessionStorage.setItem('gallery-page', String(page))
+  }, [page])
   const [filters, setFilters] = useState({
     category: 'all' as FilterCategory,
     theme: 'all' as FilterTheme,

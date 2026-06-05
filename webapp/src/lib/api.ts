@@ -27,6 +27,11 @@ export async function getComponent(id: string): Promise<ComponentWithScore & {
   return res.json()
 }
 
+export async function getComponentNeighbors(id: string): Promise<{ prev: string | null; next: string | null }> {
+  const res = await fetch(`${BASE}/components/${id}/neighbors`)
+  return res.json()
+}
+
 export async function getConversations(params: {
   type?: string
   domain?: string

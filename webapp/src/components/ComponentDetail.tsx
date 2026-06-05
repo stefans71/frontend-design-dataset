@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import type { ComponentWithScore } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import CritiquePanel from '@/components/CritiquePanel'
-import { Maximize2, Minimize2 } from 'lucide-react'
+import { Maximize2, Minimize2, ChevronLeft, ChevronRight } from 'lucide-react'
 
 function scoreVariant(score: number) {
   if (score >= 7) return 'score-high' as const
@@ -12,6 +12,8 @@ function scoreVariant(score: number) {
 
 interface ComponentDetailProps {
   component: ComponentWithScore & { critique?: string; improved_html?: string; component_html?: string }
+  neighbors?: { prev: string | null; next: string | null }
+  onNavigate?: (id: string) => void
 }
 
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -113,7 +115,6 @@ function ResizableIframe({ srcDoc, title, expanded, label, attribution }: {
         style={iframeStyle}
         sandbox="allow-scripts"
       />
-      {/* Resize handles */}
       {!expanded && (
         <>
           <div onMouseDown={e => onMouseDown(e, 'br')} style={{ position: 'absolute', bottom: 0, right: 0, width: 16, height: 16, cursor: 'nwse-resize', zIndex: 10 }}>
@@ -131,7 +132,48 @@ function ResizableIframe({ srcDoc, title, expanded, label, attribution }: {
   )
 }
 
-export default function ComponentDetail({ component: c }: ComponentDetailProps) {
+function TabButton({ tab, current, available, onClick }: { tab: Tab; current: Tab; available: boolean; onClick: () => void; label?: string }) {
+  const isActive = current === tab
+  const label = tab === 'original' ? 'Original' : tab === 'critique' ? 'Critique' : 'Improved'
+  return (
+    <button
+      onClick={onClick}
+      className="cursor-pointer bg-transparent border-0 transition-colors duration-150"
+      style={{
+        padding: '8px 14px',
+        fontSize: 13,
+        fontWeight: isActive && available ? 600 : 400,
+        color: !available
+          ? isActive ? 'var(--text-muted)' : 'color-mix(in srgb, var(--text-muted) 50%, transparent)'
+          : isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+        borderBottom: isActive
+          ? available ? '2px solid var(--accent)' : '2px dashed var(--text-muted)'
+          : '2px solid transparent',
+        marginBottom: -1,
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
+function NavArrow({ targetId, direction, onNavigate, size: sz = 28 }: {
+  targetId: string | null; direction: 'prev' | 'next'; onNavigate?: (id: string) => void; size?: number
+}) {
+  return (
+    <button
+      onClick={() => targetId && onNavigate?.(targetId)}
+      disabled={!targetId}
+      className="flex items-center justify-center cursor-pointer disabled:cursor-default disabled:opacity-25 text-text-muted hover:text-text-primary hover:bg-bg-secondary bg-transparent transition-colors duration-150"
+      style={{ width: sz, height: sz, borderRadius: 6, border: '1px solid var(--border)', flexShrink: 0 }}
+      aria-label={direction === 'prev' ? 'Previous component' : 'Next component'}
+    >
+      {direction === 'prev' ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+    </button>
+  )
+}
+
+export default function ComponentDetail({ component: c, neighbors, onNavigate }: ComponentDetailProps) {
   const [tab, setTab] = useState<Tab>('original')
   const [expanded, setExpanded] = useState(false)
   const score = c.score?.total ?? c.total
@@ -145,16 +187,16 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const tabs: { key: Tab; label: string; available: boolean }[] = [
-    { key: 'original', label: 'Original', available: true },
-    { key: 'critique', label: 'Critique', available: !!c.critique },
-    { key: 'improved', label: 'Improved', available: !!c.improved_html },
+  const tabs: { key: Tab; available: boolean }[] = [
+    { key: 'original', available: true },
+    { key: 'critique', available: !!c.critique },
+    { key: 'improved', available: !!c.improved_html },
   ]
 
   const showExpandButton = tab === 'original' || tab === 'improved'
   const hasContent = tab === 'original' ? !!c.component_html : tab === 'improved' ? !!c.improved_html : false
 
-  const iframeContent = expanded && hasContent ? (
+  const expandedContent = expanded ? (
     <div
       style={{
         position: 'fixed',
@@ -169,36 +211,62 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
       }}
     >
       <div style={{ padding: '0 24px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <div className="flex items-center justify-between" style={{ padding: '12px 0', flexShrink: 0 }}>
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-text-muted" style={{ fontSize: 12 }}>
-              {tab === 'original' ? 'component.html' : 'improved.html'}
-            </span>
-            <span style={{ fontSize: 11 }}>
-              {tab === 'original' ? (
-                <><span style={{ background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 700 }}>Qwen3.6-27B</span> · T={c.temperature}</>
-              ) : (
-                <span style={{ color: '#22c55e' }}>Rewritten by GPT-5.4</span>
-              )}
-            </span>
+        {/* Expanded toolbar: tabs + nav + exit */}
+        <div className="flex items-center justify-between" style={{ padding: '8px 0', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
+          <div className="flex items-center" style={{ gap: 2 }}>
+            {tabs.map(t => (
+              <TabButton key={t.key} tab={t.key} current={tab} available={t.available} onClick={() => setTab(t.key)} />
+            ))}
           </div>
-          <button
-            onClick={() => setExpanded(false)}
-            className="cursor-pointer bg-transparent border-0 text-text-muted hover:text-text-primary transition-colors duration-150 flex items-center gap-2"
-            style={{ fontSize: 13 }}
-          >
-            <Minimize2 size={14} />
-            <span>Exit</span>
-          </button>
+          <div className="flex items-center gap-3">
+            {neighbors && onNavigate && (
+              <div className="flex items-center gap-1">
+                <NavArrow targetId={neighbors.prev} direction="prev" onNavigate={onNavigate} size={26} />
+                <NavArrow targetId={neighbors.next} direction="next" onNavigate={onNavigate} size={26} />
+              </div>
+            )}
+            <button
+              onClick={() => setExpanded(false)}
+              className="cursor-pointer bg-transparent border-0 text-text-muted hover:text-text-primary transition-colors duration-150 flex items-center gap-1.5"
+              style={{ fontSize: 12, padding: '6px 8px' }}
+            >
+              <Minimize2 size={13} />
+              <span>Exit</span>
+            </button>
+          </div>
         </div>
-        <div className="rounded-lg overflow-hidden border border-border" style={{ flex: 1, minHeight: 0 }}>
-          <iframe
-            srcDoc={tab === 'original' ? c.component_html! : c.improved_html!}
-            title={tab === 'original' ? 'Original component' : 'Improved by GPT-5.4'}
-            className="w-full h-full border-0 block"
-            style={{ background: '#fff' }}
-            sandbox="allow-scripts"
-          />
+
+        {/* Expanded content */}
+        <div style={{ flex: 1, minHeight: 0, paddingTop: 12 }}>
+          {(tab === 'original' || tab === 'improved') && hasContent ? (
+            <div className="rounded-lg overflow-hidden border border-border" style={{ height: '100%' }}>
+              <iframe
+                srcDoc={tab === 'original' ? c.component_html! : c.improved_html!}
+                title={tab === 'original' ? 'Original component' : 'Improved by GPT-5.4'}
+                className="w-full h-full border-0 block"
+                style={{ background: '#fff' }}
+                sandbox="allow-scripts"
+              />
+            </div>
+          ) : tab === 'critique' ? (
+            <div className="rounded-lg border border-border overflow-auto" style={{ height: '100%' }}>
+              <div style={{ padding: '20px 24px' }}>
+                {c.critique ? (
+                  <CritiquePanel critique={c.critique} />
+                ) : (
+                  <p className="text-text-muted" style={{ fontSize: 14, padding: '40px 0', textAlign: 'center' }}>
+                    Critique not available
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center border border-dashed border-border rounded-lg" style={{ height: '100%' }}>
+              <p className="text-text-muted" style={{ fontSize: 14 }}>
+                Content not available for this component
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -206,36 +274,15 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
 
   return (
     <>
-    {iframeContent}
+    {expandedContent}
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 component-detail-layout">
       <div className="lg:col-span-3 space-y-4">
         {/* Tab switcher */}
         <div className="flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
           <div className="flex items-center" style={{ gap: 2 }}>
-            {tabs.map(t => {
-              const isActive = tab === t.key
-              return (
-                <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className="cursor-pointer bg-transparent border-0 transition-colors duration-150"
-                  style={{
-                    padding: '10px 16px',
-                    fontSize: 14,
-                    fontWeight: isActive && t.available ? 600 : 400,
-                    color: !t.available
-                      ? isActive ? 'var(--text-muted)' : 'color-mix(in srgb, var(--text-muted) 50%, transparent)'
-                      : isActive ? 'var(--text-primary)' : 'var(--text-muted)',
-                    borderBottom: isActive
-                      ? t.available ? '2px solid var(--accent)' : '2px dashed var(--text-muted)'
-                      : '2px solid transparent',
-                    marginBottom: -1,
-                  }}
-                >
-                  {t.label}
-                </button>
-              )
-            })}
+            {tabs.map(t => (
+              <TabButton key={t.key} tab={t.key} current={tab} available={t.available} onClick={() => setTab(t.key)} />
+            ))}
           </div>
           {showExpandButton && hasContent && (
             <button
