@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import type { ComponentWithScore } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import CritiquePanel from '@/components/CritiquePanel'
+import { Maximize2, Minimize2 } from 'lucide-react'
 
 function scoreVariant(score: number) {
   if (score >= 7) return 'score-high' as const
@@ -42,12 +43,107 @@ function ScoreBar({ label, value, max }: { label: string; value: number; max: nu
 
 type Tab = 'original' | 'critique' | 'improved'
 
+function ResizableIframe({ srcDoc, title, expanded, label, attribution }: {
+  srcDoc: string
+  title: string
+  expanded: boolean
+  label: string
+  attribution: React.ReactNode
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [resizing, setResizing] = useState(false)
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null)
+  const startRef = useRef<{ x: number; y: number; w: number; h: number; corner: string }>({ x: 0, y: 0, w: 0, h: 0, corner: '' })
+
+  const onMouseDown = useCallback((e: React.MouseEvent, corner: string) => {
+    e.preventDefault()
+    const el = containerRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    startRef.current = { x: e.clientX, y: e.clientY, w: rect.width, h: rect.height, corner }
+    setResizing(true)
+  }, [])
+
+  useEffect(() => {
+    if (!resizing) return
+    const onMove = (e: MouseEvent) => {
+      const s = startRef.current
+      const dx = e.clientX - s.x
+      const dy = e.clientY - s.y
+      let w = s.w
+      let h = s.h
+      if (s.corner.includes('r')) w = Math.max(320, s.w + dx)
+      if (s.corner.includes('l')) w = Math.max(320, s.w - dx)
+      if (s.corner.includes('b')) h = Math.max(200, s.h + dy)
+      setSize({ w, h })
+    }
+    const onUp = () => setResizing(false)
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+  }, [resizing])
+
+  useEffect(() => { if (expanded) setSize(null) }, [expanded])
+
+  const iframeStyle: React.CSSProperties = expanded
+    ? { height: size?.h ?? 'calc(100vh - 140px)', width: '100%', background: '#fff' }
+    : { height: size?.h ?? 560, width: size?.w ?? '100%', maxWidth: '100%', background: '#fff' }
+
+  return (
+    <div
+      ref={containerRef}
+      className="rounded-lg overflow-visible border border-border"
+      style={{ position: 'relative', width: expanded ? '100%' : (size?.w ?? '100%'), maxWidth: '100%' }}
+    >
+      <div className="flex items-center justify-between bg-bg-secondary" style={{ padding: '8px 14px', borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1.5">
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--border)' }} />
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--border)' }} />
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--border)' }} />
+          </div>
+          <span className="font-mono text-text-muted" style={{ fontSize: 11 }}>{label}</span>
+        </div>
+        {attribution}
+      </div>
+      <iframe
+        srcDoc={srcDoc}
+        title={title}
+        className="border-0 block"
+        style={iframeStyle}
+        sandbox="allow-scripts"
+      />
+      {/* Resize handles */}
+      {!expanded && (
+        <>
+          <div onMouseDown={e => onMouseDown(e, 'br')} style={{ position: 'absolute', bottom: 0, right: 0, width: 16, height: 16, cursor: 'nwse-resize', zIndex: 10 }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" style={{ position: 'absolute', bottom: 2, right: 2 }}>
+              <line x1="14" y1="6" x2="6" y2="14" stroke="var(--text-muted)" strokeWidth="1" strokeOpacity="0.5" />
+              <line x1="14" y1="10" x2="10" y2="14" stroke="var(--text-muted)" strokeWidth="1" strokeOpacity="0.5" />
+            </svg>
+          </div>
+          <div onMouseDown={e => onMouseDown(e, 'b')} style={{ position: 'absolute', bottom: 0, left: 16, right: 16, height: 6, cursor: 'ns-resize', zIndex: 10 }} />
+          <div onMouseDown={e => onMouseDown(e, 'r')} style={{ position: 'absolute', top: 40, right: 0, bottom: 16, width: 6, cursor: 'ew-resize', zIndex: 10 }} />
+        </>
+      )}
+      {resizing && <div style={{ position: 'fixed', inset: 0, zIndex: 9999, cursor: startRef.current.corner === 'b' ? 'ns-resize' : startRef.current.corner === 'r' ? 'ew-resize' : 'nwse-resize' }} />}
+    </div>
+  )
+}
+
 export default function ComponentDetail({ component: c }: ComponentDetailProps) {
   const [tab, setTab] = useState<Tab>('original')
+  const [expanded, setExpanded] = useState(false)
   const score = c.score?.total ?? c.total
   const visual = c.score?.visual_score ?? c.visual_score
   const alignment = c.score?.alignment_score ?? c.alignment_score
   const interactivity = c.score?.interactivity_score ?? c.interactivity_score
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const tabs: { key: Tab; label: string; available: boolean }[] = [
     { key: 'original', label: 'Original', available: true },
@@ -55,61 +151,118 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
     { key: 'improved', label: 'Improved', available: !!c.improved_html },
   ]
 
+  const showExpandButton = tab === 'original' || tab === 'improved'
+  const hasContent = tab === 'original' ? !!c.component_html : tab === 'improved' ? !!c.improved_html : false
+
+  const iframeContent = expanded && hasContent ? (
+    <div
+      style={{
+        position: 'fixed',
+        top: 100,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 40,
+        background: 'var(--bg-primary)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div style={{ padding: '0 24px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <div className="flex items-center justify-between" style={{ padding: '12px 0', flexShrink: 0 }}>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-text-muted" style={{ fontSize: 12 }}>
+              {tab === 'original' ? 'component.html' : 'improved.html'}
+            </span>
+            <span style={{ fontSize: 11 }}>
+              {tab === 'original' ? (
+                <><span style={{ background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 700 }}>Qwen3.6-27B</span> · T={c.temperature}</>
+              ) : (
+                <span style={{ color: '#22c55e' }}>Rewritten by GPT-5.4</span>
+              )}
+            </span>
+          </div>
+          <button
+            onClick={() => setExpanded(false)}
+            className="cursor-pointer bg-transparent border-0 text-text-muted hover:text-text-primary transition-colors duration-150 flex items-center gap-2"
+            style={{ fontSize: 13 }}
+          >
+            <Minimize2 size={14} />
+            <span>Exit</span>
+          </button>
+        </div>
+        <div className="rounded-lg overflow-hidden border border-border" style={{ flex: 1, minHeight: 0 }}>
+          <iframe
+            srcDoc={tab === 'original' ? c.component_html! : c.improved_html!}
+            title={tab === 'original' ? 'Original component' : 'Improved by GPT-5.4'}
+            className="w-full h-full border-0 block"
+            style={{ background: '#fff' }}
+            sandbox="allow-scripts"
+          />
+        </div>
+      </div>
+    </div>
+  ) : null
+
   return (
+    <>
+    {iframeContent}
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 component-detail-layout">
       <div className="lg:col-span-3 space-y-4">
         {/* Tab switcher */}
-        <div className="flex items-center" style={{ gap: 2, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
-          {tabs.map(t => {
-            const isActive = tab === t.key
-            return (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className="cursor-pointer bg-transparent border-0 transition-colors duration-150"
-                style={{
-                  padding: '10px 16px',
-                  fontSize: 14,
-                  fontWeight: isActive && t.available ? 600 : 400,
-                  color: !t.available
-                    ? isActive ? 'var(--text-muted)' : 'color-mix(in srgb, var(--text-muted) 50%, transparent)'
-                    : isActive ? 'var(--text-primary)' : 'var(--text-muted)',
-                  borderBottom: isActive
-                    ? t.available ? '2px solid var(--accent)' : '2px dashed var(--text-muted)'
-                    : '2px solid transparent',
-                  marginBottom: -1,
-                }}
-              >
-                {t.label}
-              </button>
-            )
-          })}
+        <div className="flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
+          <div className="flex items-center" style={{ gap: 2 }}>
+            {tabs.map(t => {
+              const isActive = tab === t.key
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className="cursor-pointer bg-transparent border-0 transition-colors duration-150"
+                  style={{
+                    padding: '10px 16px',
+                    fontSize: 14,
+                    fontWeight: isActive && t.available ? 600 : 400,
+                    color: !t.available
+                      ? isActive ? 'var(--text-muted)' : 'color-mix(in srgb, var(--text-muted) 50%, transparent)'
+                      : isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+                    borderBottom: isActive
+                      ? t.available ? '2px solid var(--accent)' : '2px dashed var(--text-muted)'
+                      : '2px solid transparent',
+                    marginBottom: -1,
+                  }}
+                >
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+          {showExpandButton && hasContent && (
+            <button
+              onClick={() => setExpanded(x => !x)}
+              className="cursor-pointer bg-transparent border-0 text-text-muted hover:text-text-primary transition-colors duration-150 flex items-center gap-1.5"
+              style={{ fontSize: 12, padding: '6px 8px', marginBottom: -1 }}
+              aria-label={expanded ? 'Collapse preview' : 'Expand preview'}
+            >
+              {expanded ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+              <span>{expanded ? 'Collapse' : 'Expand'}</span>
+            </button>
+          )}
         </div>
 
         {/* Tab content */}
         {tab === 'original' && (
           <div>
             {c.component_html ? (
-              <div className="rounded-lg overflow-hidden border border-border">
-                <div className="flex items-center justify-between bg-bg-secondary" style={{ padding: '8px 14px', borderBottom: '1px solid var(--border)' }}>
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1.5">
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--border)' }} />
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--border)' }} />
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--border)' }} />
-                    </div>
-                    <span className="font-mono text-text-muted" style={{ fontSize: 11 }}>component.html</span>
-                  </div>
+              <ResizableIframe
+                srcDoc={c.component_html}
+                title="Original component"
+                expanded={expanded}
+                label="component.html"
+                attribution={
                   <span style={{ fontSize: 11, color: '#22c55e' }}><span style={{ background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 700 }}>Qwen3.6-27B</span> · T={c.temperature}</span>
-                </div>
-                <iframe
-                  srcDoc={c.component_html}
-                  title="Original component"
-                  className="w-full border-0"
-                  style={{ height: 560, background: '#fff' }}
-                  sandbox="allow-scripts"
-                />
-              </div>
+                }
+              />
             ) : (
               <div className="rounded-lg overflow-hidden border border-border">
                 <img
@@ -152,26 +305,15 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
         {tab === 'improved' && (
           <div>
             {c.improved_html ? (
-              <div className="rounded-lg overflow-hidden border border-border">
-                <div className="flex items-center justify-between bg-bg-secondary" style={{ padding: '8px 14px', borderBottom: '1px solid var(--border)' }}>
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1.5">
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--border)' }} />
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--border)' }} />
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--border)' }} />
-                    </div>
-                    <span className="font-mono text-text-muted" style={{ fontSize: 11 }}>improved.html</span>
-                  </div>
+              <ResizableIframe
+                srcDoc={c.improved_html}
+                title="Improved by GPT-5.4"
+                expanded={expanded}
+                label="improved.html"
+                attribution={
                   <span style={{ fontSize: 11, color: '#22c55e' }}>Rewritten by GPT-5.4</span>
-                </div>
-                <iframe
-                  srcDoc={c.improved_html}
-                  title="Improved by GPT-5.4"
-                  className="w-full border-0"
-                  style={{ height: 560, background: '#fff' }}
-                  sandbox="allow-scripts"
-                />
-              </div>
+                }
+              />
             ) : (
               <div className="flex items-center justify-center border border-dashed border-border rounded-lg" style={{ height: 300 }}>
                 <p className="text-text-muted" style={{ fontSize: 14 }}>
@@ -232,5 +374,6 @@ export default function ComponentDetail({ component: c }: ComponentDetailProps) 
         </div>
       </div>
     </div>
+    </>
   )
 }
