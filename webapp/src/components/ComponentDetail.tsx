@@ -147,7 +147,7 @@ function TabButton({ tab, current, available, onClick }: { tab: Tab; current: Ta
         fontWeight: isActive && available ? 600 : 400,
         color: !available
           ? isActive ? 'var(--text-muted)' : 'color-mix(in srgb, var(--text-muted) 50%, transparent)'
-          : isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+          : isActive ? '#93b4ff' : '#6b8acd',
         borderBottom: isActive
           ? available ? '2px solid var(--accent)' : '2px dashed var(--text-muted)'
           : '2px solid transparent',
