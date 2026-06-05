@@ -136,7 +136,7 @@ function ResizableIframe({ srcDoc, title, expanded, label, attribution }: {
 
 function TabButton({ tab, current, available, onClick }: { tab: Tab; current: Tab; available: boolean; onClick: () => void; label?: string }) {
   const isActive = current === tab
-  const label = tab === 'original' ? 'Original' : tab === 'critique' ? 'Critique' : 'Improved'
+  const label = tab === 'original' ? 'Original' : tab === 'critique' ? 'Critique' : 'GPT-5.4'
   return (
     <button
       onClick={onClick}
@@ -403,7 +403,10 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
         {/* Score */}
         <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '20px 20px 12px' }}>
           <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-            <span className="section-label">Score</span>
+            <div>
+              <span className="section-label">Score</span>
+              <span className="text-text-muted" style={{ fontSize: 10, marginLeft: 6 }}>GPT-5.4 eval</span>
+            </div>
             {score !== undefined && (
               <div className="flex items-center gap-2">
                 <span className="font-mono text-text-primary" style={{ fontSize: 20, fontWeight: 700 }}>{score}</span>
