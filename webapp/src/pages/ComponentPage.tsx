@@ -11,19 +11,20 @@ export default function ComponentPage() {
   const navigate = useNavigate()
   const [component, setComponent] = useState<(ComponentWithScore & { critique?: string; improved_html?: string; component_html?: string }) | null>(null)
   const [neighbors, setNeighbors] = useState<{ prev: string | null; next: string | null }>({ prev: null, next: null })
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     if (!id) return
-    setLoading(true)
+    if (!component) setInitialLoading(true)
     Promise.all([
       getComponent(id),
       getComponentNeighbors(id),
     ])
       .then(([comp, nb]) => { setComponent(comp); setNeighbors(nb) })
       .catch(() => setError(true))
-      .finally(() => setLoading(false))
+      .finally(() => setInitialLoading(false))
   }, [id])
 
   const lastPage = sessionStorage.getItem('gallery-page') || '0'
@@ -41,7 +42,7 @@ export default function ComponentPage() {
     </button>
   )
 
-  if (loading) {
+  if (initialLoading && !component) {
     return (
       <div className="page-container" style={{ paddingTop: 32, paddingBottom: 48 }}>
         <Shimmer className="h-8 w-48" />
@@ -92,6 +93,8 @@ export default function ComponentPage() {
         component={component}
         neighbors={neighbors}
         onNavigate={targetId => navigate(`/components/${targetId}`)}
+        expanded={expanded}
+        onExpandedChange={setExpanded}
       />
     </div>
   )

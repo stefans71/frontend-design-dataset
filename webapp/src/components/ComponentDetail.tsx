@@ -14,6 +14,8 @@ interface ComponentDetailProps {
   component: ComponentWithScore & { critique?: string; improved_html?: string; component_html?: string }
   neighbors?: { prev: string | null; next: string | null }
   onNavigate?: (id: string) => void
+  expanded?: boolean
+  onExpandedChange?: (expanded: boolean) => void
 }
 
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -173,9 +175,13 @@ function NavArrow({ targetId, direction, onNavigate, size: sz = 28 }: {
   )
 }
 
-export default function ComponentDetail({ component: c, neighbors, onNavigate }: ComponentDetailProps) {
+export default function ComponentDetail({ component: c, neighbors, onNavigate, expanded: expandedProp = false, onExpandedChange }: ComponentDetailProps) {
   const [tab, setTab] = useState<Tab>('original')
-  const [expanded, setExpanded] = useState(false)
+  const expanded = expandedProp
+  const setExpanded = (v: boolean | ((prev: boolean) => boolean)) => {
+    const next = typeof v === 'function' ? v(expanded) : v
+    onExpandedChange?.(next)
+  }
   const score = c.score?.total ?? c.total
   const visual = c.score?.visual_score ?? c.visual_score
   const alignment = c.score?.alignment_score ?? c.alignment_score
