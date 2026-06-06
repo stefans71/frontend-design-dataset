@@ -1,4 +1,5 @@
-import { Pi, ArrowRight, Terminal, FileCode, Wrench, Clock, CheckCircle, XCircle, BookOpen, TrendingUp, Zap, Target, Shield } from 'lucide-react'
+import { useState } from 'react'
+import { Pi, ArrowRight, Terminal, FileCode, Wrench, Clock, CheckCircle, XCircle, BookOpen, TrendingUp, Zap, Target, Shield, AlertTriangle, ChevronDown, Ban } from 'lucide-react'
 
 function Dial({ value, max, label, sublabel, color, size = 100 }: { value: number; max: number; label: string; sublabel: string; color: string; size?: number }) {
   const r = (size - 12) / 2
@@ -66,6 +67,161 @@ function PiNode({ number, title, type, duration, children, isLast }: {
         </div>
         <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '16px 20px' }}>
           {children}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const OLD_NODES: { num: number; name: string; desc: string; type: 'llm' | 'bash' | 'auto'; duration: string; warnings?: string[] }[] = [
+  { num: 1, name: 'BRIEF', desc: 'Expand prompt into design specification', type: 'llm', duration: '~1.5 min', warnings: ['$49 → $9 (fact corruption)', '"pricing card" → full page (scope expansion)'] },
+  { num: 2, name: 'TOKENS', desc: 'Generate CSS custom properties', type: 'llm', duration: '~2 min', warnings: ["Constrained model's natural color choices"] },
+  { num: 3, name: 'IMPLEMENT', desc: 'Build HTML from brief + tokens + dictionary', type: 'llm', duration: '~9 min', warnings: ['Read 3 documents → played it safe', "0 canvas charts vs raw's 12", "120 JS lines vs raw's 2,130"] },
+  { num: 4, name: 'VERIFY', desc: 'Validate output structure', type: 'bash', duration: '<1 sec' },
+  { num: 5, name: 'DICT-LINT', desc: 'Check dictionary compliance', type: 'bash', duration: '<1 sec' },
+  { num: 6, name: 'REVIEW', desc: 'Hostile critique', type: 'llm', duration: '~6 min', warnings: ['276-line review → rework collapse (component 059)', 'Unbounded output, subjective opinions'] },
+  { num: 7, name: 'GATE', desc: 'Auto-reject on failures', type: 'auto', duration: 'instant' },
+  { num: 8, name: 'REWORK', desc: 'Fix all issues at once', type: 'llm', duration: '~3 min', warnings: ['Fixed 30 things at once → introduced new bugs', 'Exceeded max_tokens → truncated HTML'] },
+  { num: 9, name: 'VERIFY-RW', desc: 'Re-validate after rework', type: 'bash', duration: '<1 sec' },
+]
+
+function OriginalPipeline() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="rounded-lg border border-border" style={{ marginTop: 24, overflow: 'hidden' }}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-between w-full text-left bg-bg-card cursor-pointer transition-colors duration-150"
+        style={{ padding: '14px 20px', border: 'none', background: 'var(--bg-card)' }}
+      >
+        <div className="flex items-center gap-3">
+          <div style={{
+            width: 28, height: 28, borderRadius: 6,
+            background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <AlertTriangle size={14} style={{ color: 'var(--score-low)' }} />
+          </div>
+          <div>
+            <span className="text-text-primary block" style={{ fontSize: 14, fontWeight: 600 }}>The Original Pipeline — Where It Broke</span>
+            <span className="text-text-muted block" style={{ fontSize: 12 }}>V2/V3: 9 nodes, 5 LLM calls, ~22 min, 76% completion</span>
+          </div>
+        </div>
+        <ChevronDown
+          size={16}
+          style={{
+            color: 'var(--text-muted)', flexShrink: 0,
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 200ms ease',
+          }}
+        />
+      </button>
+
+      <div className={`expand-content${open ? ' open' : ''}`}>
+        <div style={{ overflow: 'hidden' }}>
+          <div style={{ padding: '0 20px 24px', borderTop: '1px solid var(--border-subtle)' }}>
+            {/* 9-node vertical diagram */}
+            <div style={{ paddingTop: 20 }}>
+              {OLD_NODES.map((node, i) => {
+                const isLast = i === OLD_NODES.length - 1
+                const hasWarnings = node.warnings && node.warnings.length > 0
+                const typeColor = node.type === 'llm' ? 'var(--score-low)' : node.type === 'bash' ? 'var(--text-muted)' : '#a1a1aa'
+                const typeLabel = node.type === 'llm' ? 'LLM' : node.type === 'bash' ? 'Bash' : 'Auto'
+                const typeIcon = node.type === 'llm' ? <Pi size={10} /> : node.type === 'bash' ? <Terminal size={10} /> : <Ban size={10} />
+                return (
+                  <div key={node.num} className="flex" style={{ gap: 12 }}>
+                    {/* Timeline */}
+                    <div className="flex flex-col items-center" style={{ flexShrink: 0, width: 32 }}>
+                      <div className="flex items-center justify-center" style={{
+                        width: 28, height: 28, borderRadius: '50%',
+                        border: `2px solid ${hasWarnings ? 'var(--score-low)' : 'var(--border)'}`,
+                        background: hasWarnings ? 'rgba(239,68,68,0.06)' : 'var(--bg-primary)',
+                        zIndex: 1,
+                      }}>
+                        <span className="font-mono" style={{ fontSize: 10, fontWeight: 700, color: hasWarnings ? 'var(--score-low)' : 'var(--text-muted)' }}>{node.num}</span>
+                      </div>
+                      {!isLast && (
+                        <div style={{ width: 2, flex: 1, background: 'var(--border-subtle)', minHeight: 8 }} />
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ flex: 1, paddingBottom: isLast ? 0 : 12, minWidth: 0 }}>
+                      <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: hasWarnings ? 6 : 0 }}>
+                        <span className="text-text-primary" style={{ fontSize: 13, fontWeight: 600 }}>{node.name}</span>
+                        <span className="flex items-center gap-1" style={{
+                          fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 99,
+                          background: node.type === 'llm' ? 'rgba(239,68,68,0.08)' : 'var(--bg-secondary)',
+                          border: `1px solid ${node.type === 'llm' ? 'rgba(239,68,68,0.2)' : 'var(--border)'}`,
+                          color: typeColor,
+                        }}>
+                          {typeIcon} {typeLabel}
+                        </span>
+                        <span className="text-text-muted" style={{ fontSize: 11 }}>
+                          <Clock size={9} style={{ display: 'inline', verticalAlign: -1, marginRight: 3 }} />{node.duration}
+                        </span>
+                        <span className="text-text-muted" style={{ fontSize: 11, display: hasWarnings ? 'none' : 'inline' }}>{node.desc}</span>
+                      </div>
+                      {hasWarnings && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 2 }}>
+                          {node.warnings!.map((w, j) => (
+                            <span key={j} className="flex items-start gap-1.5" style={{ fontSize: 12, color: 'var(--score-low)', lineHeight: 1.4 }}>
+                              <AlertTriangle size={10} style={{ flexShrink: 0, marginTop: 2 }} />
+                              {w}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Summary line */}
+            <div className="flex items-center gap-3 flex-wrap" style={{
+              marginTop: 16, padding: '10px 16px', borderRadius: 6,
+              background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.15)',
+            }}>
+              <span className="font-mono" style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>Total:</span>
+              <span className="text-text-secondary" style={{ fontSize: 12 }}>5 LLM calls</span>
+              <span className="text-text-muted">·</span>
+              <span className="text-text-secondary" style={{ fontSize: 12 }}>~22 min</span>
+              <span className="text-text-muted">·</span>
+              <span style={{ fontSize: 12, color: 'var(--score-low)', fontWeight: 600 }}>76% completion (24 timeouts)</span>
+            </div>
+
+            {/* Explanation text */}
+            <div style={{
+              marginTop: 16, padding: '16px 20px', borderRadius: 8,
+              borderLeft: '3px solid var(--score-low)',
+              background: 'var(--bg-secondary)',
+            }}>
+              <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.7, margin: '0 0 12px' }}>
+                The V2/V3 YAML workflow ran all nodes in a single PI Agent session with <span className="font-mono" style={{ fontSize: 12, color: 'var(--text-primary)' }}>fresh_context: true</span> between LLM nodes. Each node received natural language instructions inside the YAML file — "be a hostile senior engineer," "fix FAIL items in this order." The model interpreted these as suggestions, not requirements. Three fundamental problems emerged:
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="flex gap-3">
+                  <span className="font-mono flex-shrink-0" style={{ fontSize: 12, fontWeight: 700, color: 'var(--score-low)', width: 16 }}>1.</span>
+                  <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.65, margin: 0 }}>
+                    <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>The brief corrupted facts.</strong> The brief node rewrote the user's prompt into a design specification, changing "$49/month" to "$9/month" and expanding "a pricing card" into a 3-tier comparison page with FAQ. The model downstream faithfully built the wrong thing.
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <span className="font-mono flex-shrink-0" style={{ fontSize: 12, fontWeight: 700, color: 'var(--score-low)', width: 16 }}>2.</span>
+                  <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.65, margin: 0 }}>
+                    <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>The review was unbounded.</strong> The hostile review node produced 15–25KB essays with 30+ findings. The rework node attempted to fix everything simultaneously, exceeded the output token limit, and truncated the HTML mid-tag. Component 059 collapsed from 7.0/10 to 5.0/10.
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <span className="font-mono flex-shrink-0" style={{ fontSize: 12, fontWeight: 700, color: 'var(--score-low)', width: 16 }}>3.</span>
+                  <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.65, margin: 0 }}>
+                    <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Timeouts cascaded.</strong> Each node ran sequentially in a single process. If one node hung (often the review or rework), the entire 20-minute pipeline timed out. Orphaned PI processes blocked the server slot for subsequent runs, causing a 72% timeout rate in late batches.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -222,6 +378,9 @@ export default function ThePi() {
             The V4.2C split pipeline separates creative generation from production polish. Session 1 generates raw HTML using an expert UI/UX persona — the model builds freely from the prompt with no constraints. A bash checklist then audits the raw output against 21 production standards (hover states, focus-visible, SVG icons, responsive breakpoints, ARIA, typography scale). Missing items become a YAML work order sent to Session 2, which also receives the original prompt for factual verification (correct prices, colors, labels). The model applies each fix and signs off on every item. Two completely independent sessions, ~5.5 minutes total, zero failures across 100 components.
           </p>
         </div>
+
+        {/* Original Pipeline — collapsible */}
+        <OriginalPipeline />
       </div>
 
       {/* Evolution Table */}
