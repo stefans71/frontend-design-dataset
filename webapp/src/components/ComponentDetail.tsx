@@ -297,6 +297,12 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
             {tabs.map(t => (
               <TabButton key={t.key} tab={t.key} current={tab} available={t.available} onClick={() => setTab(t.key)} />
             ))}
+            {neighbors && onNavigate && (
+              <div className="flex items-center gap-1" style={{ marginLeft: 8 }}>
+                <NavArrow targetId={neighbors.prev} direction="prev" onNavigate={onNavigate} size={26} />
+                <NavArrow targetId={neighbors.next} direction="next" onNavigate={onNavigate} size={26} />
+              </div>
+            )}
           </div>
           {showExpandButton && hasContent && (
             <button
