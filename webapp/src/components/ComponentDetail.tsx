@@ -404,8 +404,9 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
         <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '20px 20px 12px' }}>
           <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
             <div>
-              <span className="section-label">Score</span>
-              <span className="text-text-muted" style={{ fontSize: 10, marginLeft: 6 }}>GPT-5.4 eval</span>
+              <span className="section-label" style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Score</span>
+              <span style={{ fontSize: 12, marginLeft: 6, color: 'var(--text-secondary)' }}>GPT-5.4 eval</span>
+              <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>Scored by: Claude Opus 4.6</span>
             </div>
             {score !== undefined && (
               <div className="flex items-center gap-2">
