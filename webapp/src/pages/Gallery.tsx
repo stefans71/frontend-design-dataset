@@ -7,16 +7,17 @@ import FilterSidebar from '@/components/FilterSidebar'
 import GridControl from '@/components/GridControl'
 import Shimmer from '@/components/ui/Shimmer'
 
-export default function Gallery() {
+export default function Gallery({ basePath = '/components' }: { basePath?: string }) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [cols, setCols] = useState<GridCols>(3)
   const [page, setPage] = useState(() => Number(searchParams.get('page') || 0))
   const [search, setSearch] = useState('')
+  const storageKey = basePath === '/components' ? 'gallery-page' : 'pi-harness-gallery-page'
 
   useEffect(() => {
-    sessionStorage.setItem('gallery-page', String(page))
-  }, [page])
+    sessionStorage.setItem(storageKey, String(page))
+  }, [page, storageKey])
   const [filters, setFilters] = useState({
     category: 'all' as FilterCategory,
     theme: 'all' as FilterTheme,
@@ -94,7 +95,7 @@ export default function Gallery() {
                 if (numMatch) {
                   const num = numMatch[1].padStart(3, '0')
                   const run = runMatch ? runMatch[1] : '0'
-                  navigate(`/components/component-${num}-run${run}`)
+                  navigate(`${basePath}/component-${num}-run${run}`)
                 }
               }}
               className="flex items-center"
@@ -163,7 +164,7 @@ export default function Gallery() {
                     className="page-enter"
                     style={{ animationDelay: `${i * 30}ms` }}
                   >
-                    <ComponentCard component={c} index={i} />
+                    <ComponentCard component={c} index={i} basePath={basePath} />
                   </div>
                 ))}
               </div>
