@@ -8,7 +8,6 @@ const fineTunedLinks = [
 ]
 
 const piHarnessLinks = [
-  { to: '/pi-harness', label: 'Overview' },
   { to: '/pi-harness/components', label: 'Testing Data' },
 ]
 
