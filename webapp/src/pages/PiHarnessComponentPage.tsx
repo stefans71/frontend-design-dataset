@@ -76,6 +76,7 @@ export default function PiHarnessComponentPage() {
         onNavigate={targetId => navigate(`/pi-harness/components/${targetId}`)}
         expanded={expanded}
         onExpandedChange={setExpanded}
+        mode="pi-harness"
       />
     </div>
   )

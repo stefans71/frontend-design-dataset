@@ -11,11 +11,12 @@ function scoreVariant(score: number) {
 }
 
 interface ComponentDetailProps {
-  component: ComponentWithScore & { critique?: string; improved_html?: string; component_html?: string }
+  component: ComponentWithScore & { critique?: string; improved_html?: string; component_html?: string; pi_harness_html?: string }
   neighbors?: { prev: string | null; next: string | null }
   onNavigate?: (id: string) => void
   expanded?: boolean
   onExpandedChange?: (expanded: boolean) => void
+  mode?: 'training' | 'pi-harness'
 }
 
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -45,7 +46,7 @@ function ScoreBar({ label, value, max }: { label: string; value: number; max: nu
   )
 }
 
-type Tab = 'original' | 'critique' | 'improved'
+type Tab = 'original' | 'critique' | 'improved' | 'pi-harness'
 
 function ResizableIframe({ srcDoc, title, expanded, label, attribution }: {
   srcDoc: string
@@ -162,7 +163,9 @@ function TabButton({ tab, current, available, onClick }: { tab: Tab; current: Ta
           backgroundClip: 'text',
           fontWeight: 700,
         }}>Qwen3.6-27B-Q5</span>
-      ) : tab === 'critique' ? 'Critique' : 'GPT-5.4'}
+      ) : tab === 'critique' ? 'Critique'
+        : tab === 'pi-harness' ? <span style={{ color: '#93b4ff', fontWeight: 700 }}>Pi Harness</span>
+        : 'GPT-5.4'}
     </button>
   )
 }
@@ -183,7 +186,7 @@ function NavArrow({ targetId, direction, onNavigate, size: sz = 28 }: {
   )
 }
 
-export default function ComponentDetail({ component: c, neighbors, onNavigate, expanded: expandedProp = false, onExpandedChange }: ComponentDetailProps) {
+export default function ComponentDetail({ component: c, neighbors, onNavigate, expanded: expandedProp = false, onExpandedChange, mode = 'training' }: ComponentDetailProps) {
   const [tab, setTab] = useState<Tab>('original')
   const expanded = expandedProp
   const setExpanded = (v: boolean | ((prev: boolean) => boolean)) => {
@@ -201,14 +204,24 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const tabs: { key: Tab; available: boolean }[] = [
-    { key: 'original', available: true },
-    { key: 'critique', available: !!c.critique },
-    { key: 'improved', available: !!c.improved_html },
-  ]
+  const tabs: { key: Tab; available: boolean }[] = mode === 'pi-harness'
+    ? [
+        { key: 'original', available: true },
+        { key: 'improved', available: !!c.improved_html },
+        { key: 'pi-harness', available: !!c.pi_harness_html },
+      ]
+    : [
+        { key: 'original', available: true },
+        { key: 'critique', available: !!c.critique },
+        { key: 'improved', available: !!c.improved_html },
+      ]
 
-  const showExpandButton = tab === 'original' || tab === 'improved'
-  const hasContent = tab === 'original' ? !!c.component_html : tab === 'improved' ? !!c.improved_html : false
+  const iframeTab = tab === 'original' || tab === 'improved' || tab === 'pi-harness'
+  const showExpandButton = iframeTab
+  const hasContent = tab === 'original' ? !!c.component_html
+    : tab === 'improved' ? !!c.improved_html
+    : tab === 'pi-harness' ? !!c.pi_harness_html
+    : false
 
   const expandedContent = expanded ? (
     <div
@@ -253,11 +266,11 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
 
         {/* Expanded content */}
         <div style={{ flex: 1, minHeight: 0, paddingTop: 12 }}>
-          {(tab === 'original' || tab === 'improved') && hasContent ? (
+          {iframeTab && hasContent ? (
             <div className="rounded-lg overflow-hidden border border-border" style={{ height: '100%' }}>
               <iframe
-                srcDoc={tab === 'original' ? c.component_html! : c.improved_html!}
-                title={tab === 'original' ? 'Original component' : 'Improved by GPT-5.4'}
+                srcDoc={tab === 'original' ? c.component_html! : tab === 'pi-harness' ? c.pi_harness_html! : c.improved_html!}
+                title={tab === 'original' ? 'Original component' : tab === 'pi-harness' ? 'Pi Harness output' : 'Improved by GPT-5.4'}
                 className="w-full h-full border-0 block"
                 style={{ background: '#fff' }}
                 sandbox="allow-scripts"
@@ -386,6 +399,28 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
               <div className="flex items-center justify-center border border-dashed border-border rounded-lg" style={{ height: 300 }}>
                 <p className="text-text-muted" style={{ fontSize: 14 }}>
                   Improved version not available for this component
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === 'pi-harness' && (
+          <div>
+            {c.pi_harness_html ? (
+              <ResizableIframe
+                srcDoc={c.pi_harness_html}
+                title="Pi Harness output"
+                expanded={expanded}
+                label="pi-harness.html"
+                attribution={
+                  <span style={{ fontSize: 11, color: '#93b4ff', fontWeight: 600 }}>Pi Harness V4.2</span>
+                }
+              />
+            ) : (
+              <div className="flex items-center justify-center border border-dashed border-border rounded-lg" style={{ height: 300 }}>
+                <p className="text-text-muted" style={{ fontSize: 14 }}>
+                  Pi Harness output not available for this component
                 </p>
               </div>
             )}
