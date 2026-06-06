@@ -150,11 +150,13 @@ const server = Bun.serve({
 
     if (url.pathname.match(/^\/api\/components\/[^/]+\/neighbors$/)) {
       const id = url.pathname.replace('/api/components/', '').replace('/neighbors', '')
+      const harnessOnly = url.searchParams.get('hasPiHarness') === '1'
+      const extraWhere = harnessOnly ? ' AND c.has_pi_harness = 1' : ''
       const prev = db.query(
-        'SELECT c.id FROM components c JOIN eval_scores e ON c.id = e.component_id WHERE c.id < ? ORDER BY c.id DESC LIMIT 1'
+        `SELECT c.id FROM components c JOIN eval_scores e ON c.id = e.component_id WHERE c.id < ?${extraWhere} ORDER BY c.id DESC LIMIT 1`
       ).get(id) as { id: string } | null
       const next = db.query(
-        'SELECT c.id FROM components c JOIN eval_scores e ON c.id = e.component_id WHERE c.id > ? ORDER BY c.id ASC LIMIT 1'
+        `SELECT c.id FROM components c JOIN eval_scores e ON c.id = e.component_id WHERE c.id > ?${extraWhere} ORDER BY c.id ASC LIMIT 1`
       ).get(id) as { id: string } | null
       return Response.json({ prev: prev?.id ?? null, next: next?.id ?? null }, { headers })
     }

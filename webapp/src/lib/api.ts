@@ -27,8 +27,9 @@ export async function getComponent(id: string): Promise<ComponentWithScore & {
   return res.json()
 }
 
-export async function getComponentNeighbors(id: string): Promise<{ prev: string | null; next: string | null }> {
-  const res = await fetch(`${BASE}/components/${id}/neighbors`)
+export async function getComponentNeighbors(id: string, opts?: { hasPiHarness?: boolean }): Promise<{ prev: string | null; next: string | null }> {
+  const q = opts?.hasPiHarness ? '?hasPiHarness=1' : ''
+  const res = await fetch(`${BASE}/components/${id}/neighbors${q}`)
   return res.json()
 }
 

@@ -19,7 +19,7 @@ export default function PiHarnessComponentPage() {
     if (!component) setInitialLoading(true)
     Promise.all([
       getComponent(id),
-      getComponentNeighbors(id),
+      getComponentNeighbors(id, { hasPiHarness: true }),
     ])
       .then(([comp, nb]) => { setComponent(comp); setNeighbors(nb) })
       .catch(() => setError(true))
