@@ -110,9 +110,8 @@ html {
   overflow-x: hidden;
 }
 
-html[data-font-size="sm"] { font-size: 13px; }
-html[data-font-size="md"] { font-size: 15px; }
-html[data-font-size="lg"] { font-size: 17px; }
+html[data-font-size="sm"] main { zoom: 0.9; }
+html[data-font-size="lg"] main { zoom: 1.1; }
 
 body {
   background: var(--bg-primary);
