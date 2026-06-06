@@ -451,25 +451,58 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
         </div>
 
         {/* Score */}
-        <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '20px 20px 12px' }}>
-          <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-            <div>
-              <span className="section-label" style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Score</span>
-              <span style={{ fontSize: 12, marginLeft: 6, color: 'var(--text-secondary)' }}>GPT-5.4 eval</span>
+        {mode === 'pi-harness' ? (
+          <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '20px 20px 12px' }}>
+            <div style={{ marginBottom: 16 }}>
+              <span className="section-label" style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Score Comparison</span>
+              <span style={{ fontSize: 12, marginLeft: 6, color: 'var(--text-secondary)' }}>/9 HTML Rubric</span>
               <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>Scored by: Claude Opus 4.6</span>
             </div>
-            {score !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-text-primary" style={{ fontSize: 20, fontWeight: 700 }}>{score}</span>
-                <span className="text-text-muted" style={{ fontSize: 13 }}>/9</span>
-                <Badge variant={scoreVariant(score)}>{score >= 7 ? 'High' : score >= 5 ? 'Mid' : 'Low'}</Badge>
+            {[
+              { label: '27B Raw', value: c.v1_raw_total, color: '#a1a1aa' },
+              { label: 'GPT-5.4', value: score, color: '#22c55e' },
+              { label: 'Pi Harness', value: c.harness_total, color: '#93b4ff' },
+            ].map(row => (
+              <div key={row.label} className="py-2 border-b border-border-subtle last:border-b-0">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-sm" style={{ color: row.color, fontWeight: 600 }}>{row.label}</span>
+                  <span className="font-mono text-sm font-medium text-text-primary">
+                    {row.value != null ? `${row.value}/9` : '—'}
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-bg-elevated overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: row.value != null ? `${(row.value / 9) * 100}%` : '0%',
+                      background: row.color,
+                    }}
+                  />
+                </div>
               </div>
-            )}
+            ))}
           </div>
-          {visual !== undefined && <ScoreBar label="Visual" value={visual} max={3} />}
-          {alignment !== undefined && <ScoreBar label="Alignment" value={alignment} max={3} />}
-          {interactivity !== undefined && <ScoreBar label="Interactivity" value={interactivity} max={3} />}
-        </div>
+        ) : (
+          <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '20px 20px 12px' }}>
+            <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+              <div>
+                <span className="section-label" style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Score</span>
+                <span style={{ fontSize: 12, marginLeft: 6, color: 'var(--text-secondary)' }}>GPT-5.4 eval</span>
+                <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>Scored by: Claude Opus 4.6</span>
+              </div>
+              {score !== undefined && (
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-text-primary" style={{ fontSize: 20, fontWeight: 700 }}>{score}</span>
+                  <span className="text-text-muted" style={{ fontSize: 13 }}>/9</span>
+                  <Badge variant={scoreVariant(score)}>{score >= 7 ? 'High' : score >= 5 ? 'Mid' : 'Low'}</Badge>
+                </div>
+              )}
+            </div>
+            {visual !== undefined && <ScoreBar label="Visual" value={visual} max={3} />}
+            {alignment !== undefined && <ScoreBar label="Alignment" value={alignment} max={3} />}
+            {interactivity !== undefined && <ScoreBar label="Interactivity" value={interactivity} max={3} />}
+          </div>
+        )}
 
         {/* Metadata */}
         <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '20px 20px 12px' }}>

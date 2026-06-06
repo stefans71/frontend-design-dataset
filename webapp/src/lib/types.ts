@@ -28,6 +28,15 @@ export interface ComponentWithScore extends Component {
   visual_score?: number
   alignment_score?: number
   interactivity_score?: number
+  v1_raw_total?: number
+  v1_raw_visual?: number
+  v1_raw_alignment?: number
+  v1_raw_interactivity?: number
+  harness_total?: number
+  harness_visual?: number
+  harness_alignment?: number
+  harness_interactivity?: number
+  has_pi_harness?: boolean
   category: string
   theme: 'dark' | 'light'
 }

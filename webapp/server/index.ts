@@ -122,7 +122,8 @@ const server = Bun.serve({
       const allRows = db.query(`
         SELECT c.id, c.prompt, c.temperature, c.run, c.suffix,
                e.total, e.visual_score, e.alignment_score, e.interactivity_score,
-               c.has_desktop_png
+               e.harness_total, e.v1_raw_total,
+               c.has_desktop_png, c.has_pi_harness
         FROM components c
         JOIN eval_scores e ON c.id = e.component_id
         WHERE e.total BETWEEN ? AND ?${pngFilter}
@@ -159,7 +160,9 @@ const server = Bun.serve({
     if (url.pathname.startsWith('/api/components/')) {
       const id = url.pathname.replace('/api/components/', '')
       const component = db.query(`
-        SELECT c.*, e.total, e.visual_score, e.alignment_score, e.interactivity_score
+        SELECT c.*, e.total, e.visual_score, e.alignment_score, e.interactivity_score,
+               e.v1_raw_total, e.v1_raw_visual, e.v1_raw_alignment, e.v1_raw_interactivity,
+               e.harness_total, e.harness_visual, e.harness_alignment, e.harness_interactivity
         FROM components c
         JOIN eval_scores e ON c.id = e.component_id
         WHERE c.id = ?
