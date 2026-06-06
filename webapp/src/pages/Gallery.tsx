@@ -34,6 +34,7 @@ export default function Gallery({ basePath = '/components' }: { basePath?: strin
     page,
     minScore: filters.minScore,
     maxScore: filters.maxScore,
+    hasPiHarness: isPiHarness ? 1 : undefined,
   }
   const { items, total, loading } = useComponents(params)
   const totalPages = Math.ceil(total / 24)

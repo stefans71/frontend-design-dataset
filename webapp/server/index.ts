@@ -118,6 +118,8 @@ const server = Bun.serve({
 
       const hasPng = url.searchParams.get('hasPng')
       const pngFilter = hasPng === '1' ? ' AND c.has_desktop_png = 1' : ''
+      const hasPiHarness = url.searchParams.get('hasPiHarness')
+      const harnessFilter = hasPiHarness === '1' ? ' AND c.has_pi_harness = 1' : ''
 
       const allRows = db.query(`
         SELECT c.id, c.prompt, c.temperature, c.run, c.suffix,
@@ -126,7 +128,7 @@ const server = Bun.serve({
                c.has_desktop_png, c.has_pi_harness
         FROM components c
         JOIN eval_scores e ON c.id = e.component_id
-        WHERE e.total BETWEEN ? AND ?${pngFilter}
+        WHERE e.total BETWEEN ? AND ?${pngFilter}${harnessFilter}
         ORDER BY ${orderBy}
       `).all(minScore, maxScore) as Record<string, string | number>[]
 
