@@ -50,7 +50,7 @@ export default function Gallery({ basePath = '/components' }: { basePath?: strin
                 <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12 }}>
                   PI HARNESS V4.2
                 </div>
-                <h1 className="text-text-primary" style={{ fontSize: 32, fontWeight: 800, lineHeight: 1.2, marginBottom: 4 }}>Testing Data</h1>
+                <h1 className="text-text-primary" style={{ fontSize: 32, fontWeight: 800, lineHeight: 1.2, marginBottom: 4 }}>HTML Cards</h1>
                 <div style={{ fontSize: 15, color: 'var(--text-secondary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <span style={{
                     background: 'linear-gradient(90deg, #f97316 0%, #f97316 20%, #2dd4bf 80%, #2dd4bf 100%)',
