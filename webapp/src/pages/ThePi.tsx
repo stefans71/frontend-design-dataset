@@ -85,30 +85,111 @@ const OLD_NODES: { num: number; name: string; desc: string; type: 'llm' | 'bash'
   { num: 9, name: 'VERIFY-RW', desc: 'Re-validate after rework', type: 'bash', duration: '<1 sec' },
 ]
 
+function OldPipelineNode({ node, isLast, index, animate }: { node: typeof OLD_NODES[number]; isLast: boolean; index: number; animate: boolean }) {
+  const hasWarnings = node.warnings && node.warnings.length > 0
+  const nodeIcon = node.type === 'llm'
+    ? <Pi size={20} style={{ color: 'var(--score-low)' }} />
+    : node.type === 'bash'
+      ? <Terminal size={20} style={{ color: 'var(--text-muted)' }} />
+      : <Ban size={20} style={{ color: 'var(--text-muted)' }} />
+
+  return (
+    <div
+      className="old-pipeline-node flex"
+      style={{
+        gap: 20, padding: '8px 8px 8px 0', margin: '0 -8px',
+        opacity: animate ? 1 : 0,
+        transform: animate ? 'translateY(0)' : 'translateY(12px)',
+        transition: `opacity 400ms ease ${index * 80}ms, transform 400ms ease ${index * 80}ms`,
+      }}
+    >
+      {/* Timeline rail */}
+      <div className="flex flex-col items-center" style={{ flexShrink: 0, width: 48 }}>
+        <div className={`old-pipeline-icon flex items-center justify-center${hasWarnings ? ' has-warnings' : ''}`} style={{
+          width: 48, height: 48, borderRadius: 12,
+          border: `1.5px solid ${hasWarnings ? 'rgba(239,68,68,0.3)' : 'var(--border)'}`,
+          background: hasWarnings ? 'rgba(239,68,68,0.05)' : 'var(--bg-secondary)',
+          zIndex: 1,
+        }}>
+          {nodeIcon}
+        </div>
+        {!isLast && (
+          <div className="old-pipeline-connector" style={{
+            width: 2, flex: 1, minHeight: 16, marginTop: 6, marginBottom: 6,
+            background: 'linear-gradient(180deg, var(--border) 0%, var(--border-subtle) 100%)',
+          }} />
+        )}
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, paddingBottom: isLast ? 0 : 20, paddingTop: 6, minWidth: 0 }}>
+        <div className="flex items-center gap-3 flex-wrap" style={{ marginBottom: 8 }}>
+          <span style={{ fontSize: 17, fontWeight: 700, color: hasWarnings ? 'var(--score-low)' : 'var(--text-primary)' }}>{node.name}</span>
+          <span className="flex items-center gap-1.5" style={{
+            fontSize: 12, fontWeight: 500, padding: '3px 12px', borderRadius: 99,
+            background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+            color: 'var(--text-secondary)',
+          }}>
+            {node.type === 'llm' ? 'LLM' : node.type === 'bash' ? 'Bash' : 'Auto'}
+          </span>
+          <span className="flex items-center gap-1.5 text-text-muted" style={{ fontSize: 14 }}>
+            <Clock size={13} /> {node.duration}
+          </span>
+        </div>
+        {!hasWarnings && (
+          <p className="text-text-secondary" style={{ fontSize: 15, lineHeight: 1.6, margin: 0 }}>{node.desc}</p>
+        )}
+        {hasWarnings && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 2 }}>
+            {node.warnings!.map((w, j) => (
+              <span key={j} className="flex items-start gap-2.5 text-text-secondary" style={{ fontSize: 15, lineHeight: 1.6 }}>
+                <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 4, color: 'var(--text-muted)', opacity: 0.7 }} />
+                {w}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function OriginalPipeline() {
   const [open, setOpen] = useState(false)
+  const [animate, setAnimate] = useState(false)
+
+  const handleToggle = () => {
+    if (!open) {
+      setOpen(true)
+      requestAnimationFrame(() => setAnimate(true))
+    } else {
+      setAnimate(false)
+      setOpen(false)
+    }
+  }
+
   return (
     <div className="rounded-lg border border-border" style={{ marginTop: 24, overflow: 'hidden' }}>
       <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full text-left bg-bg-card cursor-pointer transition-colors duration-150"
-        style={{ padding: '14px 20px', border: 'none', background: 'var(--bg-card)' }}
+        onClick={handleToggle}
+        className="flex items-center justify-between w-full text-left cursor-pointer transition-colors duration-150"
+        style={{ padding: '16px 24px', border: 'none', background: 'var(--bg-card)' }}
       >
         <div className="flex items-center gap-3">
           <div style={{
-            width: 28, height: 28, borderRadius: 6,
-            background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+            width: 36, height: 36, borderRadius: 8,
+            background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <AlertTriangle size={14} style={{ color: 'var(--score-low)' }} />
+            <AlertTriangle size={18} style={{ color: 'var(--score-low)' }} />
           </div>
           <div>
-            <span className="text-text-primary block" style={{ fontSize: 14, fontWeight: 600 }}>The Original Pipeline — Where It Broke</span>
-            <span className="text-text-muted block" style={{ fontSize: 12 }}>V2/V3: 9 nodes, 5 LLM calls, ~22 min, 76% completion</span>
+            <span className="text-text-primary block" style={{ fontSize: 15, fontWeight: 600 }}>The Original Pipeline — Where It Broke</span>
+            <span className="text-text-muted block" style={{ fontSize: 13, marginTop: 2 }}>V2/V3: 9 nodes, 5 LLM calls, ~22 min, 76% completion</span>
           </div>
         </div>
         <ChevronDown
-          size={16}
+          size={18}
           style={{
             color: 'var(--text-muted)', flexShrink: 0,
             transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -119,103 +200,52 @@ function OriginalPipeline() {
 
       <div className={`expand-content${open ? ' open' : ''}`}>
         <div style={{ overflow: 'hidden' }}>
-          <div style={{ padding: '0 20px 24px', borderTop: '1px solid var(--border-subtle)' }}>
+          <div style={{ padding: '4px 24px 32px', borderTop: '1px solid var(--border-subtle)' }}>
             {/* 9-node vertical diagram */}
-            <div style={{ paddingTop: 20 }}>
-              {OLD_NODES.map((node, i) => {
-                const isLast = i === OLD_NODES.length - 1
-                const hasWarnings = node.warnings && node.warnings.length > 0
-                const typeColor = node.type === 'llm' ? 'var(--score-low)' : node.type === 'bash' ? 'var(--text-muted)' : '#a1a1aa'
-                const typeLabel = node.type === 'llm' ? 'LLM' : node.type === 'bash' ? 'Bash' : 'Auto'
-                const typeIcon = node.type === 'llm' ? <Pi size={10} /> : node.type === 'bash' ? <Terminal size={10} /> : <Ban size={10} />
-                return (
-                  <div key={node.num} className="flex" style={{ gap: 12 }}>
-                    {/* Timeline */}
-                    <div className="flex flex-col items-center" style={{ flexShrink: 0, width: 32 }}>
-                      <div className="flex items-center justify-center" style={{
-                        width: 28, height: 28, borderRadius: '50%',
-                        border: `2px solid ${hasWarnings ? 'var(--score-low)' : 'var(--border)'}`,
-                        background: hasWarnings ? 'rgba(239,68,68,0.06)' : 'var(--bg-primary)',
-                        zIndex: 1,
-                      }}>
-                        <span className="font-mono" style={{ fontSize: 10, fontWeight: 700, color: hasWarnings ? 'var(--score-low)' : 'var(--text-muted)' }}>{node.num}</span>
-                      </div>
-                      {!isLast && (
-                        <div style={{ width: 2, flex: 1, background: 'var(--border-subtle)', minHeight: 8 }} />
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div style={{ flex: 1, paddingBottom: isLast ? 0 : 12, minWidth: 0 }}>
-                      <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: hasWarnings ? 6 : 0 }}>
-                        <span className="text-text-primary" style={{ fontSize: 13, fontWeight: 600 }}>{node.name}</span>
-                        <span className="flex items-center gap-1" style={{
-                          fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 99,
-                          background: node.type === 'llm' ? 'rgba(239,68,68,0.08)' : 'var(--bg-secondary)',
-                          border: `1px solid ${node.type === 'llm' ? 'rgba(239,68,68,0.2)' : 'var(--border)'}`,
-                          color: typeColor,
-                        }}>
-                          {typeIcon} {typeLabel}
-                        </span>
-                        <span className="text-text-muted" style={{ fontSize: 11 }}>
-                          <Clock size={9} style={{ display: 'inline', verticalAlign: -1, marginRight: 3 }} />{node.duration}
-                        </span>
-                        <span className="text-text-muted" style={{ fontSize: 11, display: hasWarnings ? 'none' : 'inline' }}>{node.desc}</span>
-                      </div>
-                      {hasWarnings && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 2 }}>
-                          {node.warnings!.map((w, j) => (
-                            <span key={j} className="flex items-start gap-1.5" style={{ fontSize: 12, color: 'var(--score-low)', lineHeight: 1.4 }}>
-                              <AlertTriangle size={10} style={{ flexShrink: 0, marginTop: 2 }} />
-                              {w}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+            <div style={{ paddingTop: 24 }}>
+              {OLD_NODES.map((node, i) => (
+                <OldPipelineNode key={node.num} node={node} isLast={i === OLD_NODES.length - 1} index={i} animate={animate} />
+              ))}
             </div>
 
             {/* Summary line */}
-            <div className="flex items-center gap-3 flex-wrap" style={{
-              marginTop: 16, padding: '10px 16px', borderRadius: 6,
-              background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.15)',
+            <div className="flex items-center gap-4 flex-wrap" style={{
+              marginTop: 28, padding: '14px 20px', borderRadius: 8,
+              background: 'var(--bg-secondary)', border: '1px solid var(--border)',
             }}>
-              <span className="font-mono" style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>Total:</span>
-              <span className="text-text-secondary" style={{ fontSize: 12 }}>5 LLM calls</span>
+              <span className="font-mono" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Total</span>
+              <span className="text-text-secondary" style={{ fontSize: 14 }}>5 LLM calls</span>
               <span className="text-text-muted">·</span>
-              <span className="text-text-secondary" style={{ fontSize: 12 }}>~22 min</span>
+              <span className="text-text-secondary" style={{ fontSize: 14 }}>~22 min</span>
               <span className="text-text-muted">·</span>
-              <span style={{ fontSize: 12, color: 'var(--score-low)', fontWeight: 600 }}>76% completion (24 timeouts)</span>
+              <span style={{ fontSize: 14, color: 'var(--score-low)', fontWeight: 600 }}>76% completion (24 timeouts)</span>
             </div>
 
             {/* Explanation text */}
             <div style={{
-              marginTop: 16, padding: '16px 20px', borderRadius: 8,
-              borderLeft: '3px solid var(--score-low)',
+              marginTop: 20, padding: '20px 24px', borderRadius: 8,
+              borderLeft: '3px solid var(--border)',
               background: 'var(--bg-secondary)',
             }}>
-              <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.7, margin: '0 0 12px' }}>
-                The V2/V3 YAML workflow ran all nodes in a single PI Agent session with <span className="font-mono" style={{ fontSize: 12, color: 'var(--text-primary)' }}>fresh_context: true</span> between LLM nodes. Each node received natural language instructions inside the YAML file — "be a hostile senior engineer," "fix FAIL items in this order." The model interpreted these as suggestions, not requirements. Three fundamental problems emerged:
+              <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: '0 0 16px' }}>
+                The V2/V3 YAML workflow ran all nodes in a single PI Agent session with <span className="font-mono" style={{ fontSize: 13, color: 'var(--text-primary)' }}>fresh_context: true</span> between LLM nodes. Each node received natural language instructions inside the YAML file — "be a hostile senior engineer," "fix FAIL items in this order." The model interpreted these as suggestions, not requirements. Three fundamental problems emerged:
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div className="flex gap-3">
-                  <span className="font-mono flex-shrink-0" style={{ fontSize: 12, fontWeight: 700, color: 'var(--score-low)', width: 16 }}>1.</span>
-                  <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.65, margin: 0 }}>
+                  <span className="font-mono flex-shrink-0" style={{ fontSize: 14, fontWeight: 700, color: 'var(--score-low)', width: 20 }}>1.</span>
+                  <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.7, margin: 0 }}>
                     <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>The brief corrupted facts.</strong> The brief node rewrote the user's prompt into a design specification, changing "$49/month" to "$9/month" and expanding "a pricing card" into a 3-tier comparison page with FAQ. The model downstream faithfully built the wrong thing.
                   </p>
                 </div>
                 <div className="flex gap-3">
-                  <span className="font-mono flex-shrink-0" style={{ fontSize: 12, fontWeight: 700, color: 'var(--score-low)', width: 16 }}>2.</span>
-                  <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.65, margin: 0 }}>
+                  <span className="font-mono flex-shrink-0" style={{ fontSize: 14, fontWeight: 700, color: 'var(--score-low)', width: 20 }}>2.</span>
+                  <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.7, margin: 0 }}>
                     <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>The review was unbounded.</strong> The hostile review node produced 15–25KB essays with 30+ findings. The rework node attempted to fix everything simultaneously, exceeded the output token limit, and truncated the HTML mid-tag. Component 059 collapsed from 7.0/10 to 5.0/10.
                   </p>
                 </div>
                 <div className="flex gap-3">
-                  <span className="font-mono flex-shrink-0" style={{ fontSize: 12, fontWeight: 700, color: 'var(--score-low)', width: 16 }}>3.</span>
-                  <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.65, margin: 0 }}>
+                  <span className="font-mono flex-shrink-0" style={{ fontSize: 14, fontWeight: 700, color: 'var(--score-low)', width: 20 }}>3.</span>
+                  <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.7, margin: 0 }}>
                     <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Timeouts cascaded.</strong> Each node ran sequentially in a single process. If one node hung (often the review or rework), the entire 20-minute pipeline timed out. Orphaned PI processes blocked the server slot for subsequent runs, causing a 72% timeout rate in late batches.
                   </p>
                 </div>

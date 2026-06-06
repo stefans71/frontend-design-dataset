@@ -99,6 +99,72 @@
   background: linear-gradient(90deg, var(--accent) 0%, var(--border) 50%, transparent 100%);
 }
 
+@keyframes pipelinePulseTravel {
+  0% { top: 0; opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes nodeFlashRed {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+  50% { box-shadow: 0 0 16px 4px rgba(239,68,68,0.35); }
+}
+
+@keyframes nodeFlashRedBorder {
+  0%, 100% { border-color: rgba(239,68,68,0.3); }
+  50% { border-color: rgba(239,68,68,0.7); }
+}
+
+.old-pipeline-rail { position: relative; }
+.old-pipeline-rail::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--score-low);
+  box-shadow: 0 0 8px 2px rgba(239,68,68,0.5);
+  animation: pipelinePulseTravel 6s ease-in-out infinite;
+  z-index: 2;
+}
+
+.old-pipeline-node {
+  transition: transform 200ms ease, background-color 200ms ease;
+}
+.old-pipeline-node:hover {
+  transform: translateX(4px);
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.old-pipeline-icon {
+  transition: box-shadow 300ms ease, border-color 300ms ease;
+}
+.old-pipeline-icon.has-warnings {
+  animation: nodeFlashRed 3s ease-in-out infinite, nodeFlashRedBorder 3s ease-in-out infinite;
+}
+.old-pipeline-icon:hover {
+  box-shadow: 0 0 12px 3px rgba(239,68,68,0.3);
+}
+
+.old-pipeline-connector {
+  position: relative;
+  overflow: visible;
+}
+.old-pipeline-connector::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%; transform: translateX(-50%);
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--score-low);
+  box-shadow: 0 0 8px 2px rgba(239,68,68,0.5);
+  animation: pipelinePulseTravel 4s ease-in-out infinite;
+  z-index: 2;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
