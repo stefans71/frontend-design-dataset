@@ -2,11 +2,9 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getComponent, getHarnessStats } from '@/lib/api'
 import type { ComponentWithScore } from '@/lib/types'
+import ComponentCard from '@/components/ComponentCard'
 import Shimmer from '@/components/ui/Shimmer'
-import Badge from '@/components/ui/Badge'
 import { ArrowRight, TrendingUp, Equal, ArrowDown } from 'lucide-react'
-
-type FullComponent = ComponentWithScore & { critique?: string; improved_html?: string; component_html?: string; pi_harness_html?: string }
 
 const FEATURED_IDS = [
   'component-014-run0',
@@ -26,117 +24,9 @@ function StatCard({ label, value, suffix, color }: { label: string; value: strin
   )
 }
 
-function ShowcaseCard({ component, index }: { component: FullComponent; index: number }) {
-  const [activeTab, setActiveTab] = useState<'original' | 'harness'>('original')
-  const rawScore = component.v1_raw_total
-  const harnessScore = component.harness_total
-  const delta = rawScore != null && harnessScore != null ? harnessScore - rawScore : null
-
-  return (
-    <div
-      className="rounded-lg border border-border bg-bg-card page-enter"
-      style={{ animationDelay: `${index * 80}ms`, overflow: 'hidden' }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between" style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
-        <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
-          <Link
-            to={`/pi-harness/components/${component.id}`}
-            className="font-mono text-text-primary no-underline hover:text-accent transition-colors duration-150"
-            style={{ fontSize: 13, fontWeight: 600, flexShrink: 0 }}
-          >
-            {component.id}
-          </Link>
-          <Badge>{component.category}</Badge>
-        </div>
-        <div className="flex items-center gap-3" style={{ flexShrink: 0 }}>
-          {rawScore != null && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-text-muted" style={{ fontSize: 11 }}>27B Raw</span>
-              <span className="font-mono" style={{ fontSize: 13, fontWeight: 600, color: '#a1a1aa' }}>{rawScore}/9</span>
-            </div>
-          )}
-          {harnessScore != null && (
-            <div className="flex items-center gap-1.5">
-              <span style={{ fontSize: 11, color: '#93b4ff' }}>Harness</span>
-              <span className="font-mono" style={{ fontSize: 13, fontWeight: 600, color: '#93b4ff' }}>{harnessScore}/9</span>
-            </div>
-          )}
-          {delta != null && delta > 0 && (
-            <span className="font-mono" style={{ fontSize: 12, fontWeight: 700, color: 'var(--score-high)', padding: '2px 8px', background: 'rgba(74,222,128,0.1)', borderRadius: 4 }}>
-              +{delta}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Prompt */}
-      <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)' }}>
-        <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
-          {component.prompt}
-        </p>
-      </div>
-
-      {/* Tab switcher */}
-      <div className="flex items-center" style={{ borderBottom: '1px solid var(--border)', padding: '0 20px' }}>
-        <button
-          onClick={() => setActiveTab('original')}
-          className="cursor-pointer bg-transparent border-0 transition-colors duration-150"
-          style={{
-            padding: '10px 14px',
-            fontSize: 13,
-            fontWeight: activeTab === 'original' ? 600 : 400,
-            color: activeTab === 'original' ? '#a1a1aa' : 'var(--text-muted)',
-            borderBottom: activeTab === 'original' ? '2px solid #a1a1aa' : '2px solid transparent',
-            marginBottom: -1,
-          }}
-        >
-          <span style={{
-            background: 'linear-gradient(90deg, #f97316 0%, #f97316 20%, #2dd4bf 80%, #2dd4bf 100%)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 700,
-          }}>Qwen3.6-27B-Q5</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('harness')}
-          className="cursor-pointer bg-transparent border-0 transition-colors duration-150"
-          style={{
-            padding: '10px 14px',
-            fontSize: 13,
-            fontWeight: activeTab === 'harness' ? 600 : 400,
-            color: activeTab === 'harness' ? '#93b4ff' : 'var(--text-muted)',
-            borderBottom: activeTab === 'harness' ? '2px solid #93b4ff' : '2px solid transparent',
-            marginBottom: -1,
-          }}
-        >
-          <span style={{ color: '#93b4ff', fontWeight: 700 }}>Pi Harness</span>
-        </button>
-        <div style={{ flex: 1 }} />
-        <Link
-          to={`/pi-harness/components/${component.id}`}
-          className="no-underline text-text-muted hover:text-text-primary transition-colors duration-150 flex items-center gap-1"
-          style={{ fontSize: 12 }}
-        >
-          View detail <ArrowRight size={12} />
-        </Link>
-      </div>
-
-      {/* Iframe */}
-      <div style={{ position: 'relative' }}>
-        <iframe
-          srcDoc={activeTab === 'original' ? (component.component_html || '') : (component.pi_harness_html || '')}
-          title={activeTab === 'original' ? 'Original Qwen output' : 'Pi Harness output'}
-          className="w-full border-0 block"
-          style={{ height: 480, background: '#fff' }}
-          sandbox="allow-scripts"
-        />
-      </div>
-    </div>
-  )
-}
-
 export default function HarnessResults() {
   const [stats, setStats] = useState<{ total: number; harness_avg: number; raw_avg: number; gpt_avg: number; wins: number; ties: number; losses: number } | null>(null)
-  const [featured, setFeatured] = useState<FullComponent[]>([])
+  const [featured, setFeatured] = useState<ComponentWithScore[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -146,7 +36,7 @@ export default function HarnessResults() {
     ])
       .then(([s, ...comps]) => {
         setStats(s)
-        setFeatured(comps)
+        setFeatured(comps.map(c => ({ ...c, category: c.category || 'misc', theme: c.theme || 'light' })))
       })
       .finally(() => setLoading(false))
   }, [])
@@ -278,21 +168,23 @@ export default function HarnessResults() {
       )}
 
       {/* Featured showcase */}
-      <div style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 24 }}>
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>
-          FEATURED COMPARISONS
+          FEATURED COMPONENTS
         </div>
         <h2 className="text-text-primary" style={{ fontSize: 20, fontWeight: 600, marginBottom: 4 }}>
-          Before &amp; after — toggle to see the difference
+          Notable harness improvements
         </h2>
-        <p className="text-text-secondary" style={{ fontSize: 14, marginBottom: 24, lineHeight: 1.6 }}>
-          Click between tabs to see the original Qwen output and the Pi Harness refined version.
+        <p className="text-text-secondary" style={{ fontSize: 14, marginBottom: 0, lineHeight: 1.6 }}>
+          Click any card to compare the original Qwen output, GPT-5.4 improvement, and Pi Harness refinement side by side.
         </p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div className="grid grid-cols-3 gallery-grid" style={{ gap: 16 }}>
         {featured.map((comp, i) => (
-          <ShowcaseCard key={comp.id} component={comp} index={i} />
+          <div key={comp.id} className="page-enter" style={{ animationDelay: `${i * 30}ms` }}>
+            <ComponentCard component={comp} index={i} basePath="/pi-harness/components" />
+          </div>
         ))}
       </div>
 
