@@ -225,20 +225,21 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
       }}
     >
       <div style={{ padding: '0 24px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        {/* Expanded toolbar: tabs + nav + exit */}
-        <div className="flex items-center justify-between" style={{ padding: '8px 0', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
+        {/* Expanded toolbar: centered tabs + nav, exit right */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', padding: '8px 0', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
+          <div />
           <div className="flex items-center" style={{ gap: 2 }}>
             {tabs.map(t => (
               <TabButton key={t.key} tab={t.key} current={tab} available={t.available} onClick={() => setTab(t.key)} />
             ))}
-          </div>
-          <div className="flex items-center gap-3">
             {neighbors && onNavigate && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1" style={{ marginLeft: 8 }}>
                 <NavArrow targetId={neighbors.prev} direction="prev" onNavigate={onNavigate} size={26} />
                 <NavArrow targetId={neighbors.next} direction="next" onNavigate={onNavigate} size={26} />
               </div>
             )}
+          </div>
+          <div className="flex justify-end">
             <button
               onClick={() => setExpanded(false)}
               className="cursor-pointer bg-transparent border-0 text-text-muted hover:text-text-primary transition-colors duration-150 flex items-center gap-1.5"
