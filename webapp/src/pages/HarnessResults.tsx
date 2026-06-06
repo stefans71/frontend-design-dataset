@@ -4,7 +4,7 @@ import { getComponent, getHarnessStats } from '@/lib/api'
 import type { ComponentWithScore } from '@/lib/types'
 import ComponentCard from '@/components/ComponentCard'
 import Shimmer from '@/components/ui/Shimmer'
-import { ArrowRight, TrendingUp, Equal, ArrowDown } from 'lucide-react'
+import { ArrowRight, TrendingUp, Equal, ArrowDown, Info, Code, Eye, Sparkles } from 'lucide-react'
 
 const FEATURED_IDS = [
   'component-014-run0',
@@ -77,6 +77,43 @@ export default function HarnessResults() {
           <span>/9 HTML rubric</span>
           <span>·</span>
           <span><strong style={{ color: 'var(--text-primary)' }}>{stats?.total || 100}</strong> components tested</span>
+        </div>
+      </div>
+
+      {/* Note on scoring */}
+      <div className="rounded-lg border border-border bg-bg-card page-enter" style={{ padding: '20px 24px', marginBottom: 24 }}>
+        <div className="flex items-start gap-3" style={{ marginBottom: 16 }}>
+          <Info size={16} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <span className="text-text-primary" style={{ fontSize: 14, fontWeight: 600 }}>Note on Code Quality Scores (/9)</span>
+            <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.7, margin: '6px 0 0' }}>
+              All three conditions score similarly (8.6–8.8/9) because this rubric evaluates HTML source code
+              structure — not visual design quality.
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingLeft: 28 }}>
+          <div className="flex items-start gap-3">
+            <Code size={14} style={{ color: 'var(--text-muted)', flexShrink: 0, marginTop: 2 }} />
+            <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+              The <span className="font-mono" style={{ fontSize: 12, color: 'var(--text-primary)' }}>/9</span> rubric checks hover states, color usage, and prompt alignment.{' '}
+              <span style={{ background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 600 }}>Qwen3.6-27B</span>{' '}
+              naturally produces well-structured HTML that passes these checks.
+            </p>
+          </div>
+          <div className="flex items-start gap-3">
+            <Eye size={14} style={{ color: 'var(--text-muted)', flexShrink: 0, marginTop: 2 }} />
+            <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+              The meaningful quality differences are in <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>visual design polish</strong> — typography hierarchy, spacing precision, color harmony, and layout craft — captured by the{' '}
+              <span className="font-mono" style={{ fontSize: 12, color: 'var(--text-primary)' }}>/10</span> Visual Design rubric.
+            </p>
+          </div>
+          <div className="flex items-start gap-3">
+            <Sparkles size={14} style={{ color: '#93b4ff', flexShrink: 0, marginTop: 2 }} />
+            <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+              <span style={{ color: '#93b4ff', fontWeight: 600 }}>Pi Harness V4.2C</span> adds production polish — SVG icons, focus states, responsive breakpoints, ARIA accessibility — that the /9 code rubric confirms but cannot differentiate from the raw model's baseline competence.
+            </p>
+          </div>
         </div>
       </div>
 
