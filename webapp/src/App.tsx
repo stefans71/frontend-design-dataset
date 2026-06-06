@@ -8,6 +8,9 @@ import Gallery from '@/pages/Gallery'
 import ComponentPage from '@/pages/ComponentPage'
 import Validation from '@/pages/Validation'
 import Conversations from '@/pages/Conversations'
+import PiHarness from '@/pages/PiHarness'
+import PiHarnessGallery from '@/pages/PiHarnessGallery'
+import PiHarnessComponentPage from '@/pages/PiHarnessComponentPage'
 import '@/styles/globals.css'
 
 export default function App() {
@@ -26,6 +29,9 @@ export default function App() {
             <Route path="/components/:id" element={<ComponentPage />} />
             <Route path="/validation" element={<Validation />} />
             <Route path="/conversations" element={<Conversations />} />
+            <Route path="/pi-harness" element={<PiHarness />} />
+            <Route path="/pi-harness/components" element={<PiHarnessGallery />} />
+            <Route path="/pi-harness/components/:id" element={<PiHarnessComponentPage />} />
           </Routes>
         </main>
       </BrowserRouter>

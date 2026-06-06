@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { ComponentWithScore } from '@/lib/types'
 
-export default function ComponentCard({ component }: { component: ComponentWithScore; index?: number }) {
+export default function ComponentCard({ component, basePath = '/components' }: { component: ComponentWithScore; index?: number; basePath?: string }) {
   const c = component
   const score = c.score?.total ?? c.total
   const [imgFailed, setImgFailed] = useState(false)
@@ -12,7 +12,7 @@ export default function ComponentCard({ component }: { component: ComponentWithS
 
   return (
     <Link
-      to={`/components/${c.id}`}
+      to={`${basePath}/${c.id}`}
       className="block overflow-hidden no-underline bg-bg-card card-hover-lift"
       style={{ borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
     >

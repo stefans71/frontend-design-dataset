@@ -1,10 +1,15 @@
 import { Link, useLocation } from 'react-router-dom'
 
-const sectionLinks = [
+const fineTunedLinks = [
   { to: '/fine-tuned', label: 'Overview' },
   { to: '/validation', label: 'Validation' },
   { to: '/components', label: 'Training Data' },
   { to: '/conversations', label: 'Conversations' },
+]
+
+const piHarnessLinks = [
+  { to: '/pi-harness', label: 'Overview' },
+  { to: '/pi-harness/components', label: 'Training Data' },
 ]
 
 export const fineTunedPaths = ['/', '/fine-tuned', '/validation', '/components', '/conversations']
@@ -12,20 +17,26 @@ export const fineTunedPaths = ['/', '/fine-tuned', '/validation', '/components',
 export default function SectionNav() {
   const { pathname } = useLocation()
 
-  const isSection = pathname === '/fine-tuned' ||
+  const isFineTuned = pathname === '/fine-tuned' ||
     pathname === '/validation' ||
     pathname.startsWith('/components') ||
     pathname === '/conversations'
 
-  if (!isSection) return null
+  const isPiHarness = pathname.startsWith('/pi-harness')
+
+  const links = isFineTuned ? fineTunedLinks : isPiHarness ? piHarnessLinks : null
+
+  if (!links) return null
 
   return (
     <div className="section-nav border-b border-border" style={{ background: 'var(--bg-primary)' }}>
       <div className="page-container flex items-center" style={{ gap: 4, height: 40 }}>
-        {sectionLinks.map(l => {
+        {links.map(l => {
           const active = l.to === '/fine-tuned'
             ? pathname === '/fine-tuned'
-            : pathname.startsWith(l.to)
+            : l.to === '/pi-harness'
+              ? pathname === '/pi-harness'
+              : pathname.startsWith(l.to)
           return (
             <Link
               key={l.to}
