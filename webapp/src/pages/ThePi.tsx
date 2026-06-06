@@ -314,10 +314,10 @@ export default function ThePi() {
       {/* How It Works — flow diagram */}
       <div style={{ marginBottom: 48 }}>
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>
-          HOW IT WORKS
+          THE SPLIT PIPELINE
         </div>
         <h2 className="text-text-primary" style={{ fontSize: 20, fontWeight: 600, marginBottom: 24 }}>
-          Split pipeline architecture
+          What fixed it
         </h2>
 
         {/* 3-box flow */}
@@ -402,10 +402,52 @@ export default function ThePi() {
           </div>
         </div>
 
-        {/* Explanation text */}
-        <div className="rounded-lg border border-border bg-bg-secondary" style={{ padding: '16px 20px' }}>
-          <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.7, margin: 0 }}>
-            The V4.2C split pipeline separates creative generation from production polish. Session 1 generates raw HTML using an expert UI/UX persona — the model builds freely from the prompt with no constraints. A bash checklist then audits the raw output against 21 production standards (hover states, focus-visible, SVG icons, responsive breakpoints, ARIA, typography scale). Missing items become a YAML work order sent to Session 2, which also receives the original prompt for factual verification (correct prices, colors, labels). The model applies each fix and signs off on every item. Two completely independent sessions, ~5.5 minutes total, zero failures across 100 components.
+        {/* Explanation — What Fixed It */}
+        <div style={{
+          padding: '24px 28px', borderRadius: 8,
+          borderLeft: '3px solid #93b4ff',
+          background: 'var(--bg-secondary)',
+        }}>
+          <p className="text-text-secondary" style={{ fontSize: 15, lineHeight: 1.8, margin: '0 0 20px' }}>
+            The breakthrough was not better prompts — it was changing the format of the instructions from <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>natural language to structured YAML</strong>.
+          </p>
+          <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: '0 0 20px' }}>
+            Earlier versions embedded instructions inside YAML workflow nodes as paragraphs of text: "You are a hostile senior engineer. Review against these 42 rules. Score each PASS/FAIL..." The model treated this as a conversation — it could interpret, skip, or partially follow. The rework node received a free-form essay of findings and decided for itself what to fix.
+          </p>
+          <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: '0 0 16px' }}>
+            V4.2C replaces this with a machine-readable YAML work order. The bash checklist greps the HTML and generates a structured file:
+          </p>
+
+          {/* YAML code block */}
+          <div className="rounded-lg" style={{
+            padding: '16px 20px', marginBottom: 20,
+            background: 'var(--bg-primary)', border: '1px solid var(--border)',
+            fontFamily: 'var(--font-mono)', fontSize: 13, lineHeight: 1.7,
+            color: 'var(--text-secondary)', overflowX: 'auto',
+          }}>
+            <div><span style={{ color: '#93b4ff' }}>fixes:</span></div>
+            <div style={{ paddingLeft: 16 }}>
+              <div><span style={{ color: 'var(--text-muted)' }}>- </span><span style={{ color: '#2dd4bf' }}>id:</span> IS-01</div>
+              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>item:</span> hover</div>
+              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>css_example:</span> <span style={{ color: 'var(--accent)' }}>":hover {'{ }'}"</span></div>
+              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>instruction:</span> <span style={{ color: 'var(--accent)' }}>"Add :hover on every clickable element"</span></div>
+              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>sign_off:</span> <span style={{ color: 'var(--score-low)' }}>false</span></div>
+              <div style={{ marginTop: 8 }}><span style={{ color: 'var(--text-muted)' }}>- </span><span style={{ color: '#2dd4bf' }}>id:</span> CR-01</div>
+              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>item:</span> svg_icons</div>
+              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>css_example:</span> <span style={{ color: 'var(--accent)' }}>"&lt;svg viewBox='0 0 24 24'&gt;...&lt;/svg&gt;"</span></div>
+              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>instruction:</span> <span style={{ color: 'var(--accent)' }}>"Replace emoji checkmarks with inline SVG"</span></div>
+              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>sign_off:</span> <span style={{ color: 'var(--score-low)' }}>false</span></div>
+            </div>
+          </div>
+
+          <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: '0 0 20px' }}>
+            The model reads this as a checklist, not a suggestion. It applies each fix, then outputs a sign-off confirming what it changed — <span className="font-mono" style={{ fontSize: 13, color: 'var(--score-high)' }}>applied: true</span> with a description. This accountability structure is why the polish step works reliably where "please fix these issues" did not.
+          </p>
+          <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: '0 0 20px' }}>
+            Session 2 also receives the original user prompt for factual verification. When the prompt says "subtle purple glow" or "Pro column in blue," the model can cross-check the HTML and add what's missing. Earlier versions couldn't do this because the polish step never saw the original prompt.
+          </p>
+          <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: 0 }}>
+            Two completely independent processes. No shared context, no cascading timeouts, no orphaned sessions. <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>~5.5 minutes total, 100% completion rate across 100 components.</strong>
           </p>
         </div>
 
