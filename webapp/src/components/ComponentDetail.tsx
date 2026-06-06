@@ -136,7 +136,9 @@ function ResizableIframe({ srcDoc, title, expanded, label, attribution }: {
 
 function TabButton({ tab, current, available, onClick }: { tab: Tab; current: Tab; available: boolean; onClick: () => void; label?: string }) {
   const isActive = current === tab
-  const label = tab === 'original' ? 'Original' : tab === 'critique' ? 'Critique' : 'GPT-5.4'
+  const baseColor = !available
+    ? isActive ? 'var(--text-muted)' : 'color-mix(in srgb, var(--text-muted) 50%, transparent)'
+    : isActive ? '#93b4ff' : '#6b8acd'
   return (
     <button
       onClick={onClick}
@@ -145,16 +147,22 @@ function TabButton({ tab, current, available, onClick }: { tab: Tab; current: Ta
         padding: '8px 14px',
         fontSize: 13,
         fontWeight: isActive && available ? 600 : 400,
-        color: !available
-          ? isActive ? 'var(--text-muted)' : 'color-mix(in srgb, var(--text-muted) 50%, transparent)'
-          : isActive ? '#93b4ff' : '#6b8acd',
+        color: baseColor,
         borderBottom: isActive
           ? available ? '2px solid var(--accent)' : '2px dashed var(--text-muted)'
           : '2px solid transparent',
         marginBottom: -1,
       }}
     >
-      {label}
+      {tab === 'original' ? (
+        <span style={{
+          background: 'linear-gradient(90deg, #f97316 0%, #f97316 20%, #2dd4bf 80%, #2dd4bf 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          fontWeight: 700,
+        }}>Qwen3.6-27B-Q5</span>
+      ) : tab === 'critique' ? 'Critique' : 'GPT-5.4'}
     </button>
   )
 }
