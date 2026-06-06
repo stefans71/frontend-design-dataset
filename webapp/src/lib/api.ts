@@ -50,6 +50,19 @@ export async function getValidationResults(): Promise<ValidationResult[]> {
   return res.json()
 }
 
+export async function getHarnessStats(): Promise<{
+  total: number
+  harness_avg: number
+  raw_avg: number
+  gpt_avg: number
+  wins: number
+  ties: number
+  losses: number
+}> {
+  const res = await fetch(`${BASE}/harness-stats`)
+  return res.json()
+}
+
 export async function getStats(): Promise<{
   total_components: number
   total_conversations: number

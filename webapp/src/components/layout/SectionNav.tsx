@@ -9,6 +9,7 @@ const fineTunedLinks = [
 
 const piHarnessLinks = [
   { to: '/pi-harness/components', label: 'Testing Data' },
+  { to: '/pi-harness/results', label: 'Harness Results' },
 ]
 
 export const fineTunedPaths = ['/', '/fine-tuned', '/validation', '/components', '/conversations']

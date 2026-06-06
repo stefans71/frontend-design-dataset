@@ -234,6 +234,23 @@ const server = Bun.serve({
       return Response.json({ items, total, domainCounts }, { headers })
     }
 
+    if (url.pathname === '/api/harness-stats') {
+      const stats = db.query(`
+        SELECT
+          COUNT(*) as total,
+          AVG(e.harness_total) as harness_avg,
+          AVG(e.v1_raw_total) as raw_avg,
+          AVG(e.total) as gpt_avg,
+          SUM(CASE WHEN e.harness_total > e.v1_raw_total THEN 1 ELSE 0 END) as wins,
+          SUM(CASE WHEN e.harness_total = e.v1_raw_total THEN 1 ELSE 0 END) as ties,
+          SUM(CASE WHEN e.harness_total < e.v1_raw_total THEN 1 ELSE 0 END) as losses
+        FROM eval_scores e
+        JOIN components c ON c.id = e.component_id
+        WHERE c.has_pi_harness = 1
+      `).get() as Record<string, number>
+      return Response.json(stats, { headers })
+    }
+
     if (url.pathname === '/api/validation') {
       const scoresPath = join(import.meta.dir, '../data/fine-tuned-scores.jsonl')
       if (!existsSync(scoresPath)) return Response.json([], { headers })

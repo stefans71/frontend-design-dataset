@@ -9,6 +9,7 @@ import ComponentPage from '@/pages/ComponentPage'
 import Validation from '@/pages/Validation'
 import Conversations from '@/pages/Conversations'
 import PiHarnessComponentPage from '@/pages/PiHarnessComponentPage'
+import HarnessResults from '@/pages/HarnessResults'
 import '@/styles/globals.css'
 
 export default function App() {
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="/conversations" element={<Conversations />} />
             <Route path="/pi-harness/components" element={<Gallery basePath="/pi-harness/components" />} />
             <Route path="/pi-harness/components/:id" element={<PiHarnessComponentPage />} />
+            <Route path="/pi-harness/results" element={<HarnessResults />} />
           </Routes>
         </main>
       </BrowserRouter>
