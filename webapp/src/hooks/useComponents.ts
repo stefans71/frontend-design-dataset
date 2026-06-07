@@ -8,6 +8,7 @@ export function useComponents(params: {
   sort?: string
   page?: number
   hasPiHarness?: number
+  hasHtmlCompare?: number
 }) {
   const [items, setItems] = useState<ComponentWithScore[]>([])
   const [total, setTotal] = useState(0)
@@ -21,7 +22,7 @@ export function useComponents(params: {
         setTotal(res.total)
       })
       .finally(() => setLoading(false))
-  }, [params.category, params.theme, params.sort, params.page, params.hasPiHarness])
+  }, [params.category, params.theme, params.sort, params.page, params.hasPiHarness, params.hasHtmlCompare])
 
   return { items, total, loading }
 }

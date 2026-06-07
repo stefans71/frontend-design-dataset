@@ -37,6 +37,7 @@ export interface ComponentWithScore extends Component {
   harness_alignment?: number
   harness_interactivity?: number
   has_pi_harness?: boolean
+  has_html_compare?: boolean
   category: string
   theme: 'dark' | 'light'
 }

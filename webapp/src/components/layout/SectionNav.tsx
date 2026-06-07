@@ -5,6 +5,7 @@ const fineTunedLinks = [
   { to: '/validation', label: 'Validation' },
   { to: '/components', label: 'Training Data' },
   { to: '/conversations', label: 'Conversations' },
+  { to: '/html-compare', label: 'HTML Compare' },
 ]
 
 const piHarnessLinks = [
@@ -13,7 +14,7 @@ const piHarnessLinks = [
   { to: '/pi-harness/the-pi', label: 'The Pi' },
 ]
 
-export const fineTunedPaths = ['/', '/fine-tuned', '/validation', '/components', '/conversations']
+export const fineTunedPaths = ['/', '/fine-tuned', '/validation', '/components', '/conversations', '/html-compare']
 
 export default function SectionNav() {
   const { pathname } = useLocation()
@@ -21,7 +22,8 @@ export default function SectionNav() {
   const isFineTuned = pathname === '/fine-tuned' ||
     pathname === '/validation' ||
     pathname.startsWith('/components') ||
-    pathname === '/conversations'
+    pathname === '/conversations' ||
+    pathname.startsWith('/html-compare')
 
   const isPiHarness = pathname.startsWith('/pi-harness')
 

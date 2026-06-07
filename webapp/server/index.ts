@@ -120,6 +120,8 @@ const server = Bun.serve({
       const pngFilter = hasPng === '1' ? ' AND c.has_desktop_png = 1' : ''
       const hasPiHarness = url.searchParams.get('hasPiHarness')
       const harnessFilter = hasPiHarness === '1' ? ' AND c.has_pi_harness = 1' : ''
+      const hasHtmlCompare = url.searchParams.get('hasHtmlCompare')
+      const htmlCompareFilter = hasHtmlCompare === '1' ? ' AND c.has_html_compare = 1' : ''
 
       const allRows = db.query(`
         SELECT c.id, c.prompt, c.temperature, c.run, c.suffix,
@@ -128,7 +130,7 @@ const server = Bun.serve({
                c.has_desktop_png, c.has_pi_harness
         FROM components c
         JOIN eval_scores e ON c.id = e.component_id
-        WHERE e.total BETWEEN ? AND ?${pngFilter}${harnessFilter}
+        WHERE e.total BETWEEN ? AND ?${pngFilter}${harnessFilter}${htmlCompareFilter}
         ORDER BY ${orderBy}
       `).all(minScore, maxScore) as Record<string, string | number>[]
 
@@ -151,7 +153,8 @@ const server = Bun.serve({
     if (url.pathname.match(/^\/api\/components\/[^/]+\/neighbors$/)) {
       const id = url.pathname.replace('/api/components/', '').replace('/neighbors', '')
       const harnessOnly = url.searchParams.get('hasPiHarness') === '1'
-      const extraWhere = harnessOnly ? ' AND c.has_pi_harness = 1' : ''
+      const htmlCompareOnly = url.searchParams.get('hasHtmlCompare') === '1'
+      const extraWhere = (harnessOnly ? ' AND c.has_pi_harness = 1' : '') + (htmlCompareOnly ? ' AND c.has_html_compare = 1' : '')
       const prev = db.query(
         `SELECT c.id FROM components c JOIN eval_scores e ON c.id = e.component_id WHERE c.id < ?${extraWhere} ORDER BY c.id DESC LIMIT 1`
       ).get(id) as { id: string } | null

@@ -13,8 +13,9 @@ export default function Gallery({ basePath = '/components' }: { basePath?: strin
   const [cols, setCols] = useState<GridCols>(3)
   const [page, setPage] = useState(() => Number(searchParams.get('page') || 0))
   const [search, setSearch] = useState('')
-  const isPiHarness = basePath !== '/components'
-  const storageKey = isPiHarness ? 'pi-harness-gallery-page' : 'gallery-page'
+  const isPiHarness = basePath === '/pi-harness/components'
+  const isHtmlCompare = basePath === '/html-compare'
+  const storageKey = isHtmlCompare ? 'html-compare-gallery-page' : isPiHarness ? 'pi-harness-gallery-page' : 'gallery-page'
 
   useEffect(() => {
     sessionStorage.setItem(storageKey, String(page))
@@ -35,6 +36,7 @@ export default function Gallery({ basePath = '/components' }: { basePath?: strin
     minScore: filters.minScore,
     maxScore: filters.maxScore,
     hasPiHarness: isPiHarness ? 1 : undefined,
+    hasHtmlCompare: isHtmlCompare ? 1 : undefined,
   }
   const { items, total, loading } = useComponents(params)
   const totalPages = Math.ceil(total / 24)
@@ -45,7 +47,27 @@ export default function Gallery({ basePath = '/components' }: { basePath?: strin
       <div style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
           <div>
-            {isPiHarness ? (
+            {isHtmlCompare ? (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12 }}>
+                  HTML COMPARE
+                </div>
+                <h1 className="text-text-primary" style={{ fontSize: 32, fontWeight: 800, lineHeight: 1.2, marginBottom: 4 }}>Condition Comparison</h1>
+                <div style={{ fontSize: 15, color: 'var(--text-secondary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ color: '#93b4ff', fontWeight: 700 }}>8B-VL-Base</span>
+                  <span>·</span>
+                  <span style={{ color: '#10b981', fontWeight: 700 }}>Fine Tuned 8B</span>
+                  <span>·</span>
+                  <span style={{ color: '#f59e0b', fontWeight: 700 }}>Harness D</span>
+                  <span>·</span>
+                  <span style={{ color: '#a78bfa', fontWeight: 700 }}>Harness E</span>
+                </div>
+                <p style={{ fontSize: 14, color: 'var(--text-secondary)', maxWidth: 580, lineHeight: 1.6, marginBottom: 12 }}>
+                  Same 100 prompts (T=0.5) run through four pipelines: base 8B-VL, fine-tuned 8B raw output,
+                  Harness V4.5 without persona, and Harness V4.5 with persona. Compare side by side.
+                </p>
+              </>
+            ) : isPiHarness ? (
               <>
                 <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12 }}>
                   PI HARNESS V4.2

@@ -11,6 +11,7 @@ export async function getComponents(params: {
   page?: number
   limit?: number
   hasPng?: number
+  hasHtmlCompare?: number
 }): Promise<{ items: ComponentWithScore[]; total: number }> {
   const q = new URLSearchParams()
   Object.entries(params).forEach(([k, v]) => v !== undefined && q.set(k, String(v)))
@@ -27,9 +28,12 @@ export async function getComponent(id: string): Promise<ComponentWithScore & {
   return res.json()
 }
 
-export async function getComponentNeighbors(id: string, opts?: { hasPiHarness?: boolean }): Promise<{ prev: string | null; next: string | null }> {
-  const q = opts?.hasPiHarness ? '?hasPiHarness=1' : ''
-  const res = await fetch(`${BASE}/components/${id}/neighbors${q}`)
+export async function getComponentNeighbors(id: string, opts?: { hasPiHarness?: boolean; hasHtmlCompare?: boolean }): Promise<{ prev: string | null; next: string | null }> {
+  const q = new URLSearchParams()
+  if (opts?.hasPiHarness) q.set('hasPiHarness', '1')
+  if (opts?.hasHtmlCompare) q.set('hasHtmlCompare', '1')
+  const qs = q.toString()
+  const res = await fetch(`${BASE}/components/${id}/neighbors${qs ? `?${qs}` : ''}`)
   return res.json()
 }
 
