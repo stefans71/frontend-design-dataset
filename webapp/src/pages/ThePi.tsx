@@ -283,7 +283,7 @@ export default function ThePi() {
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-              PI HARNESS V4.2C
+              PI HARNESS V4.5
             </div>
             <h1 className="text-text-primary" style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.2 }}>The Pi</h1>
           </div>
@@ -291,14 +291,14 @@ export default function ThePi() {
         <p className="text-text-secondary" style={{ fontSize: 16, maxWidth: 720, lineHeight: 1.75, marginBottom: 0 }}>
           The Pi Harness transforms raw{' '}
           <span style={{ background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 700 }}>Qwen3.6-27B</span>{' '}
-          output into production-quality UI components in 5.5 minutes — matching or exceeding GPT-5.4 improved output on code quality benchmarks, with 100% completion rate and zero failures across 100 components.
+          output into production-quality UI components in 6 minutes — using 12 YAML-structured UX standards with model judgment and sign-off accountability. 100% completion rate, zero failures, zero regressions across 100 components.
         </p>
       </div>
 
       {/* Key metric dials */}
       <div className="grid grid-cols-2 md:grid-cols-4 validation-stats-grid page-enter" style={{ gap: 16, marginBottom: 48 }}>
         <div className="rounded-lg border border-border bg-bg-card flex flex-col items-center" style={{ padding: '24px 16px' }}>
-          <Dial value={3.6} max={4} label="3.6x" sublabel="Faster than V2" color="var(--accent)" size={96} />
+          <Dial value={6.3} max={8} label="6.3" sublabel="Avg min per component" color="var(--accent)" size={96} />
         </div>
         <div className="rounded-lg border border-border bg-bg-card flex flex-col items-center" style={{ padding: '24px 16px' }}>
           <Dial value={100} max={100} label="100%" sublabel="Completion Rate" color="var(--score-high)" size={96} />
@@ -307,7 +307,7 @@ export default function ThePi() {
           <Dial value={0} max={1} label="0" sublabel="Failures (of 100)" color="#93b4ff" size={96} />
         </div>
         <div className="rounded-lg border border-border bg-bg-card flex flex-col items-center" style={{ padding: '24px 16px' }}>
-          <Dial value={62} max={62} label="62" sublabel="Production Rules" color="#2dd4bf" size={96} />
+          <Dial value={12} max={12} label="12" sublabel="UX Standards (YAML sign-off)" color="#2dd4bf" size={96} />
         </div>
       </div>
 
