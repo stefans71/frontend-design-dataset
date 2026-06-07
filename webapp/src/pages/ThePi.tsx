@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pi, ArrowRight, Terminal, FileCode, Wrench, Clock, CheckCircle, XCircle, BookOpen, TrendingUp, Zap, Target, Shield, AlertTriangle, ChevronDown, Ban } from 'lucide-react'
+import { Pi, Terminal, FileCode, Wrench, Clock, CheckCircle, XCircle, BookOpen, Zap, Target, Shield, AlertTriangle, ChevronDown, Ban } from 'lucide-react'
 
 function Dial({ value, max, label, sublabel, color, size = 100 }: { value: number; max: number; label: string; sublabel: string; color: string; size?: number }) {
   const r = (size - 12) / 2
@@ -258,6 +258,30 @@ function OriginalPipeline() {
   )
 }
 
+const UX_STANDARDS = [
+  { id: 'TY', standard: 'Typography hierarchy — display text (prices, headlines) >= 48px, body 16px, captions 12-14px. Clear size jumps.' },
+  { id: 'SP', standard: 'Spacing rhythm — 8px grid, section gaps 48px, card padding 24px min. Do NOT inflate padding if already balanced.' },
+  { id: 'IC', standard: 'Inline SVG icons — checkmarks, arrows, close buttons as <svg>, never emoji or text characters.' },
+  { id: 'IS', standard: 'Interactive states — hover (color shift + 150ms), focus-visible (2px outline), active (scale 0.97), disabled (opacity 0.4) on EVERY clickable.' },
+  { id: 'CC', standard: 'Color contrast — WCAG AA 4.5:1. CTA button must be the most saturated element. Match prompt color requests.' },
+  { id: 'SH', standard: 'Shadows contained — multi-layer box-shadow for depth. Glow on outer edge only, never bleeding through card face.' },
+  { id: 'RM', standard: 'Reduced motion — @media (prefers-reduced-motion: reduce) with 0.01ms durations.' },
+  { id: 'CP', standard: 'CSS custom properties — all colors, spacing, radii as :root variables. Domain-evocative names.' },
+  { id: 'RS', standard: 'Responsive — mobile-first, @media for 768px and 1024px. Adjust layout direction and max-width ONLY, NOT padding.' },
+  { id: 'AC', standard: 'Accessibility — aria-labels on icon-only buttons, semantic HTML (article, nav, button, ul).' },
+  { id: 'HL', standard: 'Hover lift — cards and buttons shift up translateY(-1px) or translateY(-2px) with shadow expansion on hover. Creates tactile, physical feel.' },
+  { id: 'PA', standard: 'Prompt adherence — verify all prices, labels, colors, features match the original prompt exactly.' },
+]
+
+const SIGNOFF_EXAMPLES = [
+  { id: 'TY', action: 'Fixed headline from 17px to 20px. Clear size hierarchy: headline 20px bold > body 16px > captions 13px.' },
+  { id: 'SP', action: 'Fixed banner padding from 20px to 24px to meet minimum. Vertical padding remains 12px — appropriate for compact banner.' },
+  { id: 'IC', action: 'Already correct — crown and close icons are inline SVGs.' },
+  { id: 'IS', action: 'Added missing :disabled state to .btn-dismiss (opacity 0.4, cursor not-allowed). All four states now present.' },
+  { id: 'CC', action: 'Fixed dismiss button contrast from ~3.5:1 to >4.5:1. CTA remains most saturated.' },
+  { id: 'SH', action: 'Already correct — multi-layer box-shadow, contained, no bleed.' },
+]
+
 const VERSIONS = [
   { version: 'V2', arch: '8-node YAML workflow', nodes: 8, llm: 5, time: '~20 min', completion: '76/100', failures: '24 timeouts', dict: 'None', change: 'Hostile review + rework' },
   { version: 'V3', arch: '9-node YAML + dictionary', nodes: 9, llm: 5, time: '~25 min', completion: '9/12', failures: '3', dict: '42 rules', change: 'Structured review by rule ID' },
@@ -265,6 +289,7 @@ const VERSIONS = [
   { version: 'V4.1', arch: 'Split: pi + direct API', nodes: 2, llm: 2, time: '~5.5 min', completion: '12/12', failures: '0', dict: '52 rules', change: 'YAML work order + sign-off' },
   { version: 'V4.2', arch: 'Split + new rules', nodes: 2, llm: 2, time: '~5.5 min', completion: '50/50', failures: '0', dict: '62 rules', change: 'TY-08 display size, LS-07 CTA, CD color direction' },
   { version: 'V4.2C', arch: 'Split + persona + prompt injection', nodes: 2, llm: 2, time: '~5.5 min', completion: '100/100', failures: '0', dict: '62 rules', change: 'Expert persona + prompt-aware polish' },
+  { version: 'V4.5', arch: 'Split + YAML review checklist', nodes: 2, llm: 2, time: '~6.3 min', completion: '100/100', failures: '0', dict: '12 standards', change: 'Model judgment + sign-off. 0 regressions. YAML format triggers fixes where plain text didn\'t' },
 ]
 
 export default function ThePi() {
@@ -320,134 +345,179 @@ export default function ThePi() {
           What fixed it
         </h2>
 
-        {/* 3-box flow */}
+        {/* 2-step flow with YAML bridge */}
         <div className="flex items-stretch the-pi-flow" style={{ gap: 0, marginBottom: 24 }}>
           {/* Session 1 */}
-          <div className="flex-1 rounded-lg border border-border bg-bg-card" style={{ padding: '20px 20px 16px' }}>
-            <div className="flex items-center gap-2" style={{ marginBottom: 12 }}>
+          <div className="flex-1 rounded-lg border border-border bg-bg-card" style={{ padding: '24px 24px 20px' }}>
+            <div className="flex items-center gap-2" style={{ marginBottom: 14 }}>
               <div style={{
-                width: 28, height: 28, borderRadius: 6,
+                width: 32, height: 32, borderRadius: 8,
                 background: 'rgba(147,180,255,0.12)', border: '1px solid rgba(147,180,255,0.3)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <Pi size={14} style={{ color: '#93b4ff' }} />
+                <Pi size={16} style={{ color: '#93b4ff' }} />
               </div>
-              <span className="font-mono" style={{ fontSize: 11, fontWeight: 600, color: '#93b4ff' }}>SESSION 1</span>
+              <span className="font-mono" style={{ fontSize: 12, fontWeight: 600, color: '#93b4ff' }}>SESSION 1</span>
             </div>
-            <span className="text-text-primary block" style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Raw Generate</span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              <span>Expert UI/UX persona</span>
-              <span>Raw generate from prompt only</span>
-              <span>Full creative freedom</span>
+            <span className="text-text-primary block" style={{ fontSize: 16, fontWeight: 600, marginBottom: 10 }}>Raw Generate</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+              <span>Expert UI/UX persona + 10-line UX guidelines</span>
+              <span>Raw generate from prompt</span>
+              <span>Full creative freedom with design direction</span>
             </div>
-            <div className="flex items-center gap-1 mt-3" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              <Clock size={10} /> ~2 min
-            </div>
-          </div>
-
-          {/* Arrow 1 */}
-          <div className="flex items-center the-pi-arrow" style={{ padding: '0 8px', flexShrink: 0 }}>
-            <ArrowRight size={18} style={{ color: 'var(--text-muted)' }} />
-          </div>
-
-          {/* Bash checklist */}
-          <div className="flex-1 rounded-lg border bg-bg-card" style={{ padding: '20px 20px 16px', borderColor: 'var(--accent)', borderWidth: 1 }}>
-            <div className="flex items-center gap-2" style={{ marginBottom: 12 }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: 6,
-                background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Terminal size={14} style={{ color: 'var(--accent)' }} />
-              </div>
-              <span className="font-mono" style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)' }}>BASH</span>
-            </div>
-            <span className="text-text-primary block" style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>21-Item Checklist</span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              <span>Greps HTML for missing items</span>
-              <span>Production standards audit</span>
-              <span>Generates YAML work order</span>
-            </div>
-            <div className="flex items-center gap-1 mt-3" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              <Clock size={10} /> &lt;1 sec
+            <div className="flex items-center gap-1.5 mt-4" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              <Clock size={12} /> ~3 min
             </div>
           </div>
 
-          {/* Arrow 2 */}
-          <div className="flex items-center the-pi-arrow" style={{ padding: '0 8px', flexShrink: 0 }}>
-            <ArrowRight size={18} style={{ color: 'var(--text-muted)' }} />
+          {/* YAML bridge divider */}
+          <div className="flex flex-col items-center justify-center the-pi-arrow" style={{ padding: '0 12px', flexShrink: 0, gap: 6 }}>
+            <div style={{
+              width: 2, height: 20,
+              background: 'linear-gradient(180deg, transparent 0%, var(--accent) 100%)',
+            }} className="the-pi-bridge-line" />
+            <div style={{
+              padding: '6px 14px', borderRadius: 99,
+              background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)',
+              fontSize: 11, fontWeight: 600, color: 'var(--accent)',
+              whiteSpace: 'nowrap', textAlign: 'center', lineHeight: 1.3,
+            }}>
+              12 standards<br />as YAML
+            </div>
+            <div style={{
+              width: 2, height: 20,
+              background: 'linear-gradient(180deg, var(--accent) 0%, transparent 100%)',
+            }} className="the-pi-bridge-line" />
           </div>
 
           {/* Session 2 */}
-          <div className="flex-1 rounded-lg border border-border bg-bg-card" style={{ padding: '20px 20px 16px' }}>
-            <div className="flex items-center gap-2" style={{ marginBottom: 12 }}>
+          <div className="flex-1 rounded-lg border border-border bg-bg-card" style={{ padding: '24px 24px 20px' }}>
+            <div className="flex items-center gap-2" style={{ marginBottom: 14 }}>
               <div style={{
-                width: 28, height: 28, borderRadius: 6,
+                width: 32, height: 32, borderRadius: 8,
                 background: 'rgba(45,212,191,0.1)', border: '1px solid rgba(45,212,191,0.3)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <Wrench size={14} style={{ color: '#2dd4bf' }} />
+                <Wrench size={16} style={{ color: '#2dd4bf' }} />
               </div>
-              <span className="font-mono" style={{ fontSize: 11, fontWeight: 600, color: '#2dd4bf' }}>SESSION 2</span>
+              <span className="font-mono" style={{ fontSize: 12, fontWeight: 600, color: '#2dd4bf' }}>SESSION 2</span>
             </div>
-            <span className="text-text-primary block" style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>YAML Work Order Polish</span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            <span className="text-text-primary block" style={{ fontSize: 16, fontWeight: 600, marginBottom: 10 }}>YAML Review & Polish</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
               <span>Direct API call to Qwen 27B</span>
-              <span>YAML work order + original prompt</span>
-              <span>Sign-off on each fix</span>
+              <span>12-standard YAML checklist + original prompt</span>
+              <span>Model <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>judges</strong> each standard — can say "already correct"</span>
+              <span>Sign-off accountability on every standard</span>
             </div>
-            <div className="flex items-center gap-1 mt-3" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              <Clock size={10} /> ~3 min
+            <div className="flex items-center gap-1.5 mt-4" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              <Clock size={12} /> ~3 min
             </div>
           </div>
         </div>
 
-        {/* Explanation — What Fixed It */}
+      </div>
+
+      {/* The Breakthrough */}
+      <div style={{ marginBottom: 48 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>
+          THE BREAKTHROUGH: FORMAT {'>'} CONTENT
+        </div>
+        <h2 className="text-text-primary" style={{ fontSize: 20, fontWeight: 600, marginBottom: 24 }}>
+          Structured YAML with model judgment
+        </h2>
+
         <div style={{
           padding: '24px 28px', borderRadius: 8,
           borderLeft: '3px solid #93b4ff',
           background: 'var(--bg-secondary)',
         }}>
           <p className="text-text-secondary" style={{ fontSize: 15, lineHeight: 1.8, margin: '0 0 20px' }}>
-            The breakthrough was not better prompts — it was changing the format of the instructions from <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>natural language to structured YAML</strong>.
+            The breakthrough was not better prompts — it was changing the format of the instructions from <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>natural language to structured YAML</strong> with sign-off accountability.
           </p>
           <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: '0 0 20px' }}>
-            Earlier versions embedded instructions inside YAML workflow nodes as paragraphs of text: "You are a hostile senior engineer. Review against these 42 rules. Score each PASS/FAIL..." The model treated this as a conversation — it could interpret, skip, or partially follow. The rework node received a free-form essay of findings and decided for itself what to fix.
+            V4.2C used a bash script to grep the HTML and generate a YAML work order of missing items. It worked — 100/100, 8.82/9 — but the grep couldn't judge context. It forced fixes on things that weren't broken, blowing out padding on ~20% of components.
           </p>
-          <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: '0 0 16px' }}>
-            V4.2C replaces this with a machine-readable YAML work order. The bash checklist greps the HTML and generates a structured file:
+          <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: '0 0 20px' }}>
+            V4.5 eliminates the grep entirely. The model receives 12 UX standards as a YAML checklist and <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>judges each one itself</strong>. If a standard is already met, it says so. If it needs fixing, it fixes it and explains what changed. Every standard gets a <span className="font-mono" style={{ fontSize: 13, color: 'var(--score-high)' }}>status: true</span> sign-off — no standard is skipped, no fix goes undocumented.
           </p>
 
-          {/* YAML code block */}
-          <div className="rounded-lg" style={{
-            padding: '16px 20px', marginBottom: 20,
-            background: 'var(--bg-primary)', border: '1px solid var(--border)',
-            fontFamily: 'var(--font-mono)', fontSize: 13, lineHeight: 1.7,
-            color: 'var(--text-secondary)', overflowX: 'auto',
-          }}>
-            <div><span style={{ color: '#93b4ff' }}>fixes:</span></div>
-            <div style={{ paddingLeft: 16 }}>
-              <div><span style={{ color: 'var(--text-muted)' }}>- </span><span style={{ color: '#2dd4bf' }}>id:</span> IS-01</div>
-              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>item:</span> hover</div>
-              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>css_example:</span> <span style={{ color: 'var(--accent)' }}>":hover {'{ }'}"</span></div>
-              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>instruction:</span> <span style={{ color: 'var(--accent)' }}>"Add :hover on every clickable element"</span></div>
-              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>sign_off:</span> <span style={{ color: 'var(--score-low)' }}>false</span></div>
-              <div style={{ marginTop: 8 }}><span style={{ color: 'var(--text-muted)' }}>- </span><span style={{ color: '#2dd4bf' }}>id:</span> CR-01</div>
-              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>item:</span> svg_icons</div>
-              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>css_example:</span> <span style={{ color: 'var(--accent)' }}>"&lt;svg viewBox='0 0 24 24'&gt;...&lt;/svg&gt;"</span></div>
-              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>instruction:</span> <span style={{ color: 'var(--accent)' }}>"Replace emoji checkmarks with inline SVG"</span></div>
-              <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>sign_off:</span> <span style={{ color: 'var(--score-low)' }}>false</span></div>
+          {/* YAML Input */}
+          <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: '0 0 12px', fontWeight: 500 }}>
+            The exact YAML delivered to Session 2:
+          </p>
+          <div className="rounded-lg" style={{ marginBottom: 24, overflow: 'hidden', border: '1px solid var(--border)' }}>
+            <div style={{
+              padding: '8px 16px', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)',
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2dd4bf' }} />
+              <span className="font-mono" style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>INPUT — 12 UX STANDARDS</span>
+            </div>
+            <div style={{
+              padding: '16px 20px', background: 'var(--bg-primary)',
+              fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1.7,
+              color: 'var(--text-secondary)', overflowX: 'auto', maxHeight: 480, overflowY: 'auto',
+            }}>
+              <div><span style={{ color: '#93b4ff' }}>ux_review:</span></div>
+              <div style={{ paddingLeft: 16 }}>
+                {UX_STANDARDS.map((s, i) => (
+                  <div key={s.id} style={{ marginTop: i > 0 ? 4 : 0 }}>
+                    <div><span style={{ color: 'var(--text-muted)' }}>- </span><span style={{ color: '#2dd4bf' }}>id:</span> {s.id}</div>
+                    <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>standard:</span> <span style={{ color: 'var(--accent)' }}>"{s.standard}"</span></div>
+                    <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>status:</span> <span style={{ color: 'var(--score-low)' }}>false</span></div>
+                    <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>action:</span> <span style={{ color: 'var(--text-muted)' }}>""</span></div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: '0 0 20px' }}>
-            The model reads this as a checklist, not a suggestion. It applies each fix, then outputs a sign-off confirming what it changed — <span className="font-mono" style={{ fontSize: 13, color: 'var(--score-high)' }}>applied: true</span> with a description. This accountability structure is why the polish step works reliably where "please fix these issues" did not.
+          <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: '0 0 12px' }}>
+            The model reads this as a checklist, not a suggestion. It checks each standard against the HTML, applies fixes where needed, then outputs a sign-off confirming what it did:
           </p>
+
+          {/* YAML Output */}
+          <div className="rounded-lg" style={{ marginBottom: 24, overflow: 'hidden', border: '1px solid var(--border)' }}>
+            <div style={{
+              padding: '8px 16px', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)',
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--score-high)' }} />
+              <span className="font-mono" style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>OUTPUT — MODEL SIGN-OFF</span>
+            </div>
+            <div style={{
+              padding: '16px 20px', background: 'var(--bg-primary)',
+              fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1.7,
+              color: 'var(--text-secondary)', overflowX: 'auto',
+            }}>
+              <div><span style={{ color: '#93b4ff' }}>ux_review:</span></div>
+              <div style={{ paddingLeft: 16 }}>
+                {SIGNOFF_EXAMPLES.map((s, i) => (
+                  <div key={s.id} style={{ marginTop: i > 0 ? 4 : 0 }}>
+                    <div><span style={{ color: 'var(--text-muted)' }}>- </span><span style={{ color: '#2dd4bf' }}>id:</span> {s.id}</div>
+                    <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>status:</span> <span style={{ color: 'var(--score-high)' }}>true</span></div>
+                    <div style={{ paddingLeft: 16 }}><span style={{ color: '#2dd4bf' }}>action:</span> <span style={{ color: 'var(--accent)' }}>"{s.action}"</span></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Critical difference callout */}
+          <div style={{
+            padding: '16px 20px', borderRadius: 8, marginBottom: 20,
+            background: 'rgba(74,222,128,0.04)', border: '1px solid rgba(74,222,128,0.15)',
+          }}>
+            <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: 0 }}>
+              <strong style={{ color: 'var(--score-high)', fontWeight: 600 }}>The critical difference:</strong> "Already correct" is a valid answer. V4.2C's grep checklist couldn't judge context — it saw "no 768px breakpoint" and forced one in, blowing out the padding. V4.5's model judgment sees the same component and says "padding is already balanced — not inflated." <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Zero regressions across 100 components.</strong>
+            </p>
+          </div>
+
           <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: '0 0 20px' }}>
-            Session 2 also receives the original user prompt for factual verification. When the prompt says "subtle purple glow" or "Pro column in blue," the model can cross-check the HTML and add what's missing. Earlier versions couldn't do this because the polish step never saw the original prompt.
+            Session 2 also receives the original user prompt for factual verification. When the prompt says "subtle purple glow" or "Pro column in blue," the model can cross-check the HTML against PA (prompt adherence) and fix what's wrong. Earlier versions couldn't do this because the polish step never saw the original prompt.
           </p>
           <p className="text-text-secondary" style={{ fontSize: 14, lineHeight: 1.75, margin: 0 }}>
-            Two completely independent processes. No shared context, no cascading timeouts, no orphaned sessions. <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>~5.5 minutes total, 100% completion rate across 100 components.</strong>
+            Two completely independent sessions. No shared context, no cascading timeouts, no orphaned processes. <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>~6 minutes total, 100% completion rate, 0 failures, 12/12 sign-off on every component across 100 runs.</strong>
           </p>
         </div>
 
@@ -475,7 +545,7 @@ export default function ThePi() {
             </thead>
             <tbody>
               {VERSIONS.map((v, i) => {
-                const isCurrent = v.version === 'V4.2C'
+                const isCurrent = v.version === 'V4.5'
                 return (
                   <tr key={v.version} style={{
                     borderBottom: '1px solid var(--border-subtle)',
@@ -532,20 +602,22 @@ export default function ThePi() {
         {/* Trend indicators */}
         <div className="grid grid-cols-2 md:grid-cols-4 validation-stats-grid" style={{ gap: 12, marginTop: 16 }}>
           {[
-            { icon: <Zap size={14} />, label: 'Speed', from: '20 min', to: '5.5 min', delta: '3.6x faster', color: 'var(--accent)' },
-            { icon: <Target size={14} />, label: 'Completion', from: '76%', to: '100%', delta: '+24%', color: 'var(--score-high)' },
-            { icon: <Shield size={14} />, label: 'Failures', from: '24', to: '0', delta: '-24', color: '#93b4ff' },
-            { icon: <BookOpen size={14} />, label: 'Dictionary', from: '0', to: '62 rules', delta: '+62', color: '#2dd4bf' },
+            { icon: <Zap size={14} />, label: 'Speed', v2: '20 min', v42c: '5.5 min', v45: '6.3 min', color: 'var(--accent)' },
+            { icon: <Target size={14} />, label: 'Completion', v2: '76%', v42c: '100%', v45: '100%', color: 'var(--score-high)' },
+            { icon: <Shield size={14} />, label: 'Failures', v2: '24', v42c: '0', v45: '0', color: '#93b4ff' },
+            { icon: <BookOpen size={14} />, label: 'Rules', v2: '0', v42c: '62 rules', v45: '12 standards', color: '#2dd4bf' },
           ].map(m => (
             <div key={m.label} className="rounded-lg border border-border bg-bg-card" style={{ padding: '12px 16px' }}>
               <div className="flex items-center gap-2" style={{ marginBottom: 8 }}>
                 <span style={{ color: m.color }}>{m.icon}</span>
                 <span className="text-text-muted" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{m.label}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-text-muted" style={{ fontSize: 12, textDecoration: 'line-through' }}>{m.from}</span>
-                <TrendingUp size={12} style={{ color: m.color }} />
-                <span className="font-mono" style={{ fontSize: 13, fontWeight: 700, color: m.color }}>{m.to}</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-text-muted" style={{ fontSize: 12, textDecoration: 'line-through' }}>{m.v2}</span>
+                <span className="text-text-muted" style={{ fontSize: 10 }}>→</span>
+                <span className="font-mono text-text-secondary" style={{ fontSize: 12 }}>{m.v42c}</span>
+                <span className="text-text-muted" style={{ fontSize: 10 }}>→</span>
+                <span className="font-mono" style={{ fontSize: 13, fontWeight: 700, color: m.color }}>{m.v45}</span>
               </div>
             </div>
           ))}
@@ -561,11 +633,11 @@ export default function ThePi() {
           Pipeline walkthrough
         </h2>
 
-        <PiNode number={1} title="Raw Generate" type="pi -p (PI Agent)" duration="~2 min">
+        <PiNode number={1} title="Raw Generate" type="pi -p (PI Agent)" duration="~3 min">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div className="flex items-start gap-3">
               <span className="text-text-muted" style={{ fontSize: 11, fontWeight: 600, width: 48, flexShrink: 0, paddingTop: 2 }}>Input</span>
-              <span className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.5 }}>User prompt + expert persona</span>
+              <span className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.5 }}>User prompt + expert persona + 10-line UX guidelines</span>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-text-muted" style={{ fontSize: 11, fontWeight: 600, width: 48, flexShrink: 0, paddingTop: 2 }}>Output</span>
@@ -575,41 +647,17 @@ export default function ThePi() {
             </div>
             <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 10 }}>
               <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.65, margin: 0 }}>
-                Model generates the component from the prompt with full creative freedom. Expert persona primes for typography hierarchy, spacing systems, and color theory. No dictionary, no constraints — build what the prompt asks for.
+                Model generates the component from the prompt with full creative freedom. Expert persona primes for typography hierarchy, spacing systems, and color theory. 10-line UX guidelines provide design direction without constraining — typography ≥48px display, 8px grid, SVG icons, interactive states, WCAG contrast, contained shadows, reduced motion, CSS custom properties, responsive mobile-first, accessibility. Raises raw checklist pass rate from <span className="font-mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>11/21</span> to <span className="font-mono" style={{ fontSize: 12, color: 'var(--score-high)' }}>14/21</span> before any polish.
               </p>
             </div>
           </div>
         </PiNode>
 
-        <PiNode number={2} title="Production Checklist" type="Bash (grep/regex)" duration="<1 sec">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.65, margin: 0 }}>
-              Audits the raw HTML against 21 production standards:
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3" style={{ gap: '6px 16px' }}>
-              {[
-                'Hover states (≥4)', 'Focus-visible (≥2)', 'Disabled styles',
-                'Transitions', 'Reduced-motion', 'Responsive (768+1024px)',
-                'Inline SVG icons (≥2)', 'ARIA attributes', 'Multi-layer shadows',
-                'Hover lift (translateY)', 'Letter-spacing', 'Word-break',
-                'Display text ≥48px', 'Green checkmarks', 'Clean glow',
-                'Solid headings', 'Pricing card flow', 'CTA contrast',
-                'Card elevation', 'Typography scale', 'Color direction',
-              ].map(item => (
-                <span key={item} className="flex items-center gap-1.5 text-text-muted" style={{ fontSize: 11, lineHeight: 1.4 }}>
-                  <CheckCircle size={10} style={{ color: 'var(--score-high)', flexShrink: 0 }} />
-                  {item}
-                </span>
-              ))}
-            </div>
-          </div>
-        </PiNode>
-
-        <PiNode number={3} title="YAML Work Order Polish" type="Direct API (Qwen 27B)" duration="~3 min" isLast>
+        <PiNode number={2} title="YAML Review & Sign-off" type="Direct API (Qwen 27B)" duration="~3 min" isLast>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div className="flex items-start gap-3">
               <span className="text-text-muted" style={{ fontSize: 11, fontWeight: 600, width: 48, flexShrink: 0, paddingTop: 2 }}>Input</span>
-              <span className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.5 }}>Raw HTML + YAML fix list + original prompt + dictionary reference</span>
+              <span className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.5 }}>Raw HTML + 12-standard YAML checklist + original prompt</span>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-text-muted" style={{ fontSize: 11, fontWeight: 600, width: 48, flexShrink: 0, paddingTop: 2 }}>Output</span>
@@ -620,7 +668,7 @@ export default function ThePi() {
             </div>
             <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 10 }}>
               <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.65, margin: 0 }}>
-                Receives a structured YAML work order listing every missing item with a rule ID, CSS example, and specific instruction. Also receives the original user prompt for factual cross-checking (verifying prices, colors, labels match what was requested). Applies each fix and outputs a sign-off confirming what was changed. Average polish adds <span className="font-mono" style={{ fontSize: 12, color: 'var(--text-primary)' }}>+3.9 KB</span> of production code.
+                Receives the raw HTML and a 12-standard YAML checklist (<span className="font-mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>TY, SP, IC, IS, CC, SH, RM, CP, RS, AC, HL, PA</span>). Model judges each standard against the HTML — can confirm "already correct" or apply a fix. Also receives the original user prompt for factual cross-checking (verifying prices, colors, labels match what was requested). Outputs a sign-off confirming what it checked and changed. <span className="font-mono" style={{ fontSize: 12, color: 'var(--score-high)' }}>12/12</span> sign-off on every component. Average polish tightens code (net negative KB) instead of inflating it.
               </p>
             </div>
           </div>
@@ -628,14 +676,57 @@ export default function ThePi() {
       </div>
 
       {/* Score comparison note */}
-      <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '20px 24px' }}>
-        <div className="flex items-start gap-3" style={{ marginBottom: 12 }}>
+      <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '24px 28px' }}>
+        <div className="flex items-start gap-3" style={{ marginBottom: 20 }}>
           <Pi size={16} style={{ color: '#93b4ff', flexShrink: 0, marginTop: 2 }} />
-          <span className="text-text-primary" style={{ fontSize: 14, fontWeight: 600 }}>About these scores</span>
+          <span className="text-text-primary" style={{ fontSize: 15, fontWeight: 600 }}>About these scores</span>
         </div>
-        <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.7, margin: 0, paddingLeft: 28 }}>
-          All three conditions (27B Raw, GPT-5.4 Improved, Pi Harness V4.2C) were scored by the same Claude Opus 4.6 model using the same <span className="font-mono" style={{ fontSize: 12, color: 'var(--text-primary)' }}>evaluate.ts</span> rubric reading HTML source code. This /9 rubric measures code structure — color usage, prompt alignment, and interactivity implementation — not visual design quality. All three conditions score similarly (8.6–8.8/9) because Qwen3.6-27B naturally produces well-structured HTML that passes these checks. The meaningful quality differences are in production polish: the Pi Harness adds hover/focus/disabled states, inline SVG icons, responsive breakpoints, ARIA accessibility, and prompt-faithful styling that the code rubric confirms but cannot fully differentiate from the raw model's baseline competence.
-        </p>
+
+        <div style={{ paddingLeft: 28, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div>
+            <span className="text-text-primary" style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Scoring methodology</span>
+            <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.75, margin: 0 }}>
+              All three conditions (27B Raw, GPT-5.4 Improved, Pi Harness V4.5) were scored by the same Claude Opus 4.6 model using the same <span className="font-mono" style={{ fontSize: 12, color: 'var(--text-primary)' }}>evaluate.ts</span> rubric reading HTML source code.
+            </p>
+          </div>
+
+          <div>
+            <span className="text-text-primary" style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Why scores look similar</span>
+            <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.75, margin: 0 }}>
+              The <span className="font-mono" style={{ fontSize: 12, color: 'var(--text-primary)' }}>/9</span> rubric measures code structure — color usage, prompt alignment, and interactivity implementation — not visual design quality. All three conditions score similarly (<span className="font-mono" style={{ fontSize: 12 }}>8.6–8.8/9</span>) because Qwen3.6-27B naturally produces well-structured HTML that passes these checks.
+            </p>
+          </div>
+
+          <div>
+            <span className="text-text-primary" style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Where the real differences are</span>
+            <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.75, margin: '0 0 10px' }}>
+              The meaningful quality differences are in production polish. Pi Harness V4.5 adds:
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 24px' }}>
+              {[
+                'Typography hierarchy (≥48px display)',
+                'Hover lift (translateY + shadow)',
+                'Focus-visible / disabled states',
+                'Inline SVG icons',
+                '8px spacing grid',
+                'Contained shadows',
+                'Responsive breakpoints',
+                'ARIA accessibility',
+                'CSS custom properties',
+                'Prompt-faithful styling',
+              ].map(item => (
+                <span key={item} className="flex items-center gap-2 text-text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
+                  <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#93b4ff', flexShrink: 0 }} />
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <p className="text-text-secondary" style={{ fontSize: 13, lineHeight: 1.75, margin: 0 }}>
+            All verified through 12 YAML-structured UX standards with model sign-off on every component. The code rubric confirms these additions but cannot fully differentiate them from the raw model's baseline competence.
+          </p>
+        </div>
       </div>
     </div>
   )
