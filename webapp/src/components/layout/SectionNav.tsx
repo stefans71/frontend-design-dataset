@@ -8,7 +8,6 @@ const fineTunedLinks = [
 ]
 
 const piHarnessLinks = [
-  { to: '/pi-harness/components', label: 'HTML Cards' },
   { to: '/pi-harness/html-compare', label: 'HTML Compare' },
   { to: '/pi-harness/results', label: 'Harness Results' },
   { to: '/pi-harness/the-pi', label: 'The Pi' },

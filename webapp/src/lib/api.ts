@@ -28,9 +28,8 @@ export async function getComponent(id: string): Promise<ComponentWithScore & {
   return res.json()
 }
 
-export async function getComponentNeighbors(id: string, opts?: { hasPiHarness?: boolean; hasHtmlCompare?: boolean }): Promise<{ prev: string | null; next: string | null }> {
+export async function getComponentNeighbors(id: string, opts?: { hasHtmlCompare?: boolean }): Promise<{ prev: string | null; next: string | null }> {
   const q = new URLSearchParams()
-  if (opts?.hasPiHarness) q.set('hasPiHarness', '1')
   if (opts?.hasHtmlCompare) q.set('hasHtmlCompare', '1')
   const qs = q.toString()
   const res = await fetch(`${BASE}/components/${id}/neighbors${qs ? `?${qs}` : ''}`)

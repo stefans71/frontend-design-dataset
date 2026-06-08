@@ -6,7 +6,7 @@ import { useFontSize } from '@/hooks/useFontSize'
 const links = [
   { to: '/', label: 'Home' },
   { to: '/fine-tuned', label: 'Fine Tuned' },
-  { to: '/pi-harness/components', label: 'Pi Harness' },
+  { to: '/pi-harness/html-compare', label: 'Pi Harness' },
 ]
 
 export default function Navbar() {
@@ -26,7 +26,7 @@ export default function Navbar() {
             {links.map(l => {
               const active = l.to === '/'
                 ? pathname === '/'
-                : l.to === '/pi-harness/components'
+                : l.to === '/pi-harness/html-compare'
                   ? pathname.startsWith('/pi-harness')
                   : l.to === '/fine-tuned'
                     ? pathname !== '/' && !pathname.startsWith('/pi-harness')

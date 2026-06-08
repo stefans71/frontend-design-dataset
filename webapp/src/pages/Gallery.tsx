@@ -13,9 +13,8 @@ export default function Gallery({ basePath = '/components' }: { basePath?: strin
   const [cols, setCols] = useState<GridCols>(3)
   const [page, setPage] = useState(() => Number(searchParams.get('page') || 0))
   const [search, setSearch] = useState('')
-  const isPiHarness = basePath === '/pi-harness/components'
   const isHtmlCompare = basePath === '/pi-harness/html-compare'
-  const storageKey = isHtmlCompare ? 'html-compare-gallery-page' : isPiHarness ? 'pi-harness-gallery-page' : 'gallery-page'
+  const storageKey = isHtmlCompare ? 'html-compare-gallery-page' : 'gallery-page'
 
   useEffect(() => {
     sessionStorage.setItem(storageKey, String(page))
@@ -35,7 +34,6 @@ export default function Gallery({ basePath = '/components' }: { basePath?: strin
     page,
     minScore: filters.minScore,
     maxScore: filters.maxScore,
-    hasPiHarness: isPiHarness ? 1 : undefined,
     hasHtmlCompare: isHtmlCompare ? 1 : undefined,
   }
   const { items, total, loading } = useComponents(params)
@@ -65,29 +63,6 @@ export default function Gallery({ basePath = '/components' }: { basePath?: strin
                 <p style={{ fontSize: 14, color: 'var(--text-secondary)', maxWidth: 580, lineHeight: 1.6, marginBottom: 12 }}>
                   Same 100 prompts (T=0.5) run through four pipelines: base 8B-VL, fine-tuned 8B raw output,
                   Harness V4.5 without persona, and Harness V4.5 with persona. Compare side by side.
-                </p>
-              </>
-            ) : isPiHarness ? (
-              <>
-                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12 }}>
-                  PI HARNESS V4.2
-                </div>
-                <h1 className="text-text-primary" style={{ fontSize: 32, fontWeight: 800, lineHeight: 1.2, marginBottom: 4 }}>HTML Cards</h1>
-                <div style={{ fontSize: 15, color: 'var(--text-secondary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{
-                    background: 'linear-gradient(90deg, #f97316 0%, #f97316 20%, #2dd4bf 80%, #2dd4bf 100%)',
-                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text', fontWeight: 700,
-                  }}>Qwen3.6-27B-Q5</span>
-                  <span>original ·</span>
-                  <span style={{ color: '#10b981', fontWeight: 700 }}>GPT-5.4</span>
-                  <span>improved ·</span>
-                  <span style={{ color: '#93b4ff', fontWeight: 700 }}>Pi Harness</span>
-                  <span>improved</span>
-                </div>
-                <p style={{ fontSize: 14, color: 'var(--text-secondary)', maxWidth: 580, lineHeight: 1.6, marginBottom: 12 }}>
-                  Same prompts run through three pipelines. Compare the original Qwen3.6-27B-Q5 output,
-                  GPT-5.4 expert improvement, and Pi Harness V4.2 improvement side by side.
                 </p>
               </>
             ) : (

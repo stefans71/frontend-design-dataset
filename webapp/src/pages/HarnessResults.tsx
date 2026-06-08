@@ -217,7 +217,7 @@ export default function HarnessResults() {
       <div className="grid grid-cols-3 gallery-grid" style={{ gap: 16 }}>
         {featured.map((comp, i) => (
           <div key={comp.id} className="page-enter" style={{ animationDelay: `${i * 30}ms` }}>
-            <ComponentCard component={comp} index={i} basePath="/pi-harness/components" />
+            <ComponentCard component={comp} index={i} basePath="/pi-harness/html-compare" />
           </div>
         ))}
       </div>
@@ -225,7 +225,7 @@ export default function HarnessResults() {
       {/* CTA */}
       <div style={{ marginTop: 40, textAlign: 'center' }}>
         <Link
-          to="/pi-harness/components"
+          to="/pi-harness/html-compare"
           className="no-underline text-text-muted hover:text-text-primary transition-colors duration-150"
           style={{ fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}
         >
