@@ -27,7 +27,7 @@ export default function HtmlCompareComponentPage() {
   }, [id])
 
   const lastPage = sessionStorage.getItem('html-compare-gallery-page') || '0'
-  const backTo = `/html-compare?page=${lastPage}`
+  const backTo = `/pi-harness/html-compare?page=${lastPage}`
 
   if (initialLoading && !component) {
     return (
@@ -43,7 +43,7 @@ export default function HtmlCompareComponentPage() {
       <div className="page-container" style={{ paddingTop: 32, paddingBottom: 48 }}>
         <div className="flex flex-col items-center justify-center py-20 border border-dashed border-border rounded-lg">
           <p className="text-text-muted" style={{ fontSize: 16 }}>Component not found</p>
-          <Link to="/html-compare" className="mt-3 text-sm text-text-secondary no-underline hover:text-text-primary transition-colors duration-150">
+          <Link to="/pi-harness/html-compare" className="mt-3 text-sm text-text-secondary no-underline hover:text-text-primary transition-colors duration-150">
             ← Back to HTML Compare
           </Link>
         </div>
@@ -73,7 +73,7 @@ export default function HtmlCompareComponentPage() {
       <ComponentDetail
         component={component}
         neighbors={neighbors}
-        onNavigate={targetId => navigate(`/html-compare/${targetId}`)}
+        onNavigate={targetId => navigate(`/pi-harness/html-compare/${targetId}`)}
         expanded={expanded}
         onExpandedChange={setExpanded}
         mode="html-compare"

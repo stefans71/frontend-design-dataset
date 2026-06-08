@@ -14,7 +14,7 @@ export default function Gallery({ basePath = '/components' }: { basePath?: strin
   const [page, setPage] = useState(() => Number(searchParams.get('page') || 0))
   const [search, setSearch] = useState('')
   const isPiHarness = basePath === '/pi-harness/components'
-  const isHtmlCompare = basePath === '/html-compare'
+  const isHtmlCompare = basePath === '/pi-harness/html-compare'
   const storageKey = isHtmlCompare ? 'html-compare-gallery-page' : isPiHarness ? 'pi-harness-gallery-page' : 'gallery-page'
 
   useEffect(() => {

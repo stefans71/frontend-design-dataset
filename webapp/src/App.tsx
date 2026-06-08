@@ -30,8 +30,8 @@ export default function App() {
             <Route path="/components/:id" element={<ComponentPage />} />
             <Route path="/validation" element={<Validation />} />
             <Route path="/conversations" element={<Conversations />} />
-            <Route path="/html-compare" element={<Gallery basePath="/html-compare" />} />
-            <Route path="/html-compare/:id" element={<HtmlCompareComponentPage />} />
+            <Route path="/pi-harness/html-compare" element={<Gallery basePath="/pi-harness/html-compare" />} />
+            <Route path="/pi-harness/html-compare/:id" element={<HtmlCompareComponentPage />} />
             <Route path="/pi-harness/components" element={<Gallery basePath="/pi-harness/components" />} />
             <Route path="/pi-harness/components/:id" element={<PiHarnessComponentPage />} />
             <Route path="/pi-harness/results" element={<HarnessResults />} />
