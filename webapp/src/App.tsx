@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useTheme } from '@/hooks/useTheme'
 import Navbar from '@/components/layout/Navbar'
 import SectionNav from '@/components/layout/SectionNav'
@@ -29,6 +29,7 @@ export default function App() {
             <Route path="/components/:id" element={<ComponentPage />} />
             <Route path="/validation" element={<Validation />} />
             <Route path="/conversations" element={<Conversations />} />
+            <Route path="/pi-harness/components" element={<Navigate to="/pi-harness/html-compare" replace />} />
             <Route path="/pi-harness/html-compare" element={<Gallery basePath="/pi-harness/html-compare" />} />
             <Route path="/pi-harness/html-compare/:id" element={<HtmlCompareComponentPage />} />
             <Route path="/pi-harness/results" element={<HarnessResults />} />
