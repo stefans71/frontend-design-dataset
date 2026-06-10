@@ -8,7 +8,6 @@ import Gallery from '@/pages/Gallery'
 import ComponentPage from '@/pages/ComponentPage'
 import Validation from '@/pages/Validation'
 import Conversations from '@/pages/Conversations'
-import HarnessResults from '@/pages/HarnessResults'
 import ThePi from '@/pages/ThePi'
 import HtmlCompareComponentPage from '@/pages/HtmlCompareComponentPage'
 import '@/styles/globals.css'
@@ -32,7 +31,6 @@ export default function App() {
             <Route path="/pi-harness/components" element={<Navigate to="/pi-harness/html-compare" replace />} />
             <Route path="/pi-harness/html-compare" element={<Gallery basePath="/pi-harness/html-compare" />} />
             <Route path="/pi-harness/html-compare/:id" element={<HtmlCompareComponentPage />} />
-            <Route path="/pi-harness/results" element={<HarnessResults />} />
             <Route path="/pi-harness/the-pi" element={<ThePi />} />
           </Routes>
         </main>
