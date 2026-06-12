@@ -24,18 +24,37 @@ function Qwen27bCard({ component, basePath }: { component: Qwen27bComponent; ind
       className="block overflow-hidden no-underline bg-bg-card card-hover-lift"
       style={{ borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
     >
-      {/* Zone 1 — Placeholder with category */}
-      <div className="relative overflow-hidden" style={{ aspectRatio: '4/3' }}>
-        <div style={{
-          width: '100%', height: '100%',
-          background: 'var(--bg-secondary)',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          gap: 8, color: 'var(--text-muted)',
-        }}>
-          <span style={{ fontSize: 24 }}>&#x2B21;</span>
-          <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)' }}>{c.category}</span>
-        </div>
+      {/* Zone 1 — Live HTML preview */}
+      <div className="relative overflow-hidden" style={{ aspectRatio: '4/3', background: 'var(--bg-secondary)' }}>
+        {c.q5_html ? (
+          <iframe
+            srcDoc={c.q5_html}
+            title={c.prompt}
+            sandbox="allow-same-origin"
+            loading="lazy"
+            style={{
+              width: 1280,
+              height: 960,
+              transform: 'scale(0.25)',
+              transformOrigin: 'top left',
+              border: 'none',
+              pointerEvents: 'none',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+            }}
+          />
+        ) : (
+          <div style={{
+            width: '100%', height: '100%',
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            gap: 8, color: 'var(--text-muted)',
+          }}>
+            <span style={{ fontSize: 24 }}>&#x2B21;</span>
+            <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)' }}>{c.category}</span>
+          </div>
+        )}
         {avgScore !== null && (
           <span className="absolute font-mono" style={{
             top: 8, right: 8, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
