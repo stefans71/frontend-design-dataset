@@ -44,7 +44,7 @@ export default function Qwen27bComponentPage() {
         <div className="flex flex-col items-center justify-center py-20 border border-dashed border-border rounded-lg">
           <p className="text-text-muted" style={{ fontSize: 16 }}>Component not found</p>
           <Link to="/qwen27b" className="mt-3 text-sm text-text-secondary no-underline hover:text-text-primary transition-colors duration-150">
-            &#8592; Back to Q6 VS Q8
+            &#8592; Back to Q5 VS Q8
           </Link>
         </div>
       </div>
@@ -87,13 +87,13 @@ export default function Qwen27bComponentPage() {
           to={backTo}
           className="flex items-center justify-center no-underline text-text-muted hover:text-text-primary hover:bg-bg-secondary transition-colors duration-150"
           style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid var(--border)', flexShrink: 0 }}
-          aria-label="Back to Q6 VS Q8"
+          aria-label="Back to Q5 VS Q8"
         >
           <span style={{ fontSize: 16 }}>&#8592;</span>
         </Link>
         <div className="flex items-center gap-2 text-sm">
           <Link to={backTo} className="text-text-muted no-underline hover:text-text-primary transition-colors duration-150">
-            Q6 VS Q8
+            Q5 VS Q8
           </Link>
           <span className="text-text-muted">/</span>
           <span className="text-text-primary font-medium">{id}</span>
