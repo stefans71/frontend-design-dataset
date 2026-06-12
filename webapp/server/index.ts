@@ -101,6 +101,46 @@ const server = Bun.serve({
       return Response.json({ total_components: total, total_conversations: convs, avg_score: avg }, { headers })
     }
 
+    // Qwen 27B Q6 vs Q8 routes
+    if (url.pathname === '/api/qwen27b/stats') {
+      const total = (db.query('SELECT COUNT(*) as n FROM components_qwen27b').get() as Record<string, number>).n
+      return Response.json({ total_components: total }, { headers })
+    }
+
+    if (url.pathname === '/api/qwen27b/components') {
+      const category = url.searchParams.get('category')
+      const theme = url.searchParams.get('theme')
+      const sort = url.searchParams.get('sort') || 'id_asc'
+      const page = Number(url.searchParams.get('page') || 0)
+      const limit = Number(url.searchParams.get('limit') || 24)
+      const orderBy = sort === 'id_desc' ? 'id DESC' : 'id ASC'
+
+      const conditions: string[] = []
+      const params: (string | number)[] = []
+      if (category && category !== 'all') { conditions.push('category = ?'); params.push(category) }
+      if (theme && theme !== 'all') { conditions.push('theme = ?'); params.push(theme) }
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+      const allRows = db.query(`SELECT * FROM components_qwen27b ${whereClause} ORDER BY ${orderBy}`).all(...params) as Record<string, string | number>[]
+      const total = allRows.length
+      const items = allRows.slice(page * limit, (page + 1) * limit)
+      return Response.json({ items, total }, { headers })
+    }
+
+    if (url.pathname.match(/^\/api\/qwen27b\/components\/[^/]+\/neighbors$/)) {
+      const id = url.pathname.replace('/api/qwen27b/components/', '').replace('/neighbors', '')
+      const prev = db.query('SELECT id FROM components_qwen27b WHERE id < ? ORDER BY id DESC LIMIT 1').get(id) as { id: string } | null
+      const next = db.query('SELECT id FROM components_qwen27b WHERE id > ? ORDER BY id ASC LIMIT 1').get(id) as { id: string } | null
+      return Response.json({ prev: prev?.id ?? null, next: next?.id ?? null }, { headers })
+    }
+
+    if (url.pathname.startsWith('/api/qwen27b/components/')) {
+      const id = url.pathname.replace('/api/qwen27b/components/', '')
+      const component = db.query('SELECT * FROM components_qwen27b WHERE id = ?').get(id)
+      if (!component) return new Response('Not found', { status: 404 })
+      return Response.json(component, { headers })
+    }
+
     if (url.pathname === '/api/components') {
       const category = url.searchParams.get('category')
       const theme = url.searchParams.get('theme')

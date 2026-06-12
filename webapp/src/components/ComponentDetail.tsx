@@ -11,12 +11,19 @@ function scoreVariant(score: number) {
 }
 
 interface ComponentDetailProps {
-  component: ComponentWithScore & { critique?: string; improved_html?: string; component_html?: string; pi_harness_html?: string; pi_harness_v45_html?: string; condition_g_html?: string; condition_f_html?: string; condition_d_html?: string; condition_e_html?: string }
+  component: ComponentWithScore & {
+    critique?: string; improved_html?: string; component_html?: string;
+    pi_harness_html?: string; pi_harness_v45_html?: string;
+    condition_g_html?: string; condition_f_html?: string; condition_d_html?: string; condition_e_html?: string;
+    q5_html?: string; q8_va_html?: string; q8_vb_html?: string; q8_vc_html?: string;
+    q5_score?: number; q8_va_score?: number; q8_vb_score?: number; q8_vc_score?: number;
+    q8_va_critique?: string; q8_vb_critique?: string; q8_vc_critique?: string;
+  }
   neighbors?: { prev: string | null; next: string | null }
   onNavigate?: (id: string) => void
   expanded?: boolean
   onExpandedChange?: (expanded: boolean) => void
-  mode?: 'training' | 'pi-harness' | 'html-compare'
+  mode?: 'training' | 'pi-harness' | 'html-compare' | 'qwen27b'
 }
 
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -46,7 +53,7 @@ function ScoreBar({ label, value, max }: { label: string; value: number; max: nu
   )
 }
 
-type Tab = 'original' | 'critique' | 'improved' | 'pi-harness' | 'pi-harness-v42c' | 'cond-g' | 'cond-f' | 'cond-d' | 'cond-e'
+type Tab = 'original' | 'critique' | 'improved' | 'pi-harness' | 'pi-harness-v42c' | 'cond-g' | 'cond-f' | 'cond-d' | 'cond-e' | 'q5' | 'q8-va' | 'q8-vb' | 'q8-vc'
 
 function ResizableIframe({ srcDoc, title, expanded, label, attribution }: {
   srcDoc: string
@@ -170,6 +177,10 @@ function TabButton({ tab, current, available, onClick }: { tab: Tab; current: Ta
         : tab === 'cond-f' ? <span style={{ color: '#10b981', fontWeight: 700 }}>Fine Tuned 8B</span>
         : tab === 'cond-d' ? <span style={{ color: '#f59e0b', fontWeight: 700 }}>Harness D</span>
         : tab === 'cond-e' ? <span style={{ color: '#a78bfa', fontWeight: 700 }}>Harness E</span>
+        : tab === 'q5' ? <span style={{ color: '#f97316', fontWeight: 700 }}>Q5</span>
+        : tab === 'q8-va' ? <span style={{ color: '#3b82f6', fontWeight: 700 }}>Q8 T=0.6</span>
+        : tab === 'q8-vb' ? <span style={{ color: '#8b5cf6', fontWeight: 700 }}>Q8 T=0.85</span>
+        : tab === 'q8-vc' ? <span style={{ color: '#10b981', fontWeight: 700 }}>Q8 T=0.85 2p</span>
         : 'GPT-5.4'}
     </button>
   )
@@ -191,8 +202,42 @@ function NavArrow({ targetId, direction, onNavigate, size: sz = 28 }: {
   )
 }
 
+// 2x2 comparison panel for qwen27b expand mode
+function ComparisonPanel({ label, color, html, onClick }: {
+  label: string; color: string; html?: string; onClick: () => void
+}) {
+  return (
+    <div
+      className="rounded-lg overflow-hidden border border-border"
+      style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+    >
+      <div
+        className="flex items-center justify-between bg-bg-secondary cursor-pointer"
+        style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}
+        onClick={onClick}
+      >
+        <span style={{ fontSize: 12, color, fontWeight: 600 }}>{label}</span>
+        <Maximize2 size={12} style={{ color: 'var(--text-muted)' }} />
+      </div>
+      {html ? (
+        <iframe
+          srcDoc={html}
+          title={label}
+          className="w-full border-0 block"
+          style={{ flex: 1, minHeight: 0, background: '#fff' }}
+          sandbox="allow-scripts"
+        />
+      ) : (
+        <div className="flex items-center justify-center" style={{ flex: 1, color: 'var(--text-muted)', fontSize: 13 }}>
+          Not available
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ComponentDetail({ component: c, neighbors, onNavigate, expanded: expandedProp = false, onExpandedChange, mode = 'training' }: ComponentDetailProps) {
-  const [tab, setTab] = useState<Tab>(mode === 'html-compare' ? 'cond-g' : 'original')
+  const [tab, setTab] = useState<Tab>(mode === 'html-compare' ? 'cond-g' : mode === 'qwen27b' ? 'q5' : 'original')
   const expanded = expandedProp
   const setExpanded = (v: boolean | ((prev: boolean) => boolean)) => {
     const next = typeof v === 'function' ? v(expanded) : v
@@ -203,13 +248,36 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
   const alignment = c.score?.alignment_score ?? c.alignment_score
   const interactivity = c.score?.interactivity_score ?? c.interactivity_score
 
+  // State for qwen27b 2x2 grid expand
+  const [expandedMode, setExpandedMode] = useState<'grid' | 'single'>('grid')
+  const [focusedVariant, setFocusedVariant] = useState<'q5' | 'q8-va' | 'q8-vb' | 'q8-vc'>('q5')
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false) }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (mode === 'qwen27b' && expanded) {
+          if (expandedMode === 'single') {
+            setExpandedMode('grid')
+          } else {
+            setExpanded(false)
+          }
+        } else {
+          setExpanded(false)
+        }
+      }
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [expanded, expandedMode, mode])
 
-  const tabs: { key: Tab; available: boolean }[] = mode === 'html-compare'
+  const tabs: { key: Tab; available: boolean }[] = mode === 'qwen27b'
+    ? [
+        { key: 'q5', available: !!c.q5_html },
+        { key: 'q8-va', available: !!c.q8_va_html },
+        { key: 'q8-vb', available: !!c.q8_vb_html },
+        { key: 'q8-vc', available: !!c.q8_vc_html },
+      ]
+    : mode === 'html-compare'
     ? [
         { key: 'cond-g', available: !!c.condition_g_html },
         { key: 'cond-f', available: !!c.condition_f_html },
@@ -229,7 +297,7 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
         { key: 'improved', available: !!c.improved_html },
       ]
 
-  const iframeTab = tab === 'original' || tab === 'improved' || tab === 'pi-harness' || tab === 'pi-harness-v42c' || tab === 'cond-g' || tab === 'cond-f' || tab === 'cond-d' || tab === 'cond-e'
+  const iframeTab = tab === 'original' || tab === 'improved' || tab === 'pi-harness' || tab === 'pi-harness-v42c' || tab === 'cond-g' || tab === 'cond-f' || tab === 'cond-d' || tab === 'cond-e' || tab === 'q5' || tab === 'q8-va' || tab === 'q8-vb' || tab === 'q8-vc'
   const showExpandButton = iframeTab
   const hasContent = tab === 'original' ? !!c.component_html
     : tab === 'improved' ? !!c.improved_html
@@ -239,9 +307,165 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
     : tab === 'cond-f' ? !!c.condition_f_html
     : tab === 'cond-d' ? !!c.condition_d_html
     : tab === 'cond-e' ? !!c.condition_e_html
+    : tab === 'q5' ? !!c.q5_html
+    : tab === 'q8-va' ? !!c.q8_va_html
+    : tab === 'q8-vb' ? !!c.q8_vb_html
+    : tab === 'q8-vc' ? !!c.q8_vc_html
     : false
 
-  const expandedContent = expanded ? (
+  // Helper to get srcDoc for a tab
+  const getSrcDoc = (t: Tab): string | undefined => {
+    switch (t) {
+      case 'original': return c.component_html ?? undefined
+      case 'improved': return c.improved_html ?? undefined
+      case 'pi-harness': return c.pi_harness_v45_html ?? undefined
+      case 'pi-harness-v42c': return c.pi_harness_html ?? undefined
+      case 'cond-g': return c.condition_g_html ?? undefined
+      case 'cond-f': return c.condition_f_html ?? undefined
+      case 'cond-d': return c.condition_d_html ?? undefined
+      case 'cond-e': return c.condition_e_html ?? undefined
+      case 'q5': return c.q5_html ?? undefined
+      case 'q8-va': return c.q8_va_html ?? undefined
+      case 'q8-vb': return c.q8_vb_html ?? undefined
+      case 'q8-vc': return c.q8_vc_html ?? undefined
+      default: return undefined
+    }
+  }
+
+  const getTabTitle = (t: Tab): string => {
+    switch (t) {
+      case 'original': return 'Original component'
+      case 'improved': return 'Improved by GPT-5.4'
+      case 'pi-harness': return 'Pi Harness V4.5'
+      case 'pi-harness-v42c': return 'Pi Harness V4.2C'
+      case 'cond-g': return '8B-VL-Base'
+      case 'cond-f': return 'Fine Tuned 8B'
+      case 'cond-d': return 'Harness D'
+      case 'cond-e': return 'Harness E'
+      case 'q5': return 'Q5_K_XL'
+      case 'q8-va': return 'Q8 T=0.6'
+      case 'q8-vb': return 'Q8 T=0.85'
+      case 'q8-vc': return 'Q8 T=0.85 2p'
+      default: return ''
+    }
+  }
+
+  // Qwen27b grid variants config
+  const qwen27bVariants: { key: 'q5' | 'q8-va' | 'q8-vb' | 'q8-vc'; label: string; color: string; html?: string }[] = [
+    { key: 'q5', label: 'Q5_K_XL', color: '#f97316', html: c.q5_html ?? undefined },
+    { key: 'q8-va', label: 'Q8 T=0.6', color: '#3b82f6', html: c.q8_va_html ?? undefined },
+    { key: 'q8-vb', label: 'Q8 T=0.85', color: '#8b5cf6', html: c.q8_vb_html ?? undefined },
+    { key: 'q8-vc', label: 'Q8 T=0.85 2p', color: '#10b981', html: c.q8_vc_html ?? undefined },
+  ]
+
+  // Qwen27b expanded content (2x2 grid)
+  const qwen27bExpandedContent = (mode === 'qwen27b' && expanded) ? (
+    <div
+      style={{
+        position: 'fixed',
+        top: 100,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 40,
+        background: 'var(--bg-primary)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div style={{ padding: '0 24px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        {/* Toolbar */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', padding: '8px 0', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
+          <div />
+          <div className="flex items-center" style={{ gap: 4 }}>
+            {expandedMode === 'single' && (
+              <button
+                onClick={() => setExpandedMode('grid')}
+                className="cursor-pointer bg-transparent border-0 text-text-muted hover:text-text-primary transition-colors duration-150 flex items-center gap-1"
+                style={{ fontSize: 12, padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)' }}
+              >
+                All
+              </button>
+            )}
+            {expandedMode === 'single' && (
+              <>
+                {qwen27bVariants.map(v => (
+                  <button
+                    key={v.key}
+                    onClick={() => setFocusedVariant(v.key)}
+                    className="cursor-pointer bg-transparent border-0 transition-colors duration-150"
+                    style={{
+                      fontSize: 12, padding: '6px 10px', borderRadius: 6,
+                      color: focusedVariant === v.key ? v.color : 'var(--text-muted)',
+                      fontWeight: focusedVariant === v.key ? 600 : 400,
+                      border: focusedVariant === v.key ? `1px solid ${v.color}` : '1px solid transparent',
+                    }}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </>
+            )}
+            {neighbors && onNavigate && (
+              <div className="flex items-center gap-1" style={{ marginLeft: 8 }}>
+                <NavArrow targetId={neighbors.prev} direction="prev" onNavigate={onNavigate} size={26} />
+                <NavArrow targetId={neighbors.next} direction="next" onNavigate={onNavigate} size={26} />
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end">
+            <button
+              onClick={() => setExpanded(false)}
+              className="cursor-pointer bg-transparent border-0 text-text-muted hover:text-text-primary transition-colors duration-150 flex items-center gap-1.5"
+              style={{ fontSize: 12, padding: '6px 8px' }}
+            >
+              <Minimize2 size={13} />
+              <span>Exit</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Content area */}
+        {expandedMode === 'grid' ? (
+          <div style={{ flex: 1, minHeight: 0, paddingTop: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 8 }}>
+            {qwen27bVariants.map(v => (
+              <ComparisonPanel
+                key={v.key}
+                label={v.label}
+                color={v.color}
+                html={v.html}
+                onClick={() => { setExpandedMode('single'); setFocusedVariant(v.key) }}
+              />
+            ))}
+          </div>
+        ) : (
+          <div style={{ flex: 1, minHeight: 0, paddingTop: 8 }}>
+            {(() => {
+              const v = qwen27bVariants.find(x => x.key === focusedVariant)
+              return v?.html ? (
+                <div className="rounded-lg overflow-hidden border border-border" style={{ height: '100%' }}>
+                  <iframe
+                    srcDoc={v.html}
+                    title={v.label}
+                    className="w-full h-full border-0 block"
+                    style={{ background: '#fff' }}
+                    sandbox="allow-scripts"
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center border border-dashed border-border rounded-lg" style={{ height: '100%' }}>
+                  <p className="text-text-muted" style={{ fontSize: 14 }}>Content not available</p>
+                </div>
+              )
+            })()}
+          </div>
+        )}
+      </div>
+    </div>
+  ) : null
+
+  // Non-qwen27b expanded content (existing behavior)
+  const standardExpandedContent = (mode !== 'qwen27b' && expanded) ? (
     <div
       style={{
         position: 'fixed',
@@ -287,8 +511,8 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
           {iframeTab && hasContent ? (
             <div className="rounded-lg overflow-hidden border border-border" style={{ height: '100%' }}>
               <iframe
-                srcDoc={tab === 'original' ? c.component_html! : tab === 'pi-harness' ? c.pi_harness_v45_html! : tab === 'pi-harness-v42c' ? c.pi_harness_html! : tab === 'cond-g' ? c.condition_g_html! : tab === 'cond-f' ? c.condition_f_html! : tab === 'cond-d' ? c.condition_d_html! : tab === 'cond-e' ? c.condition_e_html! : c.improved_html!}
-                title={tab === 'original' ? 'Original component' : tab === 'pi-harness' ? 'Pi Harness V4.5' : tab === 'pi-harness-v42c' ? 'Pi Harness V4.2C' : tab === 'cond-g' ? '8B-VL-Base' : tab === 'cond-f' ? 'Fine Tuned 8B' : tab === 'cond-d' ? 'Harness D' : tab === 'cond-e' ? 'Harness E' : 'Improved by GPT-5.4'}
+                srcDoc={getSrcDoc(tab)!}
+                title={getTabTitle(tab)}
                 className="w-full h-full border-0 block"
                 style={{ background: '#fff' }}
                 sandbox="allow-scripts"
@@ -318,9 +542,34 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
     </div>
   ) : null
 
+  // Helper: render iframe tab content for any mode (used in the non-expanded view)
+  const renderIframeTabContent = (tabKey: Tab, srcDoc: string | undefined, title: string, label: string, attribution: React.ReactNode, notAvailableMsg: string) => {
+    if (tab !== tabKey) return null
+    return (
+      <div>
+        {srcDoc ? (
+          <ResizableIframe
+            srcDoc={srcDoc}
+            title={title}
+            expanded={expanded}
+            label={label}
+            attribution={attribution}
+          />
+        ) : (
+          <div className="flex items-center justify-center border border-dashed border-border rounded-lg" style={{ height: 300 }}>
+            <p className="text-text-muted" style={{ fontSize: 14 }}>
+              {notAvailableMsg}
+            </p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <>
-    {expandedContent}
+    {qwen27bExpandedContent}
+    {standardExpandedContent}
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 component-detail-layout">
       <div className="lg:col-span-3 space-y-4">
         {/* Tab switcher */}
@@ -336,9 +585,9 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
               </div>
             )}
           </div>
-          {showExpandButton && hasContent && (
+          {showExpandButton && (mode === 'qwen27b' || hasContent) && (
             <button
-              onClick={() => setExpanded(x => !x)}
+              onClick={() => { setExpanded(x => !x); if (mode === 'qwen27b') setExpandedMode('grid') }}
               className="cursor-pointer bg-transparent border-0 text-text-muted hover:text-text-primary transition-colors duration-150 flex items-center gap-1.5"
               style={{ fontSize: 12, padding: '6px 8px', marginBottom: -1 }}
               aria-label={expanded ? 'Collapse preview' : 'Expand preview'}
@@ -401,142 +650,60 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
           </div>
         )}
 
-        {tab === 'improved' && (
-          <div>
-            {c.improved_html ? (
-              <ResizableIframe
-                srcDoc={c.improved_html}
-                title="Improved by GPT-5.4"
-                expanded={expanded}
-                label="improved.html"
-                attribution={
-                  <span style={{ fontSize: 11, color: '#22c55e' }}>Rewritten by GPT-5.4</span>
-                }
-              />
-            ) : (
-              <div className="flex items-center justify-center border border-dashed border-border rounded-lg" style={{ height: 300 }}>
-                <p className="text-text-muted" style={{ fontSize: 14 }}>
-                  Improved version not available for this component
-                </p>
-              </div>
-            )}
-          </div>
+        {renderIframeTabContent('improved', c.improved_html ?? undefined, 'Improved by GPT-5.4', 'improved.html',
+          <span style={{ fontSize: 11, color: '#22c55e' }}>Rewritten by GPT-5.4</span>,
+          'Improved version not available for this component'
         )}
 
-        {tab === 'pi-harness' && (
-          <div>
-            {c.pi_harness_v45_html ? (
-              <ResizableIframe
-                srcDoc={c.pi_harness_v45_html}
-                title="Pi Harness V4.5"
-                expanded={expanded}
-                label="harness-output.html"
-                attribution={
-                  <span style={{ fontSize: 11, color: '#93b4ff', fontWeight: 600 }}>Pi Harness V4.5</span>
-                }
-              />
-            ) : (
-              <div className="flex items-center justify-center border border-dashed border-border rounded-lg" style={{ height: 300 }}>
-                <p className="text-text-muted" style={{ fontSize: 14 }}>
-                  Pi Harness V4.5 output not available for this component
-                </p>
-              </div>
-            )}
-          </div>
+        {renderIframeTabContent('pi-harness', c.pi_harness_v45_html ?? undefined, 'Pi Harness V4.5', 'harness-output.html',
+          <span style={{ fontSize: 11, color: '#93b4ff', fontWeight: 600 }}>Pi Harness V4.5</span>,
+          'Pi Harness V4.5 output not available for this component'
         )}
 
-        {tab === 'pi-harness-v42c' && (
-          <div>
-            {c.pi_harness_html ? (
-              <ResizableIframe
-                srcDoc={c.pi_harness_html}
-                title="Pi Harness V4.2C"
-                expanded={expanded}
-                label="harness-output.html"
-                attribution={
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Pi Harness V4.2C</span>
-                }
-              />
-            ) : (
-              <div className="flex items-center justify-center border border-dashed border-border rounded-lg" style={{ height: 300 }}>
-                <p className="text-text-muted" style={{ fontSize: 14 }}>
-                  Pi Harness V4.2C output not available for this component
-                </p>
-              </div>
-            )}
-          </div>
+        {renderIframeTabContent('pi-harness-v42c', c.pi_harness_html ?? undefined, 'Pi Harness V4.2C', 'harness-output.html',
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Pi Harness V4.2C</span>,
+          'Pi Harness V4.2C output not available for this component'
         )}
 
-        {tab === 'cond-g' && (
-          <div>
-            {c.condition_g_html ? (
-              <ResizableIframe
-                srcDoc={c.condition_g_html}
-                title="8B-VL-Base"
-                expanded={expanded}
-                label="harness-output.html"
-                attribution={<span style={{ fontSize: 11, color: '#93b4ff', fontWeight: 600 }}>8B-VL-Base (Condition G)</span>}
-              />
-            ) : (
-              <div className="flex items-center justify-center border border-dashed border-border rounded-lg" style={{ height: 300 }}>
-                <p className="text-text-muted" style={{ fontSize: 14 }}>8B-VL-Base output not available for this component</p>
-              </div>
-            )}
-          </div>
+        {renderIframeTabContent('cond-g', c.condition_g_html ?? undefined, '8B-VL-Base', 'harness-output.html',
+          <span style={{ fontSize: 11, color: '#93b4ff', fontWeight: 600 }}>8B-VL-Base (Condition G)</span>,
+          '8B-VL-Base output not available for this component'
         )}
 
-        {tab === 'cond-f' && (
-          <div>
-            {c.condition_f_html ? (
-              <ResizableIframe
-                srcDoc={c.condition_f_html}
-                title="Fine Tuned 8B"
-                expanded={expanded}
-                label="harness-output.html"
-                attribution={<span style={{ fontSize: 11, color: '#10b981', fontWeight: 600 }}>Fine Tuned 8B (Condition F)</span>}
-              />
-            ) : (
-              <div className="flex items-center justify-center border border-dashed border-border rounded-lg" style={{ height: 300 }}>
-                <p className="text-text-muted" style={{ fontSize: 14 }}>Fine Tuned 8B output not available for this component</p>
-              </div>
-            )}
-          </div>
+        {renderIframeTabContent('cond-f', c.condition_f_html ?? undefined, 'Fine Tuned 8B', 'harness-output.html',
+          <span style={{ fontSize: 11, color: '#10b981', fontWeight: 600 }}>Fine Tuned 8B (Condition F)</span>,
+          'Fine Tuned 8B output not available for this component'
         )}
 
-        {tab === 'cond-d' && (
-          <div>
-            {c.condition_d_html ? (
-              <ResizableIframe
-                srcDoc={c.condition_d_html}
-                title="Harness D"
-                expanded={expanded}
-                label="harness-output.html"
-                attribution={<span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>Harness D (Condition D)</span>}
-              />
-            ) : (
-              <div className="flex items-center justify-center border border-dashed border-border rounded-lg" style={{ height: 300 }}>
-                <p className="text-text-muted" style={{ fontSize: 14 }}>Harness D output not available for this component</p>
-              </div>
-            )}
-          </div>
+        {renderIframeTabContent('cond-d', c.condition_d_html ?? undefined, 'Harness D', 'harness-output.html',
+          <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>Harness D (Condition D)</span>,
+          'Harness D output not available for this component'
         )}
 
-        {tab === 'cond-e' && (
-          <div>
-            {c.condition_e_html ? (
-              <ResizableIframe
-                srcDoc={c.condition_e_html}
-                title="Harness E"
-                expanded={expanded}
-                label="harness-output.html"
-                attribution={<span style={{ fontSize: 11, color: '#a78bfa', fontWeight: 600 }}>Harness E (Condition E)</span>}
-              />
-            ) : (
-              <div className="flex items-center justify-center border border-dashed border-border rounded-lg" style={{ height: 300 }}>
-                <p className="text-text-muted" style={{ fontSize: 14 }}>Harness E output not available for this component</p>
-              </div>
-            )}
-          </div>
+        {renderIframeTabContent('cond-e', c.condition_e_html ?? undefined, 'Harness E', 'harness-output.html',
+          <span style={{ fontSize: 11, color: '#a78bfa', fontWeight: 600 }}>Harness E (Condition E)</span>,
+          'Harness E output not available for this component'
+        )}
+
+        {/* Qwen27b tabs */}
+        {renderIframeTabContent('q5', c.q5_html ?? undefined, 'Q5_K_XL', 'component.html',
+          <span style={{ fontSize: 11, color: '#f97316', fontWeight: 600 }}>Qwen 3.6 27B · Q5_K_XL</span>,
+          'Q5 output not available for this component'
+        )}
+
+        {renderIframeTabContent('q8-va', c.q8_va_html ?? undefined, 'Q8 T=0.6', 'harness-output.html',
+          <span style={{ fontSize: 11, color: '#3b82f6', fontWeight: 600 }}>Q8_K_XL · T=0.6</span>,
+          'Q8 T=0.6 output not available for this component'
+        )}
+
+        {renderIframeTabContent('q8-vb', c.q8_vb_html ?? undefined, 'Q8 T=0.85', 'harness-output.html',
+          <span style={{ fontSize: 11, color: '#8b5cf6', fontWeight: 600 }}>Q8_K_XL · T=0.85</span>,
+          'Q8 T=0.85 output not available for this component'
+        )}
+
+        {renderIframeTabContent('q8-vc', c.q8_vc_html ?? undefined, 'Q8 T=0.85 2p', 'harness-output.html',
+          <span style={{ fontSize: 11, color: '#10b981', fontWeight: 600 }}>Q8_K_XL · T=0.85 · Self-check</span>,
+          'Q8 T=0.85 2p output not available for this component'
         )}
       </div>
 
@@ -554,7 +721,11 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
             </p>
           </div>
           <div className="flex items-center gap-3" style={{ marginTop: 12 }}>
-            <span style={{ fontSize: 11, background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 700 }}>Qwen3.6-27B</span>
+            {mode === 'qwen27b' ? (
+              <span style={{ fontSize: 11, color: '#f97316', fontWeight: 700 }}>Qwen 3.6 27B</span>
+            ) : (
+              <span style={{ fontSize: 11, background: 'linear-gradient(90deg, #f97316 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 700 }}>Qwen3.6-27B</span>
+            )}
             <span className="text-text-muted" style={{ fontSize: 11 }}>·</span>
             <span className="text-text-muted" style={{ fontSize: 11 }}>T={c.temperature}</span>
             <span className="text-text-muted" style={{ fontSize: 11 }}>·</span>
@@ -563,7 +734,37 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
         </div>
 
         {/* Score */}
-        {mode === 'html-compare' ? (
+        {mode === 'qwen27b' ? (
+          <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '20px 20px 12px' }}>
+            <div style={{ marginBottom: 16 }}>
+              <span className="section-label" style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Conditions</span>
+            </div>
+            {[
+              { label: 'Q5', color: '#f97316', score: c.q5_score, max: 9 },
+              { label: 'Q8 T=0.6', color: '#3b82f6', score: c.q8_va_score, max: 10 },
+              { label: 'Q8 T=0.85', color: '#8b5cf6', score: c.q8_vb_score, max: 10 },
+              { label: 'Q8 T=0.85 2p', color: '#10b981', score: c.q8_vc_score, max: 10 },
+            ].map(row => (
+              <div key={row.label} className="py-2 border-b border-border-subtle last:border-b-0">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-sm" style={{ color: row.color, fontWeight: 600 }}>{row.label}</span>
+                  <span className="font-mono text-sm font-medium text-text-primary">
+                    {row.score != null ? `${row.score}/${row.max}` : '—'}
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-bg-elevated overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: row.score != null ? `${(row.score / row.max) * 100}%` : '0%',
+                      background: row.color,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : mode === 'html-compare' ? (
           <div className="rounded-lg border border-border bg-bg-card" style={{ padding: '20px 20px 12px' }}>
             <div style={{ marginBottom: 16 }}>
               <span className="section-label" style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Condition Comparison</span>

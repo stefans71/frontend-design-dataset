@@ -10,6 +10,8 @@ import Validation from '@/pages/Validation'
 import Conversations from '@/pages/Conversations'
 import ThePi from '@/pages/ThePi'
 import HtmlCompareComponentPage from '@/pages/HtmlCompareComponentPage'
+import Qwen27bGallery from '@/pages/Qwen27bGallery'
+import Qwen27bComponentPage from '@/pages/Qwen27bComponentPage'
 import '@/styles/globals.css'
 
 export default function App() {
@@ -32,6 +34,8 @@ export default function App() {
             <Route path="/pi-harness/html-compare" element={<Gallery basePath="/pi-harness/html-compare" />} />
             <Route path="/pi-harness/html-compare/:id" element={<HtmlCompareComponentPage />} />
             <Route path="/pi-harness/the-pi" element={<ThePi />} />
+            <Route path="/qwen27b" element={<Qwen27bGallery />} />
+            <Route path="/qwen27b/:id" element={<Qwen27bComponentPage />} />
           </Routes>
         </main>
       </BrowserRouter>

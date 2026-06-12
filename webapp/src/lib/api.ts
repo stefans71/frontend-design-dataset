@@ -1,4 +1,4 @@
-import type { ComponentWithScore, Conversation, ValidationResult } from './types'
+import type { ComponentWithScore, Conversation, ValidationResult, Qwen27bComponent } from './types'
 
 const BASE = '/api'
 
@@ -73,5 +73,24 @@ export async function getStats(): Promise<{
   categories: Record<string, number>
 }> {
   const res = await fetch(`${BASE}/stats`)
+  return res.json()
+}
+
+export async function getQwen27bComponents(params: {
+  category?: string; theme?: string; sort?: string; page?: number; limit?: number
+}): Promise<{ items: Qwen27bComponent[]; total: number }> {
+  const q = new URLSearchParams()
+  Object.entries(params).forEach(([k, v]) => v !== undefined && q.set(k, String(v)))
+  const res = await fetch(`${BASE}/qwen27b/components?${q}`)
+  return res.json()
+}
+
+export async function getQwen27bComponent(id: string): Promise<Qwen27bComponent> {
+  const res = await fetch(`${BASE}/qwen27b/components/${id}`)
+  return res.json()
+}
+
+export async function getQwen27bNeighbors(id: string): Promise<{ prev: string | null; next: string | null }> {
+  const res = await fetch(`${BASE}/qwen27b/components/${id}/neighbors`)
   return res.json()
 }

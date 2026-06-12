@@ -70,6 +70,26 @@ export interface ValidationResult {
   base_critique?: string
 }
 
+export interface Qwen27bComponent {
+  id: string
+  prompt: string
+  temperature: number
+  run: string
+  category: string
+  theme: 'dark' | 'light'
+  q5_html?: string
+  q8_va_html?: string
+  q8_vb_html?: string
+  q8_vc_html?: string
+  q5_score?: number
+  q8_va_score?: number
+  q8_vb_score?: number
+  q8_vc_score?: number
+  q8_va_critique?: string
+  q8_vb_critique?: string
+  q8_vc_critique?: string
+}
+
 export type GridCols = 2 | 3 | 4
 export type Theme = 'light' | 'dark'
 export type SortBy = 'score_desc' | 'score_asc' | 'category' | 'temperature' | 'id_asc' | 'id_desc'

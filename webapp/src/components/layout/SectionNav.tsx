@@ -12,6 +12,10 @@ const piHarnessLinks = [
   { to: '/pi-harness/the-pi', label: 'The Pi' },
 ]
 
+const qwen27bLinks = [
+  { to: '/qwen27b', label: 'Q6 VS Q8' },
+]
+
 export const fineTunedPaths = ['/', '/fine-tuned', '/validation', '/components', '/conversations']
 
 export default function SectionNav() {
@@ -23,8 +27,9 @@ export default function SectionNav() {
     pathname === '/conversations'
 
   const isPiHarness = pathname.startsWith('/pi-harness')
+  const isQwen27b = pathname.startsWith('/qwen27b')
 
-  const links = isFineTuned ? fineTunedLinks : isPiHarness ? piHarnessLinks : null
+  const links = isFineTuned ? fineTunedLinks : isPiHarness ? piHarnessLinks : isQwen27b ? qwen27bLinks : null
 
   if (!links) return null
 
