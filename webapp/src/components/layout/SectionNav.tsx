@@ -13,7 +13,7 @@ const piHarnessLinks = [
 ]
 
 const qwen27bLinks = [
-  { to: '/qwen27b', label: 'Q6 VS Q8' },
+  { to: '/qwen27b', label: 'Q5 VS Q8' },
 ]
 
 export const fineTunedPaths = ['/', '/fine-tuned', '/validation', '/components', '/conversations']

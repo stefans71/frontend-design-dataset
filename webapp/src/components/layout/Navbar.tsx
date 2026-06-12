@@ -137,7 +137,7 @@ export default function Navbar() {
                     onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-secondary)' }}
                     onMouseLeave={e => { if (!pathname.startsWith('/qwen27b')) e.currentTarget.style.background = 'transparent' }}
                   >
-                    Q6 VS Q8
+                    Q5 VS Q8
                   </Link>
                 </div>
               )}

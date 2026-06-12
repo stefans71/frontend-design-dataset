@@ -206,7 +206,7 @@ export default function Qwen27bGallery() {
             <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12 }}>
               QWEN 3.6 27B
             </div>
-            <h1 className="text-text-primary" style={{ fontSize: 32, fontWeight: 800, lineHeight: 1.2, marginBottom: 4 }}>Q6 VS Q8 Comparison</h1>
+            <h1 className="text-text-primary" style={{ fontSize: 32, fontWeight: 800, lineHeight: 1.2, marginBottom: 4 }}>Q5 VS Q8 Comparison</h1>
             <div style={{ fontSize: 15, color: 'var(--text-secondary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span>Comparing</span>
               <span style={{ color: '#f97316', fontWeight: 700 }}>Q5_K_XL</span>
