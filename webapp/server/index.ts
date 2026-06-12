@@ -121,10 +121,17 @@ const server = Bun.serve({
       if (theme && theme !== 'all') { conditions.push('theme = ?'); params.push(theme) }
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
-      const allRows = db.query(`SELECT * FROM components_qwen27b ${whereClause} ORDER BY ${orderBy}`).all(...params) as Record<string, string | number>[]
-      const total = allRows.length
-      const items = allRows.slice(page * limit, (page + 1) * limit)
+      const countRow = db.query(`SELECT COUNT(*) as n FROM components_qwen27b ${whereClause}`).get(...params) as Record<string, number>
+      const total = countRow.n
+      const items = db.query(`SELECT id, prompt, temperature, run, category, theme, q5_score, q8_va_score, q8_vb_score, q8_vc_score FROM components_qwen27b ${whereClause} ORDER BY ${orderBy} LIMIT ? OFFSET ?`).all(...params, limit, page * limit) as Record<string, string | number>[]
       return Response.json({ items, total }, { headers })
+    }
+
+    if (url.pathname.match(/^\/api\/qwen27b\/components\/[^/]+\/preview$/)) {
+      const id = url.pathname.replace('/api/qwen27b/components/', '').replace('/preview', '')
+      const row = db.query('SELECT q5_html FROM components_qwen27b WHERE id = ?').get(id) as { q5_html: string } | null
+      if (!row?.q5_html) return new Response('Not found', { status: 404 })
+      return new Response(row.q5_html, { headers: { ...headers, 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=86400' } })
     }
 
     if (url.pathname.match(/^\/api\/qwen27b\/components\/[^/]+\/neighbors$/)) {
