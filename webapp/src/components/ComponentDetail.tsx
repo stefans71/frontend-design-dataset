@@ -177,7 +177,7 @@ function TabButton({ tab, current, available, onClick }: { tab: Tab; current: Ta
         : tab === 'cond-f' ? <span style={{ color: '#10b981', fontWeight: 700 }}>Fine Tuned 8B</span>
         : tab === 'cond-d' ? <span style={{ color: '#f59e0b', fontWeight: 700 }}>Harness D</span>
         : tab === 'cond-e' ? <span style={{ color: '#a78bfa', fontWeight: 700 }}>Harness E</span>
-        : tab === 'q5' ? <span style={{ color: '#f97316', fontWeight: 700 }}>Q5</span>
+        : tab === 'q5' ? <span style={{ color: '#f97316', fontWeight: 700 }}>Q5 T=0.5</span>
         : tab === 'q8-va' ? <span style={{ color: '#3b82f6', fontWeight: 700 }}>Q8 T=0.6</span>
         : tab === 'q8-vb' ? <span style={{ color: '#8b5cf6', fontWeight: 700 }}>Q8 T=0.85</span>
         : tab === 'q8-vc' ? <span style={{ color: '#10b981', fontWeight: 700 }}>Q8 T=0.85 2p</span>
@@ -740,27 +740,16 @@ export default function ComponentDetail({ component: c, neighbors, onNavigate, e
               <span className="section-label" style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Conditions</span>
             </div>
             {[
-              { label: 'Q5', color: '#f97316', score: c.q5_score, max: 9 },
-              { label: 'Q8 T=0.6', color: '#3b82f6', score: c.q8_va_score, max: 10 },
-              { label: 'Q8 T=0.85', color: '#8b5cf6', score: c.q8_vb_score, max: 10 },
-              { label: 'Q8 T=0.85 2p', color: '#10b981', score: c.q8_vc_score, max: 10 },
+              { label: 'Q5 T=0.5', color: '#f97316', available: c.q5_score != null },
+              { label: 'Q8 T=0.6', color: '#3b82f6', available: c.q8_va_score != null },
+              { label: 'Q8 T=0.85', color: '#8b5cf6', available: c.q8_vb_score != null },
+              { label: 'Q8 T=0.85 2p', color: '#10b981', available: c.q8_vc_score != null },
             ].map(row => (
-              <div key={row.label} className="py-2 border-b border-border-subtle last:border-b-0">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-sm" style={{ color: row.color, fontWeight: 600 }}>{row.label}</span>
-                  <span className="font-mono text-sm font-medium text-text-primary">
-                    {row.score != null ? `${row.score}/${row.max}` : '—'}
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-bg-elevated overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-300"
-                    style={{
-                      width: row.score != null ? `${(row.score / row.max) * 100}%` : '0%',
-                      background: row.color,
-                    }}
-                  />
-                </div>
+              <div key={row.label} className="flex justify-between items-center py-2 border-b border-border-subtle last:border-b-0">
+                <span className="text-sm" style={{ color: row.color, fontWeight: 600 }}>{row.label}</span>
+                <span className="text-sm" style={{ color: row.available ? 'var(--score-high)' : 'var(--text-muted)' }}>
+                  {row.available ? '✓' : '—'}
+                </span>
               </div>
             ))}
           </div>
